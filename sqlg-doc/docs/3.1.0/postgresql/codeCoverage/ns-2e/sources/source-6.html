@@ -1,0 +1,192 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestNotifyJson</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.schema</a>
+</div>
+
+<h1>Coverage Summary for Class: TestNotifyJson (org.umlg.sqlg.test.schema)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestNotifyJson</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    91.9%
+  </span>
+  <span class="absValue">
+    (34/37)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.schema;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.node.ArrayNode;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;import static org.junit.Assert.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/11/27
+&nbsp; * Time: 9:42 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestNotifyJson extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="fc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+<b class="pc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;))</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        } catch (ConfigurationException e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNotifyJson() {
+<b class="fc">&nbsp;        Map&lt;String, PropertyDefinition&gt; properties  = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        properties.put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().ensureSchemaExist(&quot;A&quot;).ensureVertexLabelExist(&quot;A&quot;, properties);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; logs = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_LOG).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, logs.size());</b>
+<b class="fc">&nbsp;        Vertex log = logs.get(0);</b>
+<b class="fc">&nbsp;        JsonNode jsonLog = log.value(Topology.SQLG_SCHEMA_LOG_LOG);</b>
+<b class="fc">&nbsp;        JsonNode schemas = jsonLog.get(&quot;uncommittedSchemas&quot;);</b>
+<b class="fc">&nbsp;        assertNotNull(&quot;A&quot;, schemas);</b>
+<b class="fc">&nbsp;        assertTrue(schemas instanceof ArrayNode);</b>
+<b class="fc">&nbsp;        ArrayNode schemasArray = (ArrayNode)schemas;</b>
+<b class="fc">&nbsp;        assertEquals(1, schemasArray.size());</b>
+<b class="fc">&nbsp;        JsonNode aSchema = schemasArray.get(0);</b>
+<b class="fc">&nbsp;        assertEquals(&quot;A&quot;, aSchema.get(&quot;name&quot;).asText());</b>
+<b class="fc">&nbsp;        JsonNode uncommittedVertexLabels = aSchema.get(&quot;uncommittedVertexLabels&quot;);</b>
+<b class="fc">&nbsp;        assertNotNull(uncommittedVertexLabels);</b>
+<b class="fc">&nbsp;        assertTrue(uncommittedVertexLabels instanceof ArrayNode);</b>
+<b class="fc">&nbsp;        ArrayNode uncommittedVertexLabelsArray = (ArrayNode)uncommittedVertexLabels;</b>
+<b class="fc">&nbsp;        assertEquals(1, uncommittedVertexLabelsArray.size());</b>
+<b class="fc">&nbsp;        JsonNode vertexLabel = uncommittedVertexLabels.get(0);</b>
+<b class="fc">&nbsp;        assertEquals(&quot;A&quot;, vertexLabel.get(&quot;label&quot;).asText());</b>
+<b class="fc">&nbsp;        JsonNode propertiesJson = vertexLabel.get(&quot;uncommittedProperties&quot;);</b>
+<b class="fc">&nbsp;        assertNotNull(propertiesJson);</b>
+<b class="fc">&nbsp;        assertTrue(propertiesJson instanceof ArrayNode);</b>
+<b class="fc">&nbsp;        ArrayNode propertiesArray = (ArrayNode)propertiesJson;</b>
+<b class="fc">&nbsp;        assertEquals(1, propertiesArray.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

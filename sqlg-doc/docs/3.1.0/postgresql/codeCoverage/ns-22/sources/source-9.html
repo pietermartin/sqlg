@@ -1,0 +1,179 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestUpdateVertex</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.mod</a>
+</div>
+
+<h1>Coverage Summary for Class: TestUpdateVertex (org.umlg.sqlg.test.mod)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestUpdateVertex</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.mod;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/08/28
+&nbsp; * Time: 7:14 AM
+&nbsp; */
+<b class="nc">&nbsp;public class TestUpdateVertex extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateIdField() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;id&quot;, &quot;halo&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="nc">&nbsp;        a1.property(&quot;id&quot;, &quot;haloagain&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateVertex() {
+<b class="nc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;john&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;john&quot;, v.value(&quot;name&quot;));</b>
+<b class="nc">&nbsp;        v.property(&quot;name&quot;, &quot;joe&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;joe&quot;, v.value(&quot;name&quot;));</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;joe&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPropertyIsPresent() {
+<b class="nc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;john&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertNotNull(v.property(&quot;name&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLoadPropertiesOnUpdate() {
+<b class="nc">&nbsp;        Vertex vertex = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;property1&quot;, &quot;a&quot;, &quot;property2&quot;, &quot;b&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        vertex = this.sqlgGraph.traversal().V(vertex.id()).next();</b>
+<b class="nc">&nbsp;        vertex.property(&quot;property1&quot;, &quot;aa&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;b&quot;, vertex.value(&quot;property2&quot;));</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdatePropertyWithPeriod() {
+<b class="nc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;test.A&quot;, &quot;test&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        v = this.sqlgGraph.traversal().V(v).next();</b>
+<b class="nc">&nbsp;        v.property(&quot;test.A&quot;, &quot;test1&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        v = this.sqlgGraph.traversal().V(v).next();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;test1&quot;, v.property(&quot;test.A&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateStringArray() {
+<b class="nc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;ManagedObject&quot;, &quot;source&quot;, new String[]{&quot;MML&quot;});</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        v1 = this.sqlgGraph.traversal().V(v1.id()).next();</b>
+<b class="nc">&nbsp;        Assert.assertArrayEquals(new String[]{&quot;MML&quot;}, v1.value(&quot;source&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        v1.property(&quot;source&quot;, new String[]{&quot;XML&quot;});</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        v1 = this.sqlgGraph.traversal().V(v1.id()).next();</b>
+<b class="nc">&nbsp;        Assert.assertArrayEquals(new String[]{&quot;XML&quot;}, v1.value(&quot;source&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

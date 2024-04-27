@@ -1,0 +1,304 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchJson</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchJson (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchJson</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    66.7%
+  </span>
+  <span class="absValue">
+    (12/18)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (100/100)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.fasterxml.jackson.databind.node.ObjectNode;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.BatchManager;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/09
+&nbsp; * Time: 9:20 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestBatchJson extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJson() throws InterruptedException {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doc&quot;, json);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testJson_assert(this.sqlgGraph, json, a1);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testJson_assert(this.sqlgGraph1, json, a1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testJson_assert(SqlgGraph sqlgGraph, ObjectNode json, Vertex a1) {
+<b class="fc">&nbsp;        assertEquals(json, sqlgGraph.traversal().V(a1).values(&quot;doc&quot;).next());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchJson() throws InterruptedException {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc&quot;, json);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchJson_assert(this.sqlgGraph, json);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchJson_assert(this.sqlgGraph, json);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    private void batchJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        JsonNode value = vertices.get(0).value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(json, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchUpdateJson() throws InterruptedException {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc&quot;, json);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        JsonNode value = vertices.get(0).value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(json, value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;o&#39;connor&quot;);</b>
+<b class="fc">&nbsp;        for (Vertex vertex : vertices) {</b>
+<b class="fc">&nbsp;            vertex.property(&quot;doc&quot;, json);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchUpdateJson_assert(this.sqlgGraph, json);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchUpdateJson_assert(this.sqlgGraph1, json);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchUpdateJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
+&nbsp;        List&lt;Vertex&gt; vertices;
+&nbsp;        JsonNode value;
+<b class="fc">&nbsp;        vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        value = vertices.get(0).value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(json, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchUpdateJsonWithNulls() throws InterruptedException {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc1&quot;, json);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc2&quot;, json);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc3&quot;, json);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        ObjectNode jsonAgain = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        jsonAgain.put(&quot;surname&quot;, &quot;zzz&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        a1.property(&quot;doc1&quot;, jsonAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;doc2&quot;, jsonAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;doc3&quot;, jsonAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        batchUpdateJsonWithNulls_assert(this.sqlgGraph, a1, a2, a3, jsonAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchUpdateJsonWithNulls_assert(this.sqlgGraph1, a1, a2, a3, jsonAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchUpdateJsonWithNulls_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, ObjectNode jsonAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonAgain, a1.value(&quot;doc1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doc2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doc3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doc1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonAgain, a2.value(&quot;doc2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doc3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doc1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doc2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonAgain, a3.value(&quot;doc3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchJsonContainingEmbeddedJson() throws IOException, InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());</b>
+<b class="fc">&nbsp;        String jsonQuery = &quot;{&quot; +</b>
+&nbsp;                &quot;\&quot;chartEnabled\&quot;:true,&quot; +
+&nbsp;                &quot;\&quot;geom\&quot;:\&quot;{\\\&quot;type\\\&quot;:\\\&quot;LineString\\\&quot;,&quot; +
+&nbsp;                &quot;\\\&quot;coordinates\\\&quot;:[[29.86946571,-24.77036915],[29.8698364927907,-24.7697827794629],[29.8690949272093,-24.7697827794629]]}\&quot;,&quot; +
+&nbsp;                &quot;\&quot;id\&quot;:\&quot;2\&quot;}}&quot;;
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValues = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        ObjectMapper objectMapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;        JsonNode json = objectMapper.readTree(jsonQuery);</b>
+<b class="fc">&nbsp;        keyValues.put(&quot;serializedReport&quot;, json);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.STREAMING);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Test&quot;, keyValues);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchJsonContainingEmbeddedJson_assert(this.sqlgGraph, json);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchJsonContainingEmbeddedJson_assert(this.sqlgGraph1, json);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchJsonContainingEmbeddedJson_assert(SqlgGraph sqlgGraph, JsonNode json) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Test&quot;).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        JsonNode jsonNodeAgain = vertices.get(0).value(&quot;serializedReport&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(json, jsonNodeAgain);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

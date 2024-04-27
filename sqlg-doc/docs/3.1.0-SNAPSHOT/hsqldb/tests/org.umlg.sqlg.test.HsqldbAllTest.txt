@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.HsqldbAllTest
--------------------------------------------------------------------------------
-Tests run: 2071, Failures: 0, Errors: 0, Skipped: 272, Time elapsed: 222.9 s -- in org.umlg.sqlg.test.HsqldbAllTest

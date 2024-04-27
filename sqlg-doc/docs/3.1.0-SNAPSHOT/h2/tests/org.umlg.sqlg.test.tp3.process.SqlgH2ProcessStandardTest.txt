@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.tp3.process.SqlgH2ProcessStandardTest
--------------------------------------------------------------------------------
-Tests run: 890, Failures: 0, Errors: 0, Skipped: 68, Time elapsed: 100.6 s -- in org.umlg.sqlg.test.tp3.process.SqlgH2ProcessStandardTest

@@ -1,0 +1,407 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchNormalUpdateDateTimeArrays</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchNormalUpdateDateTimeArrays (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchNormalUpdateDateTimeArrays</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (15/15)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    57.1%
+  </span>
+  <span class="absValue">
+    (8/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (183/183)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.time.*;
+&nbsp;import java.time.temporal.ChronoUnit;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2017/01/26
+&nbsp; * Time: 12:22 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateLocalDateTimeArray() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDateTime[] localDateTimeArray = new LocalDateTime[]{LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS), LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateTimeArray1&quot;, localDateTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateTimeArray2&quot;, localDateTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateTimeArray3&quot;, localDateTimeArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDateTime[] localDateTimeArrayAgain = new LocalDateTime[]{</b>
+<b class="fc">&nbsp;                LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS),</b>
+<b class="fc">&nbsp;                LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS)</b>
+&nbsp;        };
+<b class="fc">&nbsp;        a1.property(&quot;localDateTimeArray1&quot;, localDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;localDateTimeArray2&quot;, localDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;localDateTimeArray3&quot;, localDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdateLocalDateTimeArray_assert(this.sqlgGraph, a1, a2, a3, localDateTimeArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testUpdateLocalDateTimeArray_assert(this.sqlgGraph1, a1, a2, a3, localDateTimeArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdateLocalDateTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalDateTime[] localDateTimeArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeArrayAgain, a1.value(&quot;localDateTimeArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localDateTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localDateTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localDateTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeArrayAgain, a2.value(&quot;localDateTimeArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localDateTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localDateTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localDateTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeArrayAgain, a3.value(&quot;localDateTimeArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateLocalDateArray() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDate[] localDateArray = new LocalDate[]{LocalDate.now(), LocalDate.now()};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateArray1&quot;, localDateArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateArray2&quot;, localDateArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateArray3&quot;, localDateArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDate[] localDateArrayAgain = new LocalDate[]{LocalDate.now().plusDays(1), LocalDate.now().plusDays(2)};</b>
+<b class="fc">&nbsp;        a1.property(&quot;localDateArray1&quot;, localDateArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;localDateArray2&quot;, localDateArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;localDateArray3&quot;, localDateArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdateLocalDateArray_assert(this.sqlgGraph, a1, a2, a3, localDateArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testUpdateLocalDateArray_assert(this.sqlgGraph1, a1, a2, a3, localDateArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdateLocalDateArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalDate[] localDateArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateArrayAgain, a1.value(&quot;localDateArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localDateArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localDateArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localDateArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateArrayAgain, a2.value(&quot;localDateArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localDateArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localDateArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localDateArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateArrayAgain, a3.value(&quot;localDateArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateLocalTimeArray() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalTime[] localTimeArray = new LocalTime[]{LocalTime.now(), LocalTime.now()};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localTimeArray1&quot;, localTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localTimeArray2&quot;, localTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localTimeArray3&quot;, localTimeArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalTime[] localTimeArrayAgain = new LocalTime[]{LocalTime.now().plusHours(1), LocalTime.now().plusHours(2)};</b>
+<b class="fc">&nbsp;        a1.property(&quot;localTimeArray1&quot;, localTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;localTimeArray2&quot;, localTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;localTimeArray3&quot;, localTimeArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdateLocalTimeArray_assert(this.sqlgGraph, a1, a2, a3, localTimeArrayAgain);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdateLocalTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalTime[] localTimeArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;LocalTime&gt; localTimes1 = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (LocalTime localTime : localTimeArrayAgain) {</b>
+<b class="fc">&nbsp;            localTimes1.add(localTime.minusNanos(localTime.getNano()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localTimes1.toArray(), a1.value(&quot;localTimeArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;localTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localTimes1.toArray(), a2.value(&quot;localTimeArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;localTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;localTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localTimes1.toArray(), a3.value(&quot;localTimeArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateZonedDateTimeArray() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        ZonedDateTime[] zonedDateTimeArray = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;zonedDateTimeArray1&quot;, zonedDateTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;zonedDateTimeArray2&quot;, zonedDateTimeArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;zonedDateTimeArray3&quot;, zonedDateTimeArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        ZonedDateTime[] zonedDateTimeArrayAgain = new ZonedDateTime[]{</b>
+<b class="fc">&nbsp;                ZonedDateTime.now().plusHours(1).truncatedTo(ChronoUnit.SECONDS),</b>
+<b class="fc">&nbsp;                ZonedDateTime.now().plusHours(2).truncatedTo(ChronoUnit.SECONDS)</b>
+&nbsp;        };
+<b class="fc">&nbsp;        a1.property(&quot;zonedDateTimeArray1&quot;, zonedDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;zonedDateTimeArray2&quot;, zonedDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;zonedDateTimeArray3&quot;, zonedDateTimeArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdateZonedDateTimeArray_assert(this.sqlgGraph, a1, a2, a3, zonedDateTimeArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testUpdateZonedDateTimeArray_assert(this.sqlgGraph1, a1, a2, a3, zonedDateTimeArrayAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdateZonedDateTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, ZonedDateTime[] zonedDateTimeArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimeArrayAgain, a1.value(&quot;zonedDateTimeArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;zonedDateTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;zonedDateTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;zonedDateTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimeArrayAgain, a2.value(&quot;zonedDateTimeArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;zonedDateTimeArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;zonedDateTimeArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;zonedDateTimeArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimeArrayAgain, a3.value(&quot;zonedDateTimeArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdateDurationArray() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Duration[] durationArray = new Duration[]{Duration.ofDays(1), Duration.ofDays(1)};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;durationArray1&quot;, durationArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;durationArray2&quot;, durationArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;durationArray3&quot;, durationArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Duration[] durationArrayAgain = new Duration[]{Duration.ofDays(3), Duration.ofDays(4)};</b>
+<b class="fc">&nbsp;        a1.property(&quot;durationArray1&quot;, durationArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;durationArray2&quot;, durationArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;durationArray3&quot;, durationArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdateDurationArray_assert(this.sqlgGraph, a1, a2, a3, durationArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testUpdateDurationArray_assert(this.sqlgGraph1, a1, a2, a3, durationArrayAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdateDurationArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Duration[] durationArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durationArrayAgain, a1.value(&quot;durationArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;durationArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;durationArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;durationArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durationArrayAgain, a2.value(&quot;durationArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;durationArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;durationArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;durationArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durationArrayAgain, a3.value(&quot;durationArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdatePeriodArray() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Period[] periodArray = new Period[]{Period.of(1, 1, 1), Period.of(1, 1, 1)};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;periodArray1&quot;, periodArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;periodArray2&quot;, periodArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;periodArray3&quot;, periodArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Period[] periodArrayAgain = new Period[]{Period.of(2, 2, 2), Period.of(4, 4, 4)};</b>
+<b class="fc">&nbsp;        a1.property(&quot;periodArray1&quot;, periodArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;periodArray2&quot;, periodArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;periodArray3&quot;, periodArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testUpdatePeriodArray_assert(this.sqlgGraph, a1, a2, a3, periodArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testUpdatePeriodArray_assert(this.sqlgGraph1, a1, a2, a3, periodArrayAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testUpdatePeriodArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Period[] periodArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periodArrayAgain, a1.value(&quot;periodArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;periodArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;periodArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;periodArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periodArrayAgain, a2.value(&quot;periodArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;periodArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;periodArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;periodArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periodArrayAgain, a3.value(&quot;periodArray3&quot;));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

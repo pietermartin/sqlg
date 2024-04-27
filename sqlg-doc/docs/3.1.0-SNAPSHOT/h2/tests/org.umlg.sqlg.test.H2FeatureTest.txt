@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.H2FeatureTest
--------------------------------------------------------------------------------
-Tests run: 1357, Failures: 0, Errors: 0, Skipped: 130, Time elapsed: 22.69 s -- in org.umlg.sqlg.test.H2FeatureTest

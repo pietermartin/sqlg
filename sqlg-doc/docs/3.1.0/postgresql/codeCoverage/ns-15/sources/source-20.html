@@ -1,0 +1,215 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestRepeatStepWithLabels</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestRepeatStepWithLabels (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestRepeatStepWithLabels</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (59/59)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/10/26
+&nbsp; * Time: 11:53 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestRepeatStepWithLabels extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEmitWithLabel() {
+&nbsp;
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1).repeat(out()).times(2).emit().as(&quot;bc&quot;).&lt;Vertex&gt;select(&quot;bc&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, result.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(result.contains(b1));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(result.contains(c1));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatEmitLabel1() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .repeat(out()).times(1).emit().as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                .&lt;Vertex&gt;select(&quot;a&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Vertex&gt;&gt; labelVertexMaps = traversal</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;Vertex, Vertex&gt;&gt; testPairs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;vadas&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;josh&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;josh&quot;), convertToVertex(this.sqlgGraph, &quot;ripple&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;josh&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;peter&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, labelVertexMaps.size());</b>
+<b class="fc">&nbsp;        for (Map&lt;String, Vertex&gt; labelVertexMap : labelVertexMaps) {</b>
+<b class="fc">&nbsp;            Pair&lt;Vertex, Vertex&gt; pair = Pair.of(labelVertexMap.get(&quot;a&quot;), labelVertexMap.get(&quot;b&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(testPairs.remove(pair));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(testPairs.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatEmitLabel2() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .repeat(out()).times(2).emit().as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                .&lt;Vertex&gt;select(&quot;a&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Vertex&gt;&gt; labelVertexMaps = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Pair&lt;Vertex, Vertex&gt;&gt; testPairs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;vadas&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;josh&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;marko&quot;), convertToVertex(this.sqlgGraph, &quot;ripple&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;josh&quot;), convertToVertex(this.sqlgGraph, &quot;ripple&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;josh&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+<b class="fc">&nbsp;        testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, &quot;peter&quot;), convertToVertex(this.sqlgGraph, &quot;lop&quot;)));</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(8, labelVertexMaps.size());</b>
+<b class="fc">&nbsp;        for (Map&lt;String, Vertex&gt; labelVertexMap : labelVertexMaps) {</b>
+<b class="fc">&nbsp;            System.out.println(labelVertexMap);</b>
+<b class="fc">&nbsp;            Pair&lt;Vertex, Vertex&gt; pair = Pair.of(labelVertexMap.get(&quot;a&quot;), labelVertexMap.get(&quot;b&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(testPairs.remove(pair));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(testPairs.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

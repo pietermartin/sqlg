@@ -1,0 +1,384 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestUUID</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.uuid</a>
+</div>
+
+<h1>Coverage Summary for Class: TestUUID (org.umlg.sqlg.test.uuid)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestUUID</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (105/105)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestUUID$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestUUID$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestUUID$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestUUID$4</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (113/113)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.uuid;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Before;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.PropertyColumn;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.UUID;
+&nbsp;
+<b class="fc">&nbsp;public class TestUUID extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void before() throws Exception {
+<b class="fc">&nbsp;        super.before();</b>
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsUUID());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUUID() {
+<b class="fc">&nbsp;        UUID uuidPerson1 = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Vertex vertexA = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, uuidPerson1);</b>
+<b class="fc">&nbsp;        UUID uuidPerson2 = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Vertex vertexB = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, uuidPerson2);</b>
+<b class="fc">&nbsp;        UUID uuidEdge = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Edge edge = vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, uuidEdge);</b>
+<b class="fc">&nbsp;        vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;        vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        vertexA = this.sqlgGraph.traversal().V(vertexA.id()).next();</b>
+<b class="fc">&nbsp;        UUID uuidFromDB = vertexA.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson1, uuidFromDB);</b>
+<b class="fc">&nbsp;        vertexB = this.sqlgGraph.traversal().V(vertexB.id()).next();</b>
+<b class="fc">&nbsp;        uuidFromDB = vertexB.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson2, uuidFromDB);</b>
+<b class="fc">&nbsp;        edge = this.sqlgGraph.traversal().E(edge.id()).next();</b>
+<b class="fc">&nbsp;        uuidFromDB = edge.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidEdge, uuidFromDB);</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson1).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, persons.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson1, persons.get(0).value(&quot;uuid&quot;));</b>
+<b class="fc">&nbsp;        persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson2).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, persons.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson2, persons.get(0).value(&quot;uuid&quot;));</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().E().hasLabel(&quot;knows&quot;).has(&quot;uuid&quot;, uuidEdge).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidEdge, edges.get(0).value(&quot;uuid&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson1)</b>
+<b class="fc">&nbsp;                .outE().has(&quot;uuid&quot;, uuidEdge)</b>
+<b class="fc">&nbsp;                .otherV()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUUIDViaTopologyApi() {
+<b class="fc">&nbsp;        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.UUID));</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        personVertexLabel.ensureEdgeLabelExist(&quot;knows&quot;, personVertexLabel, new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.UUID));</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;Person&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;        Optional&lt;PropertyColumn&gt; uuidPropertyColumnOptional = vertexLabel.getProperty(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(uuidPropertyColumnOptional.isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(PropertyType.UUID, uuidPropertyColumnOptional.get().getPropertyType());</b>
+&nbsp;
+<b class="fc">&nbsp;        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel(&quot;knows&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;        uuidPropertyColumnOptional = edgeLabel.getProperty(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(uuidPropertyColumnOptional.isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(PropertyType.UUID, uuidPropertyColumnOptional.get().getPropertyType());</b>
+&nbsp;
+<b class="fc">&nbsp;        UUID uuidPerson1 = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Vertex vertexA = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, uuidPerson1);</b>
+<b class="fc">&nbsp;        UUID uuidPerson2 = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Vertex vertexB = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, uuidPerson2);</b>
+<b class="fc">&nbsp;        UUID uuidEdge = UUID.randomUUID();</b>
+<b class="fc">&nbsp;        Edge edge = vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, uuidEdge);</b>
+<b class="fc">&nbsp;        vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;        vertexA.addEdge(&quot;knows&quot;, vertexB, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        vertexA = this.sqlgGraph.traversal().V(vertexA.id()).next();</b>
+<b class="fc">&nbsp;        UUID uuidFromDB = vertexA.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson1, uuidFromDB);</b>
+<b class="fc">&nbsp;        vertexB = this.sqlgGraph.traversal().V(vertexB.id()).next();</b>
+<b class="fc">&nbsp;        uuidFromDB = vertexB.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson2, uuidFromDB);</b>
+<b class="fc">&nbsp;        edge = this.sqlgGraph.traversal().E(edge.id()).next();</b>
+<b class="fc">&nbsp;        uuidFromDB = edge.value(&quot;uuid&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidEdge, uuidFromDB);</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson1).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, persons.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson1, persons.get(0).value(&quot;uuid&quot;));</b>
+<b class="fc">&nbsp;        persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson2).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, persons.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidPerson2, persons.get(0).value(&quot;uuid&quot;));</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().E().hasLabel(&quot;knows&quot;).has(&quot;uuid&quot;, uuidEdge).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uuidEdge, edges.get(0).value(&quot;uuid&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;uuid&quot;, uuidPerson1)</b>
+<b class="fc">&nbsp;                .outE().has(&quot;uuid&quot;, uuidEdge)</b>
+<b class="fc">&nbsp;                .otherV()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUUIDAsIdentifier() {
+<b class="fc">&nbsp;        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;Person&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.UUID));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;uuid&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        personVertexLabel.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;knows&quot;,
+&nbsp;                personVertexLabel,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.UUID));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;uuid&quot;)));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex person1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            Vertex other = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;uuid&quot;, UUID.randomUUID());</b>
+<b class="fc">&nbsp;            person1.addEdge(&quot;knows&quot;, other, &quot;uuid&quot;, UUID.randomUUID());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; others = this.sqlgGraph.traversal().V().hasId(person1.id()).out(&quot;knows&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, others.size());</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; otherEdges = this.sqlgGraph.traversal().V().hasId(person1.id()).outE(&quot;knows&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, otherEdges.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUUIDViaNormalBatchMode() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;uuid&quot;, UUID.randomUUID());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;UUID&gt; uuids = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).&lt;UUID&gt;values(&quot;uuid&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, uuids.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUUIDViaStreamingBatchMode() {
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;A&quot;, &quot;uuid&quot;, UUID.randomUUID());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;UUID&gt; uuids = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).&lt;UUID&gt;values(&quot;uuid&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, uuids.size());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

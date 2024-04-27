@@ -1,0 +1,281 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestRemoveProperty</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.mod</a>
+</div>
+
+<h1>Coverage Summary for Class: TestRemoveProperty (org.umlg.sqlg.test.mod)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestRemoveProperty</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.5%
+  </span>
+  <span class="absValue">
+    (42/44)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    96.5%
+  </span>
+  <span class="absValue">
+    (82/85)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.mod;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.fasterxml.jackson.databind.node.ObjectNode;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Property;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.junit.runner.RunWith;
+&nbsp;import org.junit.runners.Parameterized;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.*;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.Collection;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/07/13
+&nbsp; * Time: 6:51 PM
+&nbsp; */
+&nbsp;@RunWith(Parameterized.class)
+<b class="fc">&nbsp;public class TestRemoveProperty extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Parameterized.Parameter
+&nbsp;    public Object value;
+&nbsp;
+<b class="fc">&nbsp;    private static final ObjectMapper objectMapper = new ObjectMapper();</b>
+&nbsp;
+&nbsp;    @Parameterized.Parameters(name = &quot;{index}: value:{0}&quot;)
+&nbsp;    public static Collection&lt;Object[]&gt; data() {
+<b class="fc">&nbsp;        return Arrays.asList(</b>
+&nbsp;//                new Object[][]{
+&nbsp;//                        {&quot;haloThere&quot;}
+&nbsp;//                });
+&nbsp;                new Object[][]{
+<b class="fc">&nbsp;                        {true},</b>
+<b class="fc">&nbsp;                        {(byte) 1},</b>
+<b class="fc">&nbsp;                        {(short) 1},</b>
+<b class="fc">&nbsp;                        {1},</b>
+<b class="fc">&nbsp;                        {1L},</b>
+<b class="fc">&nbsp;                        {1F},</b>
+<b class="fc">&nbsp;                        {1.111D},</b>
+&nbsp;                        {&quot;haloThere&quot;},
+<b class="fc">&nbsp;                        {LocalDate.now()}, {LocalDateTime.now()}, {LocalTime.now().withNano(0)}, {ZonedDateTime.now()},</b>
+<b class="fc">&nbsp;                        {Period.of(1, 1, 1)}, {Duration.ofHours(5)}, {objectMapper.createObjectNode()},</b>
+&nbsp;                        {new boolean[]{false, true}}, {new Boolean[]{Boolean.TRUE, Boolean.FALSE}}, {new byte[]{(byte) 1, (byte) 2}},
+<b class="fc">&nbsp;                        {new short[]{(short) 1, (short) 2}}, {new Short[]{(short) 1, (short) 2}}, {new int[]{1, 1}}, {new Integer[]{1, 1}},</b>
+<b class="fc">&nbsp;                        {new long[]{1L, 2L}}, {new Long[]{1L, 2L}}, {new double[]{2D, 1D}}, {new Double[]{2D, 3D}}, {new BigDecimal[]{BigDecimal.valueOf(2D), BigDecimal.valueOf(3D)}},</b>
+<b class="fc">&nbsp;                        {new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()}},</b>
+<b class="fc">&nbsp;                        {new LocalDate[]{LocalDate.now(), LocalDate.now()}},</b>
+<b class="fc">&nbsp;                        {new LocalTime[]{LocalTime.now(), LocalTime.now()}},</b>
+<b class="fc">&nbsp;                        {new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now()}},</b>
+<b class="fc">&nbsp;                        {new Duration[]{Duration.ofHours(1), Duration.ofHours(3)}},</b>
+<b class="fc">&nbsp;                        {new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2)}},</b>
+<b class="fc">&nbsp;                        {new ObjectNode[]{objectMapper.createObjectNode(), objectMapper.createObjectNode()}}</b>
+&nbsp;                });
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void shouldAllowRemovalFromVertexWhenAlreadyRemoved() {
+<b class="fc">&nbsp;        assumeTrueForTest();</b>
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(&quot;name&quot;, this.value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.vertices(new Object[]{v.id()}).next();</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Property&lt;String&gt; p = v1.property(&quot;name&quot;);</b>
+<b class="fc">&nbsp;            p.remove();</b>
+<b class="fc">&nbsp;            p.remove();</b>
+<b class="fc">&nbsp;            v1.property(&quot;name&quot;).remove();</b>
+<b class="fc">&nbsp;            v1.property(&quot;name&quot;).remove();</b>
+<b class="nc">&nbsp;        } catch (Exception var4) {</b>
+<b class="nc">&nbsp;            Assert.fail(&quot;Removing a vertex property that was already removed should not throw an exception&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRemovePropertyBySettingToNull() {
+<b class="fc">&nbsp;        assumeTrueForTest();</b>
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;prop&quot;, this.value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(this.value, v.property(&quot;prop&quot;).value());</b>
+<b class="fc">&nbsp;        v.property(&quot;prop&quot;, null);</b>
+<b class="fc">&nbsp;        Assert.assertNull(v.property(&quot;prop&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRemovePropertyBySettingToNullInTraversal() {
+<b class="fc">&nbsp;        assumeTrueForTest();</b>
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;prop&quot;, this.value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(this.value, v.property(&quot;prop&quot;).value());</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).property(&quot;prop&quot;, null);</b>
+<b class="fc">&nbsp;        traversal.next();</b>
+<b class="fc">&nbsp;        v = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).next();</b>
+<b class="fc">&nbsp;        Assert.assertNull(v.property(&quot;prop&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRemove() {
+<b class="fc">&nbsp;        assumeTrueForTest();</b>
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;prop&quot;, this.value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(this.value, v.value(&quot;prop&quot;));</b>
+<b class="fc">&nbsp;        v.property(&quot;prop&quot;).remove();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertNull(this.sqlgGraph.traversal().V(v.id()).next().property(&quot;prop&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void assumeTrueForTest() {
+<b class="fc">&nbsp;        if (this.value instanceof Float) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof Byte) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof boolean[] || this.value instanceof Boolean[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof short[] || this.value instanceof Short[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof int[] || this.value instanceof Integer[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof long[] || this.value instanceof Long[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (this.value instanceof float[] || this.value instanceof Float[]) {</b>
+<b class="nc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof double[] || this.value instanceof Double[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof LocalDateTime[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof LocalDate[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof LocalTime[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof ZonedDateTime[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof Duration[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof Period[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof JsonNode[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof BigDecimal[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBigDecimalArrayValues());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

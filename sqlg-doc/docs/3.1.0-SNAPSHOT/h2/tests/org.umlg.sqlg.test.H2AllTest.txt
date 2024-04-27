@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.H2AllTest
--------------------------------------------------------------------------------
-Tests run: 2067, Failures: 0, Errors: 0, Skipped: 265, Time elapsed: 238.7 s -- in org.umlg.sqlg.test.H2AllTest

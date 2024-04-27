@@ -1,0 +1,302 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestPartitionRemove</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.topology</a>
+</div>
+
+<h1>Coverage Summary for Class: TestPartitionRemove (org.umlg.sqlg.test.topology)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestPartitionRemove</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/70)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestPartitionRemove$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestPartitionRemove$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/82)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.topology;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.*;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.sql.Connection;
+&nbsp;import java.sql.ResultSet;
+&nbsp;import java.sql.SQLException;
+&nbsp;import java.sql.Statement;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="nc">&nbsp;public class TestPartitionRemove extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRemovePartitionViaVertexLabelRemove() {
+<b class="nc">&nbsp;        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist(&quot;A&quot;);</b>
+<b class="nc">&nbsp;        VertexLabel aVertexLabel = aSchema.ensurePartitionedVertexLabelExist(&quot;A&quot;,</b>
+<b class="nc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                    put(&quot;part1&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;part2&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;part3&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;other&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="nc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;name&quot;, &quot;part1&quot;, &quot;part2&quot;, &quot;part3&quot;)),</b>
+&nbsp;                PartitionType.LIST,
+&nbsp;                &quot;\&quot;part1\&quot;&quot;
+&nbsp;        );
+<b class="nc">&nbsp;        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;B&quot;);</b>
+<b class="nc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;ab&quot;, bVertexLabel);</b>
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_1 = aVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;part1_1&quot;, &quot;&#39;1&#39;&quot;, PartitionType.LIST, &quot;\&quot;part2\&quot;&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_2 = aVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;part1_2&quot;, &quot;&#39;2&#39;&quot;, PartitionType.LIST, &quot;\&quot;part2\&quot;&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_1_1 = part1_1.ensureListPartitionWithSubPartitionExists(&quot;part1_1_1&quot;, &quot;1&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_1_1.ensureListPartitionExists(&quot;part1_1_1_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_1_1.ensureListPartitionExists(&quot;part1_1_1_2&quot;, &quot;2&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_1_2 = part1_1.ensureListPartitionWithSubPartitionExists(&quot;part1_1_2&quot;, &quot;2&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_1_2.ensureListPartitionExists(&quot;part1_1_2_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_1_2.ensureListPartitionExists(&quot;part1_1_2_2&quot;, &quot;2&quot;);</b>
+&nbsp;
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_2_1 = part1_2.ensureListPartitionWithSubPartitionExists(&quot;part1_2_1&quot;, &quot;1&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_2_2 = part1_2.ensureListPartitionWithSubPartitionExists(&quot;part1_2_2&quot;, &quot;2&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_2_1.ensureListPartitionExists(&quot;part1_2_1_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_2_2.ensureListPartitionExists(&quot;part1_2_2_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        aVertexLabel.remove();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)</b>
+<b class="nc">&nbsp;                .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, P.eq(&quot;A&quot;))</b>
+<b class="nc">&nbsp;                .hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_EDGE_LABEL).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_INDEX).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PARTITION)</b>
+<b class="nc">&nbsp;                .has(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, P.eq(&quot;A&quot;))</b>
+<b class="nc">&nbsp;                .hasNext());</b>
+&nbsp;
+<b class="nc">&nbsp;        Connection connection = this.sqlgGraph.tx().getConnection();</b>
+<b class="nc">&nbsp;        try (Statement statement = connection.createStatement()) {</b>
+<b class="nc">&nbsp;            ResultSet rs = statement.executeQuery(&quot;select * from &quot; + Topology.SQLG_SCHEMA + &quot;.&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + Topology.SQLG_SCHEMA_PARTITION));</b>
+<b class="nc">&nbsp;            Assert.assertFalse(rs.next());</b>
+<b class="nc">&nbsp;        } catch (SQLException e) {</b>
+<b class="nc">&nbsp;            Assert.fail(e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRemovePartitionViaSchemaRemove() {
+<b class="nc">&nbsp;        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist(&quot;A&quot;);</b>
+<b class="nc">&nbsp;        VertexLabel aVertexLabel = aSchema.ensurePartitionedVertexLabelExist(&quot;A&quot;,</b>
+<b class="nc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                    put(&quot;part1&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;part2&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;part3&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="nc">&nbsp;                    put(&quot;other&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="nc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;name&quot;, &quot;part1&quot;, &quot;part2&quot;, &quot;part3&quot;)),</b>
+&nbsp;                PartitionType.LIST,
+&nbsp;                &quot;\&quot;part1\&quot;&quot;
+&nbsp;        );
+<b class="nc">&nbsp;        VertexLabel bVertexLabel = aSchema.ensureVertexLabelExist(&quot;B&quot;);</b>
+<b class="nc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;ab&quot;, bVertexLabel);</b>
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_1 = aVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;part1_1&quot;, &quot;&#39;1&#39;&quot;, PartitionType.LIST, &quot;\&quot;part2\&quot;&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_2 = aVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;part1_2&quot;, &quot;&#39;2&#39;&quot;, PartitionType.LIST, &quot;\&quot;part2\&quot;&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_1_1 = part1_1.ensureListPartitionWithSubPartitionExists(&quot;part1_1_1&quot;, &quot;1&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_1_1.ensureListPartitionExists(&quot;part1_1_1_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_1_1.ensureListPartitionExists(&quot;part1_1_1_2&quot;, &quot;2&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_1_2 = part1_1.ensureListPartitionWithSubPartitionExists(&quot;part1_1_2&quot;, &quot;2&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_1_2.ensureListPartitionExists(&quot;part1_1_2_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_1_2.ensureListPartitionExists(&quot;part1_1_2_2&quot;, &quot;2&quot;);</b>
+&nbsp;
+&nbsp;
+<b class="nc">&nbsp;        Partition part1_2_1 = part1_2.ensureListPartitionWithSubPartitionExists(&quot;part1_2_1&quot;, &quot;1&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        Partition part1_2_2 = part1_2.ensureListPartitionWithSubPartitionExists(&quot;part1_2_2&quot;, &quot;2&quot;, PartitionType.LIST, &quot;\&quot;part3\&quot;&quot;);</b>
+<b class="nc">&nbsp;        part1_2_1.ensureListPartitionExists(&quot;part1_2_1_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        part1_2_2.ensureListPartitionExists(&quot;part1_2_2_1&quot;, &quot;1&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        aSchema.remove();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_SCHEMA)</b>
+<b class="nc">&nbsp;                .has(Topology.SQLG_SCHEMA_SCHEMA_NAME, P.neq(sqlgGraph.getSqlDialect().getPublicSchema()))</b>
+<b class="nc">&nbsp;                .hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_EDGE_LABEL).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_INDEX).hasNext());</b>
+<b class="nc">&nbsp;        Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PARTITION).hasNext());</b>
+&nbsp;        
+<b class="nc">&nbsp;        Connection connection = this.sqlgGraph.tx().getConnection();</b>
+<b class="nc">&nbsp;        try (Statement statement = connection.createStatement()) {</b>
+<b class="nc">&nbsp;            ResultSet rs = statement.executeQuery(&quot;select * from &quot; + Topology.SQLG_SCHEMA + &quot;.&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + Topology.SQLG_SCHEMA_PARTITION));</b>
+<b class="nc">&nbsp;            Assert.assertFalse(rs.next());</b>
+<b class="nc">&nbsp;        } catch (SQLException e) {</b>
+<b class="nc">&nbsp;            Assert.fail(e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

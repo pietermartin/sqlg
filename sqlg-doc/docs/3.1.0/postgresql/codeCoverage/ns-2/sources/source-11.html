@@ -1,0 +1,1200 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchStreamVertex</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchStreamVertex (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchStreamVertex</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (72/72)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78.8%
+  </span>
+  <span class="absValue">
+    (115/146)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95%
+  </span>
+  <span class="absValue">
+    (553/582)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestBatchStreamVertex$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchStreamVertex$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchStreamVertex$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchStreamVertex$4</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchStreamVertex$5</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (77/77)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78.8%
+  </span>
+  <span class="absValue">
+    (115/146)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.1%
+  </span>
+  <span class="absValue">
+    (563/592)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.node.ObjectNode;
+&nbsp;import org.apache.commons.lang3.time.StopWatch;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Direction;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.*;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.*;
+&nbsp;import java.time.temporal.ChronoUnit;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2015/05/19
+&nbsp; * Time: 9:34 PM
+&nbsp; */
+&nbsp;@SuppressWarnings({&quot;DuplicatedCode&quot;, &quot;SpellCheckingInspection&quot;})
+<b class="fc">&nbsp;public class TestBatchStreamVertex extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamBigDecimal() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, BigDecimal.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;BigDecimal&gt; bigDecimalList = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).&lt;BigDecimal&gt;values(&quot;names&quot;).toList();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            BigDecimal test = BigDecimal.valueOf(i);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, bigDecimalList.stream().filter(bd -&gt; bd.equals(test)).toList().size());</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            bigDecimalList = this.sqlgGraph1.traversal().V().hasLabel(&quot;Person&quot;).&lt;BigDecimal&gt;values(&quot;names&quot;).toList();</b>
+<b class="fc">&nbsp;            for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;                BigDecimal test = BigDecimal.valueOf(i);</b>
+<b class="fc">&nbsp;                Assert.assertEquals(1, bigDecimalList.stream().filter(bd -&gt; bd.equals(test)).toList().size());</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDuplicateLabel() {
+<b class="fc">&nbsp;        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();</b>
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist(&quot;A&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist(&quot;B&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist(&quot;C&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;abc&quot;, bVertexLabel);</b>
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;abc&quot;, cVertexLabel);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abc&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;abc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertexList = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;abc&quot;).hasLabel(&quot;B&quot;)</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertexList.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidTableException.class)
+&nbsp;    public void testStreamTooLongLabelName() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(T.label, &quot;AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidTableException.class)
+&nbsp;    public void testStreamTooLongLabelNameEnsureMethods() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.streamVertex(T.label, &quot;AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidColumnException.class)
+&nbsp;    public void testStreamColumnTooLongLabelNameEnsureMethods() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;AAAAAAAAAA&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.streamVertex(T.label, &quot;AAAAAAAAAA&quot;, &quot;AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH&quot;, &quot;halo&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testAccessPropertyFromEdgeWhileStreaming() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Edge e1 = v1.addEdge(&quot;friend&quot;, v2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; properties = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            properties.put(&quot;name&quot;, &quot;aa&quot; + i);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+<b class="fc">&nbsp;            properties.clear();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        RecordId recordId = (RecordId) e1.id();</b>
+&nbsp;//        Assert.assertEquals(&quot;a1&quot;, SqlgEdge.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value(&quot;name&quot;));
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, this.sqlgGraph.traversal().E(recordId).next().value(&quot;name&quot;));</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;     @Test(expected = IllegalStateException.class)
+&nbsp;    public void testAccessPropertyFromVertexWhileStreaming() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; properties = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            properties.put(&quot;name&quot;, &quot;aa&quot; + i);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+<b class="fc">&nbsp;            properties.clear();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        RecordId recordId = (RecordId) v1.id();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, SqlgVertex.of(</b>
+&nbsp;                this.sqlgGraph,
+<b class="fc">&nbsp;                recordId.sequenceId(),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable().getSchema(),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable().getTable()).value(&quot;name&quot;));</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryWhileStreaming() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryFromVertexWhileStreaming() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(100, this.sqlgGraph.traversal().V(v1).out(&quot;friend&quot;).count().next(), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryFromVertexWhileStreaming2() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(100, IteratorUtils.count(v1.edges(Direction.OUT, &quot;friend&quot;)), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryFromVertexWhileStreaming3() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(100, IteratorUtils.count(v1.vertices(Direction.OUT, &quot;friend&quot;)), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryFromGraphVerticesWhileStreaming() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(102, IteratorUtils.count(this.sqlgGraph.vertices()), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotQueryFromGraphEdgesWhileStreaming() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;friend&quot;, v2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(102, IteratorUtils.count(this.sqlgGraph.edges()), 1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexWithNoProperties() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 1);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(100, this.sqlgGraph1.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCanNotAddVertexOnceStreaming() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValues = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValues.put(&quot;name&quot;, &quot;test&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(&quot;A&quot;, keyValues);</b>
+<b class="nc">&nbsp;        Assert.fail();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCompleteVertexChecksSingleLabelOnly() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Persons&quot;, keyValue);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Assert.fail();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCompleteVertexFlushAndCloseStream() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().flush();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Persons&quot;, keyValue);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testCompleteVertexFlushAndCloseStream_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testCompleteVertexFlushAndCloseStream_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testCompleteVertexFlushAndCloseStream_assert(SqlgGraph sqlgGraph) {
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 0L);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraph.traversal().V().hasLabel(&quot;Persons&quot;).count().next(), 0L);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a&quot;, sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).next().&lt;String&gt;value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b&quot;, sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).next().&lt;String&gt;value(&quot;surname&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a&quot;, sqlgGraph.traversal().V().hasLabel(&quot;Persons&quot;).next().&lt;String&gt;value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b&quot;, sqlgGraph.traversal().V().hasLabel(&quot;Persons&quot;).next().&lt;String&gt;value(&quot;surname&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testCompleteVertexChecksSameKeys() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;namea&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Assert.fail();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = IllegalStateException.class)
+&nbsp;    public void testStreamingVertexKeysSameOrder() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Assert.fail();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamingVertexDifferentSchema() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;R_HG.Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        keyValue.put(&quot;surname&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;R_HG.Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel(&quot;R_HG.Person&quot;).count().next(), 0L);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, this.sqlgGraph1.traversal().V().hasLabel(&quot;R_HG.Person&quot;).count().next(), 0L);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUsingConnectionDuringResultSetIter() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 1; i &lt; 100_001; i++) {</b>
+<b class="fc">&nbsp;            LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 2; j++) {</b>
+<b class="fc">&nbsp;                keyValue.put(&quot;name&quot; + j, &quot;a&quot; + i);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;            if (i % 25_000 == 0) {</b>
+<b class="fc">&nbsp;                this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;                this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;                System.out.println(i);</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100_000, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(100_000, this.sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMilCompleteVertex() throws InterruptedException {
+<b class="fc">&nbsp;        StopWatch stopWatch = new StopWatch();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 1; i &lt; 100_001; i++) {</b>
+<b class="fc">&nbsp;            LinkedHashMap&lt;String, Object&gt; keyValue = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 2; j++) {</b>
+<b class="fc">&nbsp;                keyValue.put(&quot;name&quot; + j, &quot;a&quot; + i);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, keyValue);</b>
+<b class="fc">&nbsp;            if (i % 25_000 == 0) {</b>
+<b class="fc">&nbsp;                this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;                this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;                System.out.println(i);</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        System.out.println(stopWatch);</b>
+<b class="fc">&nbsp;        stopWatch.reset();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100_000L, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next().longValue());</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        System.out.println(stopWatch);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(100_000L, this.sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().longValue());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamingRollback() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; keyValues = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        keyValues.put(&quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        keyValues.put(&quot;surname&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1000; i++) {</b>
+<b class="fc">&nbsp;            keyValues.put(&quot;age&quot;, i);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Man&quot;, keyValues);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().flush();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1000; i++) {</b>
+<b class="fc">&nbsp;            keyValues.put(&quot;age&quot;, i);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Female&quot;, keyValues);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().rollback();</b>
+<b class="fc">&nbsp;        testStreamingRollback_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamingRollback_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamingRollback_assert(SqlgGraph sqlgGraph) {
+<b class="fc">&nbsp;        Assert.assertEquals(0, sqlgGraph.traversal().V().hasLabel(&quot;Man&quot;).count().next(), 1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, sqlgGraph.traversal().V().hasLabel(&quot;Female&quot;).count().next(), 1);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void streamJava8Style() throws InterruptedException {
+<b class="fc">&nbsp;        List&lt;String&gt; uids = Arrays.asList(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        uids.forEach(u-&gt;this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;name&quot;, u));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 0L);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(5, this.sqlgGraph1.traversal().V().hasLabel(&quot;Person&quot;).count().next(), 0L);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamLocalDateTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamLocalDateTime_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamLocalDateTime_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamLocalDateTime_assert(SqlgGraph sqlgGraph, LocalDateTime now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now, vertices.get(0).value(&quot;createOn&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamLocalDate() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDate now = LocalDate.now();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamLocalDate_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamLocalDate_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamLocalDate_assert(SqlgGraph sqlgGraph, LocalDate now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now, vertices.get(0).value(&quot;createOn&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamLocalTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalTime now = LocalTime.now();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamLocalTime_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamLocalTime_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamLocalTime_assert(SqlgGraph sqlgGraph, LocalTime now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).&lt;LocalTime&gt;value(&quot;createOn&quot;).toSecondOfDay());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamZonedDateTime() throws InterruptedException {
+<b class="fc">&nbsp;        ZonedDateTime zonedDateTime = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, zonedDateTime);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamZonedDateTime_assert(this.sqlgGraph, zonedDateTime);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamZonedDateTime_assert(this.sqlgGraph1, zonedDateTime);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamZonedDateTime_assert(SqlgGraph sqlgGraph, ZonedDateTime zonedDateTime) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(zonedDateTime, vertices.get(0).&lt;ZonedDateTime&gt;value(&quot;createOn&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamPeriod() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        Period period = Period.of(1,2,3);</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;period&quot;, period);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testSteamPeriod_assert(this.sqlgGraph, period);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testSteamPeriod_assert(this.sqlgGraph1, period);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testSteamPeriod_assert(SqlgGraph sqlgGraph, Period period) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period, vertices.get(0).&lt;Period&gt;value(&quot;period&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamDuration() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        Duration duration = Duration.ofHours(19);</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;duration&quot;, duration);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamDuration_assert(this.sqlgGraph, duration);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamDuration_assert(this.sqlgGraph1, duration);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamDuration_assert(SqlgGraph sqlgGraph, Duration duration) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration, vertices.get(0).&lt;Duration&gt;value(&quot;duration&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamJson() throws InterruptedException {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;doc&quot;, json);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamJson_assert(this.sqlgGraph, json);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamJson_assert(this.sqlgGraph1, json);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        JsonNode value = vertices.get(0).value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(json, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamStringArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        String[] stringArray = new String[]{&quot;a&quot;, &quot;b&quot;};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, stringArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamStringArray_assert(this.sqlgGraph, stringArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamStringArray_assert(this.sqlgGraph1, stringArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamStringArray_assert(SqlgGraph sqlgGraph, String[] stringArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(stringArray, vertices.get(0).&lt;String[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamBooleanArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        boolean[] booleanArray = new boolean[]{true, false};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, booleanArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testSteamBooleanArray_assert(this.sqlgGraph, booleanArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testSteamBooleanArray_assert(this.sqlgGraph1, booleanArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testSteamBooleanArray_assert(SqlgGraph sqlgGraph, boolean[] booleanArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArray, vertices.get(0).value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamIntArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        int[] intArray = new int[]{11, 22};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, intArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamIntArray_assert(this.sqlgGraph, intArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamIntArray_assert(this.sqlgGraph1, intArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamIntArray_assert(SqlgGraph sqlgGraph, int[] intArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(intArray, vertices.get(0).value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamLongArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        long[] longArray = new long[]{11, 22};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, longArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamLongArray_assert(this.sqlgGraph, longArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamLongArray_assert(this.sqlgGraph1, longArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamLongArray_assert(SqlgGraph sqlgGraph, long[] longArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArray, vertices.get(0).value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamFloatArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        float[] floatArray = new float[]{11,11f, 22.22f};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, floatArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamFloatArray_assert(this.sqlgGraph, floatArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamFloatArray_assert(this.sqlgGraph1, floatArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamFloatArray_assert(SqlgGraph sqlgGraph, float[] floatArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArray, vertices.get(0).value(&quot;names&quot;), 0f);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamDoubleArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        double[] doubleArray = new double[]{11.11d, 22.22d};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, doubleArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamDoubleArray_assert(this.sqlgGraph, doubleArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamDoubleArray_assert(this.sqlgGraph1, doubleArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamDoubleArray_assert(SqlgGraph sqlgGraph, double[] doubleArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArray, vertices.get(0).value(&quot;names&quot;), 0d);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamShortArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        short[] shortArray = new short[]{11, 22};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, shortArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamShortArray_assert(this.sqlgGraph, shortArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamShortArray_assert(this.sqlgGraph1, shortArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamShortArray_assert(SqlgGraph sqlgGraph, short[] shortArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArray, vertices.get(0).value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStreamByteArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        byte[] byteArray = new byte[]{1, 2};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, byteArray);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStreamByteArray_assert(this.sqlgGraph, byteArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStreamByteArray_assert(this.sqlgGraph1, byteArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStreamByteArray_assert(SqlgGraph sqlgGraph, byte[] byteArray) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArray, vertices.get(0).value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalDateTimeArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now().minusDays(1).truncatedTo(ChronoUnit.MILLIS), LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, localDateTimes);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLocalDateTimeArray_assert(this.sqlgGraph, localDateTimes);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLocalDateTimeArray_assert(this.sqlgGraph1, localDateTimes);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLocalDateTimeArray_assert(SqlgGraph sqlgGraph, LocalDateTime[] localDateTimes) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimes, vertices.get(0).&lt;LocalDateTime[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalDateArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDate[] localDates = new LocalDate[]{LocalDate.now().minusDays(1), LocalDate.now()};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, localDates);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLocalDateArray_assert(this.sqlgGraph, localDates);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLocalDateArray_assert(this.sqlgGraph1, localDates);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLocalDateArray_assert(SqlgGraph sqlgGraph, LocalDate[] localDates) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDates, vertices.get(0).&lt;LocalDate[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalTimeArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalTime[] localTimes = new LocalTime[]{LocalTime.now().minusHours(1), LocalTime.now()};</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, localTimes);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLocalTimeArray_assert(this.sqlgGraph, localTimes);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLocalTimeArray_assert(this.sqlgGraph1, localTimes);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLocalTimeArray_assert(SqlgGraph sqlgGraph, LocalTime[] localTimes) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        List&lt;LocalTime&gt; localTimes1 = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (LocalTime localTime : localTimes) {</b>
+<b class="fc">&nbsp;            localTimes1.add(localTime.minusNanos(localTime.getNano()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localTimes1.toArray(), vertices.get(0).&lt;LocalTime[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testZonedDateTimeArray() throws InterruptedException {
+<b class="fc">&nbsp;        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now().minusHours(1).truncatedTo(ChronoUnit.MILLIS), ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)};</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;names&quot;, zonedDateTimes);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, zonedDateTimes);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testZonedDateTimeArray_assert(this.sqlgGraph, zonedDateTimes);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testZonedDateTimeArray_assert(this.sqlgGraph1, zonedDateTimes);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testZonedDateTimeArray_assert(SqlgGraph sqlgGraph, ZonedDateTime[] zonedDateTimes) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(11, vertices.size());</b>
+<b class="fc">&nbsp;        List&lt;ZonedDateTime&gt; zonedDateTimes1 = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        Collections.addAll(zonedDateTimes1, zonedDateTimes);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(0).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(1).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(2).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(3).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(4).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(5).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(6).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(7).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(8).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(9).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(10).&lt;ZonedDateTime[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDurationArray() throws InterruptedException {
+<b class="fc">&nbsp;        Duration[] durations = new Duration[]{Duration.ofHours(5), Duration.ofHours(10)};</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;names&quot;, durations);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, durations);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testDurationArray_assert(this.sqlgGraph, durations);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDurationArray_assert(this.sqlgGraph1, durations);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDurationArray_assert(SqlgGraph sqlgGraph, Duration[] durations) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(11, vertices.size());</b>
+<b class="fc">&nbsp;        List&lt;Duration&gt; durations1 = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        Collections.addAll(durations1, durations);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(0).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(1).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(2).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(3).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(4).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(5).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(6).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(7).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(8).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(9).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(durations1.toArray(), vertices.get(10).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPeriodArray() throws InterruptedException {
+<b class="fc">&nbsp;        Period[] periods = new Period[]{Period.of(2016,1,1), Period.of(2017,2,2)};</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;names&quot;, periods);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;names&quot;, periods);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testPeriodArray_assert(this.sqlgGraph, periods);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testPeriodArray_assert(this.sqlgGraph1, periods);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testPeriodArray_assert(SqlgGraph sqlgGraph, Period[] periods) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(11, vertices.size());</b>
+<b class="fc">&nbsp;        List&lt;Period&gt; periods1 = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        Collections.addAll(periods1, periods);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(0).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(1).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(2).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(3).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(4).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(5).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(6).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(7).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(8).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(9).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(periods1.toArray(), vertices.get(10).&lt;Duration[]&gt;value(&quot;names&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
+&nbsp;    public void testStreamJsonAsArray() {
+<b class="fc">&nbsp;        ObjectNode json1 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json1.put(&quot;username&quot;, &quot;john1&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode json2 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json2.put(&quot;username&quot;, &quot;john2&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        JsonNode[] jsonNodes = new JsonNode[]{json1};</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="pc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;docs&quot;, jsonNodes);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="nc">&nbsp;        JsonNode[] value = vertices.get(0).value(&quot;docs&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertArrayEquals(jsonNodes, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

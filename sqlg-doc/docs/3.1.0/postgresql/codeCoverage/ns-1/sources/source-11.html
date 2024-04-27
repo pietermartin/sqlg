@@ -1,0 +1,361 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestRecordId</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: TestRecordId (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestRecordId</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (77/77)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestRecordId$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRecordId$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRecordId$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRecordId$4</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRecordId$5</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (92/92)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.RecordId;
+&nbsp;import org.umlg.sqlg.structure.SchemaTable;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2018/04/30
+&nbsp; */
+<b class="fc">&nbsp;public class TestRecordId extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRecordIdHasCommas() {
+<b class="fc">&nbsp;        Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        schema.ensureVertexLabelExist(&quot;aaa.bbb&quot;, new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;_id&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;            put(&quot;value&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;        }}, ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;_id&quot;)));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A.aaa.bbb&quot;, &quot;_id&quot;, &quot;id1&quot;, &quot;value&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(this.sqlgGraph, &quot;A.aaa.bbb:::[id1]&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;A.aaa.bbb&quot;).hasId(P.eq(recordId)).count().next(), 0L);</b>
+&nbsp;
+<b class="fc">&nbsp;        schema.ensureVertexLabelExist(&quot;aaa.ccc&quot;, new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;_id&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;            put(&quot;value&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;        }}, ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;_id&quot;)));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A.aaa.ccc&quot;, &quot;_id&quot;, &quot;id:::what&quot;, &quot;value&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        recordId = RecordId.from(this.sqlgGraph, &quot;A.aaa.ccc:::[id:::what]&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;A.aaa.ccc&quot;).hasId(P.eq(recordId)).count().next(), 0L);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testTableHasPeriod() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(&quot;A.aaa.bbb&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        String id = &quot;A.aaa.bbb&quot; + RecordId.RECORD_ID_DELIMITER + this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();</b>
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(id);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                SchemaTable.of(&quot;A&quot;, &quot;aaa.bbb&quot;),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable()</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue(),</b>
+<b class="fc">&nbsp;                recordId.sequenceId()</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRecordIdFromElement() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(this.sqlgGraph.getTopology().getPublicSchema().getName() + &quot;.A&quot; + RecordId.RECORD_ID_DELIMITER + this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                SchemaTable.of(this.sqlgGraph.getTopology().getPublicSchema().getName(), &quot;A&quot;),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable()</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue(),</b>
+<b class="fc">&nbsp;                recordId.sequenceId()</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRecordIdFromElementUserSuppliedPK() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                .ensureVertexLabelExist(</b>
+&nbsp;                        &quot;A&quot;,
+<b class="fc">&nbsp;                        new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                            put(&quot;uid1&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                        }},
+<b class="fc">&nbsp;                        ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;uid1&quot;)));</b>
+<b class="fc">&nbsp;        String uid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;uid1&quot;, uid1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(this.sqlgGraph, this.sqlgGraph.getTopology().getPublicSchema().getName() + &quot;.A&quot; + RecordId.RECORD_ID_DELIMITER + &quot;[&quot; + uid1 + &quot;]&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                SchemaTable.of(this.sqlgGraph.getTopology().getPublicSchema().getName(), &quot;A&quot;),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable()</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(1, recordId.getIdentifiers().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid1, recordId.getIdentifiers().get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRecordIdFromElementUserSuppliedPK_With2Ids() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                .ensureVertexLabelExist(</b>
+&nbsp;                        &quot;A&quot;,
+<b class="fc">&nbsp;                        new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                            put(&quot;uid1&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                            put(&quot;uid2&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                        }},
+<b class="fc">&nbsp;                        ListOrderedSet.listOrderedSet(Arrays.asList(&quot;uid1&quot;, &quot;uid2&quot;)));</b>
+<b class="fc">&nbsp;        String uid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        String uid2 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;uid1&quot;, uid1, &quot;uid2&quot;, uid2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(this.sqlgGraph, this.sqlgGraph.getTopology().getPublicSchema().getName() + &quot;.A&quot; + RecordId.RECORD_ID_DELIMITER + &quot;[&quot; + uid1 + &quot;, &quot; + uid2 + &quot;]&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                SchemaTable.of(this.sqlgGraph.getTopology().getPublicSchema().getName(), &quot;A&quot;),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable()</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(2, recordId.getIdentifiers().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid1, recordId.getIdentifiers().get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid2, recordId.getIdentifiers().get(1));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRecordIdFromElementUserSuppliedPK_With3Ids() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                .ensureVertexLabelExist(</b>
+&nbsp;                        &quot;A&quot;,
+<b class="fc">&nbsp;                        new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                            put(&quot;uid1&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                            put(&quot;uid2&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                            put(&quot;uid3&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                        }},
+<b class="fc">&nbsp;                        ListOrderedSet.listOrderedSet(Arrays.asList(&quot;uid1&quot;, &quot;uid2&quot;, &quot;uid3&quot;)));</b>
+<b class="fc">&nbsp;        String uid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        String uid2 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        String uid3 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;uid1&quot;, uid1, &quot;uid2&quot;, uid2, &quot;uid3&quot;, uid3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        RecordId recordId = RecordId.from(this.sqlgGraph, this.sqlgGraph.getTopology().getPublicSchema().getName() + &quot;.A&quot; + RecordId.RECORD_ID_DELIMITER + &quot;[&quot; + uid1 + &quot;, &quot; + uid2 + &quot;, &quot; + uid3 + &quot;]&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                SchemaTable.of(this.sqlgGraph.getTopology().getPublicSchema().getName(), &quot;A&quot;),</b>
+<b class="fc">&nbsp;                recordId.getSchemaTable()</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(3, recordId.getIdentifiers().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid1, recordId.getIdentifiers().get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid2, recordId.getIdentifiers().get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(uid3, recordId.getIdentifiers().get(2));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

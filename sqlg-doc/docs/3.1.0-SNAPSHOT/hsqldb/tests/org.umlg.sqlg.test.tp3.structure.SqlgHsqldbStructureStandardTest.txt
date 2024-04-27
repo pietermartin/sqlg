@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.tp3.structure.SqlgHsqldbStructureStandardTest
--------------------------------------------------------------------------------
-Tests run: 932, Failures: 0, Errors: 0, Skipped: 420, Time elapsed: 41.31 s -- in org.umlg.sqlg.test.tp3.structure.SqlgHsqldbStructureStandardTest

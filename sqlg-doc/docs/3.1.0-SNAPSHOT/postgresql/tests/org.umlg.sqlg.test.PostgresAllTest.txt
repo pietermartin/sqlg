@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.umlg.sqlg.test.PostgresAllTest
--------------------------------------------------------------------------------
-Tests run: 2273, Failures: 0, Errors: 0, Skipped: 22, Time elapsed: 3092 s -- in org.umlg.sqlg.test.PostgresAllTest

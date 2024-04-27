@@ -1,0 +1,361 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchNormalDateTime</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchNormalDateTime (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchNormalDateTime</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (19/19)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    60%
+  </span>
+  <span class="absValue">
+    (18/30)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (140/140)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.BatchManager;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.time.*;
+&nbsp;import java.time.temporal.ChronoUnit;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/09
+&nbsp; * Time: 8:03 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestBatchNormalDateTime extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalDateTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        LocalDateTime localDateTime = LocalDateTime.now();</b>
+<b class="fc">&nbsp;        localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDateTime&quot;, localDateTime);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(localDateTime, this.sqlgGraph.traversal().V(a1).values(&quot;localDateTime&quot;).next());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(localDateTime, this.sqlgGraph1.traversal().V(a1).values(&quot;localDateTime&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalDate() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        LocalDate localDate = LocalDate.now();</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localDate&quot;, localDate);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(localDate, this.sqlgGraph.traversal().V(a1).values(&quot;localDate&quot;).next());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(localDate, this.sqlgGraph1.traversal().V(a1).values(&quot;localDate&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        LocalTime localTime = LocalTime.now();</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;localTime&quot;, localTime);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(localTime.toSecondOfDay(), this.sqlgGraph.traversal().V(a1).&lt;LocalTime&gt;values(&quot;localTime&quot;).next().toSecondOfDay());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(localTime.toSecondOfDay(), this.sqlgGraph1.traversal().V(a1).&lt;LocalTime&gt;values(&quot;localTime&quot;).next().toSecondOfDay());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testZonedDateTime() throws InterruptedException {
+<b class="fc">&nbsp;        ZonedDateTime zonedDateTime = ZonedDateTime.now();</b>
+<b class="fc">&nbsp;        zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of(&quot;+02:00&quot;));</b>
+<b class="fc">&nbsp;        zdt2 = zdt2.truncatedTo(ChronoUnit.MILLIS);</b>
+&nbsp;        // ZoneId corrects +02:00 into GTM+02:00
+<b class="fc">&nbsp;        ZonedDateTime zdt2Fixed = ZonedDateTime.of(zdt2.toLocalDateTime(), ZoneId.of(&quot;GMT+02:00&quot;));</b>
+<b class="fc">&nbsp;        zdt2Fixed = zdt2Fixed.truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;zonedDateTime&quot;, zonedDateTime</b>
+&nbsp;                , &quot;zdt2&quot;, zdt2
+&nbsp;                , &quot;zdt2Fixed&quot;, zdt2Fixed);
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(zonedDateTime, this.sqlgGraph.traversal().V(a1).values(&quot;zonedDateTime&quot;).next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(zdt2Fixed, this.sqlgGraph.traversal().V(a1).values(&quot;zdt2&quot;).next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(zdt2Fixed, this.sqlgGraph.traversal().V(a1).values(&quot;zdt2Fixed&quot;).next());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(zonedDateTime, this.sqlgGraph1.traversal().V(a1).values(&quot;zonedDateTime&quot;).next());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(zdt2Fixed, this.sqlgGraph1.traversal().V(a1).values(&quot;zdt2&quot;).next());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(zdt2Fixed, this.sqlgGraph1.traversal().V(a1).values(&quot;zdt2Fixed&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDuration() throws InterruptedException {
+<b class="fc">&nbsp;        Duration duration = Duration.ofHours(5);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;duration&quot;, duration);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration, this.sqlgGraph.traversal().V(a1).values(&quot;duration&quot;).next());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(duration, this.sqlgGraph1.traversal().V(a1).values(&quot;duration&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPeriod() throws InterruptedException {
+<b class="fc">&nbsp;        Period period = Period.of(5, 5, 5);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;period&quot;, period);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period, this.sqlgGraph.traversal().V(a1).values(&quot;period&quot;).next());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(period, this.sqlgGraph1.traversal().V(a1).values(&quot;period&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchLocalDateTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDateTime now = LocalDateTime.now();</b>
+<b class="fc">&nbsp;        now = now.truncatedTo(ChronoUnit.MILLIS);</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchLocalDateTime_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchLocalDateTime_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchLocalDateTime_assert(SqlgGraph sqlgGraph, LocalDateTime now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now, vertices.get(0).value(&quot;createOn&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchLocalDate() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalDate now = LocalDate.now();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchLocalDate_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchLocalDate_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchLocalDate_assert(SqlgGraph sqlgGraph, LocalDate now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now, vertices.get(0).value(&quot;createOn&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchLocalTime() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        LocalTime now = LocalTime.now();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;createOn&quot;, now);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchLocalTime_assert(this.sqlgGraph, now);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchLocalTime_assert(this.sqlgGraph1, now);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchLocalTime_assert(SqlgGraph sqlgGraph, LocalTime now) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).&lt;LocalTime&gt;value(&quot;createOn&quot;).toSecondOfDay());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchDuration() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Duration duration0 = Duration.ofHours(0);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;duration&quot;, duration0);</b>
+<b class="fc">&nbsp;        Duration duration1 = Duration.ofHours(1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;duration&quot;, duration1);</b>
+<b class="fc">&nbsp;        Duration duration2 = Duration.ofHours(2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;duration&quot;, duration2);</b>
+<b class="fc">&nbsp;        Duration duration3 = Duration.ofHours(3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;duration&quot;, duration3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchDuration_assert(this.sqlgGraph, duration0, duration1, duration2, duration3);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchDuration_assert(this.sqlgGraph1, duration0, duration1, duration2, duration3);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchDuration_assert(SqlgGraph sqlgGraph, Duration duration0, Duration duration1, Duration duration2, Duration duration3) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration0, vertices.get(0).&lt;Duration&gt;value(&quot;duration&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration1, vertices.get(1).&lt;Duration&gt;value(&quot;duration&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration2, vertices.get(2).&lt;Duration&gt;value(&quot;duration&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(duration3, vertices.get(3).&lt;Duration&gt;value(&quot;duration&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void batchPeriod() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Period period0 = Period.of(2015, 3, 0);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;period&quot;, period0);</b>
+<b class="fc">&nbsp;        Period period1 = Period.of(2015, 3, 1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;period&quot;, period1);</b>
+<b class="fc">&nbsp;        Period period2 = Period.of(2015, 3, 2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;period&quot;, period2);</b>
+<b class="fc">&nbsp;        Period period3 = Period.of(2015, 3, 3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;period&quot;, period3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        batchPeriod_assert(this.sqlgGraph, period0, period1, period2, period3);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            batchPeriod_assert(this.sqlgGraph1, period0, period1, period2, period3);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void batchPeriod_assert(SqlgGraph sqlgGraph, Period period0, Period period1, Period period2, Period period3) {
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period0, vertices.get(0).&lt;Period&gt;value(&quot;period&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period1, vertices.get(1).&lt;Period&gt;value(&quot;period&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period2, vertices.get(2).&lt;Period&gt;value(&quot;period&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(period3, vertices.get(3).&lt;Period&gt;value(&quot;period&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

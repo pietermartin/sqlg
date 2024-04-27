@@ -1,0 +1,505 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestRepeatWithOrderAndRange</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestRepeatWithOrderAndRange (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestRepeatWithOrderAndRange</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (153/153)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$4</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$5</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestRepeatWithOrderAndRange$6</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (171/171)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Order;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.function.Predicate;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2017/04/07
+&nbsp; * Time: 10:31 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestRepeatWithOrderAndRange extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepOrderBy() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex aa1 = this.sqlgGraph.addVertex(T.label, &quot;AA&quot;, &quot;name&quot;, &quot;aa1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;, &quot;order&quot;, 4);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        aa1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        aa1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .has(T.label, P.within(&quot;A&quot;, &quot;AA&quot;))</b>
+<b class="fc">&nbsp;                .dedup()</b>
+<b class="fc">&nbsp;                .out().order().by(&quot;order&quot;, Order.desc);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        List&lt;String&gt; names = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Vertex vertex : vertices) {</b>
+<b class="fc">&nbsp;            names.add(vertex.value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(List.of(&quot;b2&quot;, &quot;c2&quot;, &quot;b1&quot;, &quot;c1&quot;), names);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatMultipleEdgesWithOrder2() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;, &quot;order&quot;, 5);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;, &quot;order&quot;, 4);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;, &quot;order&quot;, 6);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;, &quot;order&quot;, 7);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;, &quot;order&quot;, 9);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d3&quot;, &quot;order&quot;, 11);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bd&quot;, d1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bd&quot;, d2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bd&quot;, d3);</b>
+<b class="fc">&nbsp;        Vertex e1 = this.sqlgGraph.addVertex(T.label, &quot;E&quot;, &quot;name&quot;, &quot;e1&quot;, &quot;order&quot;, 8);</b>
+<b class="fc">&nbsp;        Vertex e2 = this.sqlgGraph.addVertex(T.label, &quot;E&quot;, &quot;name&quot;, &quot;e2&quot;, &quot;order&quot;, 10);</b>
+<b class="fc">&nbsp;        Vertex e3 = this.sqlgGraph.addVertex(T.label, &quot;E&quot;, &quot;name&quot;, &quot;e3&quot;, &quot;order&quot;, 12);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, e1);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, e2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, e3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        final Predicate&lt;Traverser&lt;Vertex&gt;&gt; predicate = t -&gt; t.loops() &gt; 1;</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .repeat(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;order&quot;, Order.desc)</b>
+<b class="fc">&nbsp;                ).until(predicate);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="fc">&nbsp;        List&lt;String&gt; names = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Vertex vertex : vertices) {</b>
+<b class="fc">&nbsp;            names.add(vertex.value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        System.out.println(names);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(e3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(d3, vertices.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(e2, vertices.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(d2, vertices.get(3));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(e1, vertices.get(4));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(d1, vertices.get(5));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatMultipleEdgesWithOrder() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;, &quot;order&quot;, 5);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;, &quot;order&quot;, 4);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;, &quot;order&quot;, 6);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .repeat(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;order&quot;, Order.desc)</b>
+<b class="fc">&nbsp;                ).until(__.in());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b3, vertices.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c2, vertices.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b2, vertices.get(3));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c1, vertices.get(4));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, vertices.get(5));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatWithOrder() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;, &quot;order&quot;, 4);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;, &quot;order&quot;, 5);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;, &quot;order&quot;, 6);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .repeat(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;order&quot;, Order.desc)</b>
+<b class="fc">&nbsp;                ).times(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c2, vertices.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c1, vertices.get(2));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test_g_V_playlist_paths() {
+<b class="fc">&nbsp;        loadGratefulDead();</b>
+<b class="fc">&nbsp;        List&lt;String&gt; bobSinging = this.sqlgGraph.traversal().V().has(&quot;name&quot;, &quot;Bob_Dylan&quot;).</b>
+<b class="fc">&nbsp;                in(&quot;sungBy&quot;).order().by(&quot;name&quot;).as(&quot;a&quot;).&lt;String&gt;values(&quot;name&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(22, bobSinging.size());</b>
+&nbsp;//        Assert.assertEquals(Arrays.asList(&quot;BALLAD OF FRANKIE LEE AND JUDAS PRIEST&quot;, &quot;CHIMES OF FREEDOM&quot;, &quot;DEAD MAN DEAD MAN&quot;, &quot;DONT THINK TWICE ITS ALL RIGHT&quot;,
+&nbsp;//                        &quot;GOTTA SERVE SOMEBODY&quot;, &quot;HEART OF MINE&quot;, &quot;HIGHWAY 61 REVISITED&quot;, &quot;I WANT YOU&quot;, &quot;ILL BE YOUR BABY TONIGHT&quot;, &quot;JOEY&quot;,
+&nbsp;//                        &quot;JOHN BROWN&quot;, &quot;MAN OF PEACE&quot;, &quot;MR TAMBOURINE MAN&quot;, &quot;RAINY DAY WOMEN&quot;, &quot;SHELTER FROM THE STORM&quot;, &quot;SIMPLE TWIST OF FATE&quot;,
+&nbsp;//                        &quot;SLOW TRAIN&quot;, &quot;TANGLED UP IN BLUE&quot;, &quot;TIMES THEY ARE A CHANGING THE&quot;, &quot;TOMORROW IS A LONG TIME&quot;, &quot;WATCHING THE RIVER FLOW&quot;,
+&nbsp;//                        &quot;WICKED MESSENGER&quot;),
+&nbsp;//                bobSinging);
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().has(&quot;name&quot;, &quot;Bob_Dylan&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;sungBy&quot;).order().by(&quot;name&quot;)</b>
+<b class="fc">&nbsp;                .repeat(__.out(&quot;writtenBy&quot;, &quot;sungBy&quot;, &quot;followedBy&quot;).order().by(__.path().by(&quot;name&quot;).map(pathTraverser -&gt; pathTraverser.get().toString()), String::compareTo))</b>
+<b class="fc">&nbsp;                .until(__.out(&quot;writtenBy&quot;).has(&quot;name&quot;, &quot;Johnny_Cash&quot;))</b>
+<b class="fc">&nbsp;                .limit(10)</b>
+<b class="fc">&nbsp;                .path()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        List&lt;String&gt; resultX = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Path path : paths) {</b>
+<b class="fc">&nbsp;            List&lt;String&gt; names = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (Object object : path.objects()) {</b>
+<b class="fc">&nbsp;                Vertex v = (Vertex) object;</b>
+<b class="fc">&nbsp;                names.add(v.value(&quot;name&quot;));</b>
+&nbsp;            }
+<b class="fc">&nbsp;            resultX.add(names.toString());</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(</b>
+<b class="fc">&nbsp;                List.of(</b>
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, ALTHEA, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, BIG RAILROAD BLUES, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, BIRD SONG, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, BROKEN ARROW, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, BROWN EYED WOMEN, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, CANDYMAN, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, CASSIDY, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, COLD RAIN AND SNOW, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, DEAL, BIG RIVER]&quot;,
+&nbsp;                        &quot;[Bob_Dylan, CHIMES OF FREEDOM, QUEEN JANE, DIRE WOLF, BIG RIVER]&quot;
+&nbsp;                ),
+&nbsp;                resultX
+&nbsp;        );
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; result = this.sqlgGraph.traversal().V().has(&quot;name&quot;, &quot;Bob_Dylan&quot;).</b>
+<b class="fc">&nbsp;                in(&quot;sungBy&quot;).order().by(&quot;name&quot;).as(&quot;a&quot;).</b>
+<b class="fc">&nbsp;                repeat(__.out().order().by(__.path().by(&quot;name&quot;).map(pathTraverser -&gt; pathTraverser.get().toString()), String::compareTo).simplePath().from(&quot;a&quot;)).</b>
+<b class="fc">&nbsp;                until(__.out(&quot;writtenBy&quot;).has(&quot;name&quot;, &quot;Johnny_Cash&quot;)).limit(1).as(&quot;b&quot;).</b>
+<b class="fc">&nbsp;                repeat(__.out().order().by(__.path().by(&quot;name&quot;).map(pathTraverser -&gt; pathTraverser.get().toString()), String::compareTo).as(&quot;c&quot;).simplePath().from(&quot;b&quot;).to(&quot;c&quot;)).</b>
+<b class="fc">&nbsp;                until(__.out(&quot;sungBy&quot;).has(&quot;name&quot;, &quot;Grateful_Dead&quot;)).limit(1).</b>
+<b class="fc">&nbsp;                path().from(&quot;a&quot;).unfold().</b>
+<b class="fc">&nbsp;                project(&quot;song&quot;, &quot;artists&quot;).</b>
+<b class="fc">&nbsp;                by(&quot;name&quot;).</b>
+<b class="fc">&nbsp;                by(__.coalesce(__.out(&quot;sungBy&quot;, &quot;writtenBy&quot;).dedup().values(&quot;name&quot;).order(), __.constant(&quot;Unknown&quot;)).fold()).toList();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; expected = Arrays.asList(</b>
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;CHIMES OF FREEDOM&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Bob_Dylan&quot;));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;QUEEN JANE&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Unknown&quot;));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;ALTHEA&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Garcia&quot;, &quot;Hunter&quot;));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;BIG RIVER&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Johnny_Cash&quot;, &quot;Weir&quot;));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;BERTHA&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Garcia&quot;, &quot;Hunter&quot;));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;song&quot;, &quot;DRUMS&quot;);</b>
+<b class="fc">&nbsp;                    put(&quot;artists&quot;, List.of(&quot;Grateful_Dead&quot;));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(expected, result);</b>
+&nbsp;////        Then the result should be unordered
+&nbsp;////      | result |
+&nbsp;////      | m[{&quot;song&quot;: &quot;CHIMES OF FREEDOM&quot;, &quot;artists&quot;: [&quot;Bob_Dylan&quot;]}] |
+&nbsp;////      | m[{&quot;song&quot;: &quot;QUEEN JANE&quot;, &quot;artists&quot;: [&quot;Unknown&quot;]}] |
+&nbsp;////      | m[{&quot;song&quot;: &quot;ALTHEA&quot;, &quot;artists&quot;: [&quot;Garcia&quot;,&quot;Hunter&quot;]}] |
+&nbsp;////      | m[{&quot;song&quot;: &quot;BIG RIVER&quot;, &quot;artists&quot;: [&quot;Johnny_Cash&quot;,&quot;Weir&quot;]}] |
+&nbsp;////      | m[{&quot;song&quot;: &quot;HES GONE&quot;, &quot;artists&quot;: [&quot;Garcia&quot;,&quot;Hunter&quot;]}] |
+&nbsp;////      | m[{&quot;song&quot;: &quot;CAUTION&quot;, &quot;artists&quot;: [&quot;Grateful_Dead&quot;]}] |
+&nbsp;//        System.out.println(result);
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>
