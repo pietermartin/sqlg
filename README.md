@@ -10,7 +10,7 @@ Sqlg
 [H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/)
 are supported.
 
-3.1.0-SNAPSHOT [Documentation](http://sqlg.org/docs/3.1.0-SNAPSHOT)
+3.1.0 [Documentation](http://sqlg.org/docs/3.1.0)
 
 3.0.1 [Documentation](http://sqlg.org/docs/3.0.1)
 
