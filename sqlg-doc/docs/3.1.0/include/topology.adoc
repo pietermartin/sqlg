@@ -16,8 +16,8 @@ Every graph modification first checks to see if the element's schema (label,name
 If not, it will create the element's schema. For `Postgresql` this works well as it supports transactional schema creation/modification.
 
 [WARNING]
-Hsqldb, H2 and MariaDb do not support transactional schema creation/modification. They will both silently commit the
-transaction and continue. This breaks the user's transaction boundaries. For Hsqldb, H2 and MariaDb it is recommended to
+Hsqldb, H2 do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user's transaction boundaries. For Hsqldb and H2 it is recommended to
 create the schema upfront.
 
 It is possible to query and traverse the topology as a normal TinkerPop graph.

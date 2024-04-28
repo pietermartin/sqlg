@@ -12,7 +12,7 @@ Version 3.1.0, April 2024:
 :tinkerpop-docs: http://tinkerpop.apache.org/docs/current/reference/
 :includedir: include
 :sqlg-version: 3.1.0
-:tinkerpop-version: 3.7.1
+:tinkerpop-version: 3.7.2
 
 https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
 http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].

@@ -2382,7 +2382,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql and MariaDB as it run
 <h2 id="_tinkerpop_supported_features">3. TinkerPop supported features</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sqlg version 3.1.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.7.1</a>.</p>
+<p>Sqlg version 3.1.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.7.2</a>.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code>, <code>ProcessStandardSuite</code> test suites then and <code>Gherkin feature</code> tests.</p>
@@ -7035,8 +7035,8 @@ If not, it will create the element&#8217;s schema. For <code>Postgresql</code> t
 <div class="title">Warning</div>
 </td>
 <td class="content">
-Hsqldb, H2 and MariaDb do not support transactional schema creation/modification. They will both silently commit the
-transaction and continue. This breaks the user&#8217;s transaction boundaries. For Hsqldb, H2 and MariaDb it is recommended to
+Hsqldb, H2 do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user&#8217;s transaction boundaries. For Hsqldb and H2 it is recommended to
 create the schema upfront.
 </td>
 </tr>
@@ -9165,7 +9165,7 @@ globals &lt;&lt; [g : graph.traversal()]</pre>
 <div id="footer">
 <div id="footer-text">
 Version 3.1.0<br>
-Last updated 2024-04-07 22:00:43 +0200
+Last updated 2024-04-28 10:12:18 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
