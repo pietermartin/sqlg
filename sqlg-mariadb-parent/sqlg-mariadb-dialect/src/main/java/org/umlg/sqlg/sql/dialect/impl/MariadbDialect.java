@@ -1062,7 +1062,7 @@ public class MariadbDialect extends BaseSqlDialect {
             statement.execute("CREATE USER IF NOT EXISTS 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
             statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
             statement.execute("GRANT CREATE TEMPORARY TABLES ON *.* TO 'sqlgReadOnly'@'%';");
-            statement.executeQuery("FLUSH PRIVILEGES");
+            statement.execute("FLUSH PRIVILEGES");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

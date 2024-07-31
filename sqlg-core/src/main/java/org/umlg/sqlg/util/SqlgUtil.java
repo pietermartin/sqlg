@@ -921,7 +921,7 @@ public class SqlgUtil {
         } else if (sqlDialect.isMariaDb() || sqlDialect.isMysql()) {
             try (Statement s = conn.createStatement()) {
                 s.execute("DROP USER IF EXISTS 'sqlgReadOnly'@'localhost'");
-                s.executeQuery("FLUSH PRIVILEGES");
+                s.execute("FLUSH PRIVILEGES");
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
