@@ -24,7 +24,7 @@ public class SqlgMariaDBProvider extends SqlgAbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         LOGGER.info("MariaDB, Starting test: " + test.getSimpleName() + "." + testMethodName);
-        Map<String, Object> m = new HashMap<String, Object>() {{
+        Map<String, Object> m = new HashMap<>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:mariadb://localhost:3306/?useSSL=false");
             put("jdbc.username", "mariadb");
