@@ -199,6 +199,7 @@
         <module>sqlg-postgres-parent</module>
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
+        <module>sqlg-mariadb-parent</module>
         <module>sqlg-doc</module>
     </modules>
     <dependencyManagement>
@@ -278,6 +279,16 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-h2-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mariadb</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mariadb-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
