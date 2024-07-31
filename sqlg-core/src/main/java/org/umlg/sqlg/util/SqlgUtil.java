@@ -156,6 +156,7 @@ public class SqlgUtil {
     }
 
     //TODO the identifier logic here is very suboptimal
+    @SuppressWarnings("unused")
     private static void _populateIdCountMap(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> lastElementIdCountMap) throws SQLException {
         lastElementIdCountMap.clear();
         //First load all labeled entries from the resultSet
@@ -750,7 +751,6 @@ public class SqlgUtil {
      *
      * @param propertyDefinition The property's definition
      * @param value              The value
-     * @return
      */
     private static Object[] transformArrayToInsertValue(PropertyDefinition propertyDefinition, Object value) {
         return getArray(propertyDefinition, value);
@@ -1221,14 +1221,8 @@ public class SqlgUtil {
             for (ColumnList.Column column : columns) {
                 PropertyDefinition propertyDefinition = column.getPropertyDefinition();
                 switch (propertyDefinition.propertyType().ordinal()) {
-                    case STRING_ORDINAL:
+                    case STRING_ORDINAL, VARCHAR_ORDINAL:
                         String s = resultSet.getString(column.getColumnIndex());
-                        if (!resultSet.wasNull()) {
-                            result.add(s);
-                        }
-                        break;
-                    case VARCHAR_ORDINAL:
-                        s = resultSet.getString(column.getColumnIndex());
                         if (!resultSet.wasNull()) {
                             result.add(s);
                         }
