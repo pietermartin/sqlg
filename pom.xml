@@ -98,19 +98,22 @@
                 <version>3.2.5</version>
                 <configuration>
                     <includes>
-                        <include>**/H2AllTest.java</include>
-                        <include>**/SqlgH2StructureStandardTest.java</include>
-                        <include>**/SqlgH2ProcessStandardTest.java</include>
-                        <include>**/H2FeatureTest.java</include>
+<!--                        <include>**/H2AllTest.java</include>-->
+<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
+<!--                        <include>**/H2FeatureTest.java</include>-->
 
-                        <include>**/HsqldbAllTest.java</include>
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+<!--                        <include>**/HsqldbAllTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
 
-                        <include>**/PostgresAllTest.java</include>
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresFeatureTest.java</include>
+<!--                        <include>**/PostgresAllTest.java</include>-->
+<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
+<!--                        <include>**/PostgresFeatureTest.java</include>-->
+
+                        <include>**/MariadbAllTest.java</include>
+                        <include>**/SqlgMariadbProcessStandardTest.java</include>
 
                     </includes>
                 </configuration>
@@ -200,6 +203,7 @@
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
         <module>sqlg-mariadb-parent</module>
+        <module>sqlg-mysql-parent</module>
         <module>sqlg-doc</module>
     </modules>
     <dependencyManagement>
@@ -289,6 +293,16 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-mariadb-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mysql</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mysql-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>

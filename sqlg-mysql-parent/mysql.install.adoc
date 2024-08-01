@@ -1,0 +1,21 @@
+```
+docker pull mysql:latest
+docker run -d --name test-mysql -e MYSQL_ROOT_PASSWORD=mysql -p 3307:3306 mysql
+```
+
+```
+CREATE DATABASE sqlgraphdb;
+CREATE USER 'mysql'@'%' IDENTIFIED BY 'mysql';
+GRANT ALL PRIVILEGES ON *.* TO 'mysql'@'%' WITH GRANT OPTION;
+```
+
+```
+# seems need to include sqlgraphdb.*
+GRANT ALL PRIVILEGES ON sqlgraphdb.* TO 'mysql'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+```
+
+```
+# The server might have create an anonymous user on localhost, delete it...
+DELETE FROM mysql.user where User = ''and Host = 'localhost';
+```
