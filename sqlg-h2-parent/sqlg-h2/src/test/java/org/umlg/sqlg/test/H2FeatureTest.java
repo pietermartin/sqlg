@@ -35,14 +35,12 @@ import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
 public class H2FeatureTest {
 
     private final static SqlgGraph modern = SqlgGraph.open(new MapConfiguration(getBaseConfiguration(GraphData.MODERN)));
-    private final static SqlgGraph classic = SqlgGraph.open(new MapConfiguration(getBaseConfiguration(GraphData.CLASSIC)));
     private final static SqlgGraph sink = SqlgGraph.open(new MapConfiguration(getBaseConfiguration(GraphData.SINK)));
     private final static SqlgGraph grateful = SqlgGraph.open(new MapConfiguration(getBaseConfiguration(GraphData.GRATEFUL)));
     private final static SqlgGraph empty = SqlgGraph.open(new MapConfiguration(getBaseConfiguration(null)));
 
     static {
         readIntoGraph(modern, GraphData.MODERN);
-        readIntoGraph(classic, GraphData.CLASSIC);
         readIntoGraph(sink, GraphData.SINK);
         readIntoGraph(grateful, GraphData.GRATEFUL);
     }
@@ -130,7 +128,7 @@ public class H2FeatureTest {
 
     public static class H2World extends SqlgWorld {
         public H2World() {
-            super(modern, classic, sink, grateful, empty);
+            super(modern, sink, grateful, empty);
         }
 
         @Override
