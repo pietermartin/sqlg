@@ -14,14 +14,12 @@ import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
 
 public abstract class SqlgWorld implements World {
     private final SqlgGraph modern;
-    private final SqlgGraph classic;
     private final SqlgGraph sink;
     private final SqlgGraph grateful;
     private final SqlgGraph empty;
 
-    public SqlgWorld(final SqlgGraph modern, final SqlgGraph classic, SqlgGraph sink, SqlgGraph grateful, SqlgGraph empty) {
+    public SqlgWorld(final SqlgGraph modern, SqlgGraph sink, SqlgGraph grateful, SqlgGraph empty) {
         this.modern = modern;
-        this.classic = classic;
         this.sink = sink;
         this.grateful = grateful;
         this.empty = empty;
@@ -32,8 +30,6 @@ public abstract class SqlgWorld implements World {
     public GraphTraversalSource getGraphTraversalSource(final GraphData graphData) {
         if (null == graphData)
             return empty.traversal();
-        else if (graphData == GraphData.CLASSIC)
-            return classic.traversal();
         else if (graphData == GraphData.CREW)
             throw new UnsupportedOperationException("The Crew dataset is not supported by Sqlg because it doesn't support multi/meta-properties");
         else if (graphData == GraphData.MODERN)
@@ -63,7 +59,6 @@ public abstract class SqlgWorld implements World {
 
     private void cleanEmpty() {
         empty.tx().commit();
-        classic.tx().commit();
         modern.tx().commit();
         sink.tx().commit();
         grateful.tx().commit();
