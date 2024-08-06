@@ -12,6 +12,7 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -295,6 +296,9 @@ public class MysqlDialect extends BaseSqlDialect {
         if (value instanceof JsonNode) {
             return;
         }
+        if (value instanceof UUID) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -302,21 +306,6 @@ public class MysqlDialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof char[]) {
-            return;
-        }
-        if (value instanceof short[]) {
-            return;
-        }
-        if (value instanceof int[]) {
-            return;
-        }
-        if (value instanceof long[]) {
-            return;
-        }
-        if (value instanceof double[]) {
-            return;
-        }
-        if (value instanceof String[]) {
             return;
         }
         if (value instanceof Character[]) {
@@ -328,37 +317,7 @@ public class MysqlDialect extends BaseSqlDialect {
         if (value instanceof Byte[]) {
             return;
         }
-        if (value instanceof Short[]) {
-            return;
-        }
-        if (value instanceof Integer[]) {
-            return;
-        }
-        if (value instanceof Long[]) {
-            return;
-        }
-        if (value instanceof Double[]) {
-            return;
-        }
-        if (value instanceof LocalDateTime[]) {
-            return;
-        }
-        if (value instanceof LocalDate[]) {
-            return;
-        }
-        if (value instanceof LocalTime[]) {
-            return;
-        }
-        if (value instanceof ZonedDateTime[]) {
-            return;
-        }
-        if (value instanceof Duration[]) {
-            return;
-        }
-        if (value instanceof Period[]) {
-            return;
-        }
-        if (value instanceof JsonNode[]) {
+        if (value instanceof BigDecimal) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -454,34 +413,26 @@ public class MysqlDialect extends BaseSqlDialect {
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
-        switch (sqlType) {
-            case Types.BOOLEAN:
-                return PropertyType.BOOLEAN;
-            case Types.SMALLINT:
-                return PropertyType.SHORT;
-            case Types.INTEGER:
-                return PropertyType.INTEGER;
-            case Types.BIGINT:
-                return PropertyType.LONG;
-            case Types.REAL:
-                return PropertyType.FLOAT;
-            case Types.DOUBLE:
-                return PropertyType.DOUBLE;
-            case Types.LONGVARCHAR:
-                return PropertyType.STRING;
-            case Types.TIMESTAMP:
-                return PropertyType.LOCALDATETIME;
-            case Types.DATE:
-                return PropertyType.LOCALDATE;
-            case Types.TIME:
-                return PropertyType.LOCALTIME;
-            case Types.VARBINARY:
-                return PropertyType.BYTE_ARRAY;
-            case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
-            default:
-                throw new IllegalStateException("Unknown sqlType " + sqlType);
-        }
+        return switch (sqlType) {
+            case Types.BOOLEAN -> PropertyType.BOOLEAN;
+            case Types.SMALLINT -> PropertyType.SHORT;
+            case Types.INTEGER -> PropertyType.INTEGER;
+            case Types.BIGINT -> PropertyType.LONG;
+            case Types.REAL -> PropertyType.FLOAT;
+            case Types.DOUBLE -> PropertyType.DOUBLE;
+            case Types.LONGVARCHAR -> PropertyType.STRING;
+            case Types.VARCHAR ->
+                //This is not exactly correct. Need to extract the column length and create PropertyType.varchar(x)
+                //However Sqlg does not depend on the varchar(x) except during table creation so STRING will do.
+                    PropertyType.STRING;
+            case Types.TIMESTAMP -> PropertyType.LOCALDATETIME;
+            case Types.DATE -> PropertyType.LOCALDATE;
+            case Types.TIME -> PropertyType.LOCALTIME;
+            case Types.VARBINARY -> PropertyType.BYTE_ARRAY;
+            case Types.ARRAY ->
+                    sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+            default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
+        };
     }
 
     @Override
@@ -1225,7 +1176,8 @@ public class MysqlDialect extends BaseSqlDialect {
 
     @Override
     public String dropIndex(SqlgGraph sqlgGraph, AbstractLabel parentLabel, String name) {
-        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+//        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+        StringBuilder sql = new StringBuilder("DROP INDEX ");
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
         sql.append(sqlDialect.maybeWrapInQoutes(name));
         sql.append(" ON ");
@@ -1237,5 +1189,25 @@ public class MysqlDialect extends BaseSqlDialect {
             sql.append(";");
         }
         return sql.toString();
+    }
+    
+    @Override
+    public boolean supportsBigDecimalArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsUUID() {
+        return false;
+    }
+    
+    @Override
+    public boolean requiresIndexName() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsIfExists() {
+        return false;
     }
 }
