@@ -370,7 +370,6 @@ public class MariadbDialect extends BaseSqlDialect {
             case GEOGRAPHY_POLYGON_ORDINAL -> throw new IllegalStateException("MariaDb does not support gis types!");
             case BYTE_ARRAY_ORDINAL -> new String[]{"BLOB"};
             case byte_ARRAY_ORDINAL -> new String[]{"BLOB"};
-            case boolean_ARRAY_ORDINAL -> new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
             default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
