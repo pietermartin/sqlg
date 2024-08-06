@@ -25,9 +25,9 @@ import java.util.Set;
 @SuppressWarnings("rawtypes")
 public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
-    private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgGraph.class.getName());
 
-    private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
+    private static final Set<Class> IMPLEMENTATIONS = new HashSet<>() {{
         add(SqlgEdge.class);
         add(SqlgElement.class);
         add(SqlgGraph.class);
@@ -42,7 +42,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         StopWatch stopWatch = StopWatch.createStarted();
         Graph graph = super.openTestGraph(config);
         stopWatch.stop();
-        logger.info("openTestGraph, time: {}", stopWatch);
+        LOGGER.info("openTestGraph, time: {}", stopWatch);
         return graph;
     }
 
@@ -69,7 +69,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             }
         }
         stopWatch.stop();
-        logger.info("clearing datasource {}, time: {}", configuration.getString("jdbc.url"), stopWatch);
+        LOGGER.info("clearing datasource {}, time: {}", configuration.getString("jdbc.url"), stopWatch);
     }
 
     @Override
