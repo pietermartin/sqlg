@@ -529,6 +529,14 @@ public class VertexLabel extends AbstractLabel {
     }
 
     private void renameVertexLabelOnDb(String oldLabel, String newLabel) {
+        if (this.sqlgGraph.getSqlDialect().isMysql()) {
+            Connection conn = this.sqlgGraph.tx().getConnection();
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("USE " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchema().getName()) + ";");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         String sql = this.sqlgGraph.getSqlDialect().renameTable(
                 this.schema.getName(),
                 VERTEX_PREFIX + oldLabel,
