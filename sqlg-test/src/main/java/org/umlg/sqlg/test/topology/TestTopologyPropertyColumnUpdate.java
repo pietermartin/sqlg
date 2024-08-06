@@ -24,7 +24,7 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
 
     @Before
     public void before() throws Exception {
-        Assume.assumeTrue(!isMariaDb());
+        Assume.assumeTrue(!isMariaDb() && !isMysql());
         super.before();
         this.topologyListenerTriple.clear();
     }

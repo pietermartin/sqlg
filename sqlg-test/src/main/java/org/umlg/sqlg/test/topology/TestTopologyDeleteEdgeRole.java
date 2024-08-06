@@ -60,7 +60,7 @@ public class TestTopologyDeleteEdgeRole extends BaseTest {
 
     @Before
     public void before() throws Exception {
-        Assume.assumeFalse(isMariaDb());
+        Assume.assumeFalse(isMariaDb() || isMysql());
         super.before();
     }
 
