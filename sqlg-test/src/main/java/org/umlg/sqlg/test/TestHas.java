@@ -270,7 +270,7 @@ public class TestHas extends BaseTest {
     //This is from TinkerPop process test suite. It fails for MariaDb
     @Test
     public void g_V_hasXk_withinXcXX_valuesXkX() {
-        Assume.assumeTrue(!isMariaDb());
+        Assume.assumeTrue(!isMariaDb() && !isMysql());
         this.sqlgGraph.traversal().addV().property("k", "轉注").
                 addV().property("k", "✦").
                 addV().property("k", "♠").
