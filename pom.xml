@@ -98,22 +98,29 @@
                 <version>3.2.5</version>
                 <configuration>
                     <includes>
-<!--                        <include>**/H2AllTest.java</include>-->
-<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
-<!--                        <include>**/H2FeatureTest.java</include>-->
+                        <include>**/H2AllTest.java</include>
+                        <include>**/SqlgH2StructureStandardTest.java</include>
+                        <include>**/SqlgH2ProcessStandardTest.java</include>
+                        <include>**/H2FeatureTest.java</include>
 
-<!--                        <include>**/HsqldbAllTest.java</include>-->
-<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
+                        <include>**/HsqldbAllTest.java</include>
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
 
 <!--                        <include>**/PostgresAllTest.java</include>-->
 <!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
 <!--                        <include>**/PostgresFeatureTest.java</include>-->
 
-                        <include>**/MariadbAllTest.java</include>
-                        <include>**/SqlgMariadbProcessStandardTest.java</include>
+<!--                        <include>**/MariadbAllTest.java</include>-->
+<!--                        <include>**/SqlgMariadbProcessStandardTest.java</include>-->
+<!--                        <include>**/SqlgMariaDBStructureStandardTest.java</include>-->
+<!--                        <include>**/MariadbFeatureTest.java</include>-->
+<!--                        -->
+<!--                        <include>**/MysqlAllTest.java</include>-->
+<!--                        <include>**/SqlgMysqlProcessStandardTest.java</include>-->
+<!--                        <include>**/SqlgMysqlStructureStandardTest.java</include>-->
+<!--                        <include>**/MysqlFeatureTest.java</include>-->
 
                     </includes>
                 </configuration>
