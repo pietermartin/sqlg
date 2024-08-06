@@ -1,0 +1,27 @@
+=== using docker
+
+start script
+[source,bash,options="nowrap"]
+```
+docker pull mysql:latest
+./mysql-docker-start.sh
+```
+
+stop script
+[source,bash,options="nowrap"]
+```
+./mysql-docker-stop.sh
+```
+
+For running as a non root user the following is required.
+[source,sql,options="nowrap"]
+```
+CREATE DATABASE sqlgraphdb;
+CREATE USER 'mysql'@'%' IDENTIFIED BY 'mysql';
+GRANT ALL PRIVILEGES ON *.* TO 'mysql'@'%' WITH GRANT OPTION;
+-- seems need to include sqlgraphdb.*
+GRANT ALL PRIVILEGES ON sqlgraphdb.* TO 'mysql'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+-- The server might have create an anonymous user on localhost, delete it...
+DELETE FROM mysql.user where User = ''and Host = 'localhost';
+```
