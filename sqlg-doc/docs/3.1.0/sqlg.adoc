@@ -16,7 +16,7 @@ Version 3.1.0, April 2024:
 
 https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
 http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].
-Currently http://www.postgresql.org/[Postgresql], http://hsqldb.org/[HSQLDB] and http://h2database.com[H2] are supported.
+Currently http://www.postgresql.org/[Postgresql], http://hsqldb.org/[HSQLDB], http://h2database.com[H2], https://mariadb.org[MariaDB], https://www.mysql.com[MySQL] are supported.
 
 Sqlg has a github https://github.com/pietermartin/sqlg/discussions[discussions] page.
 

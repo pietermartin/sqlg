@@ -74,6 +74,22 @@ The various `Sqlg` supported databases.
      <version>{sqlg-version}</version>
  </dependency>
 
+[subs="specialchars, attributes"]
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb</artifactId>
+     <version>{sqlg-version}</version>
+ </dependency>
+
+[subs="specialchars, attributes"]
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql</artifactId>
+     <version>{sqlg-version}</version>
+ </dependency>
+
 The above mentioned maven coordinates will include `gremlin-groovy`. To exclude `gremlin-groovy` only include the dialect.
 
 [subs="specialchars, attributes"]
@@ -100,6 +116,22 @@ The above mentioned maven coordinates will include `gremlin-groovy`. To exclude 
      <version>{sqlg-version}</version>
  </dependency>
 
+[subs="specialchars, attributes"]
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb-dialect</artifactId>
+     <version>{sqlg-version}</version>
+ </dependency>
+
+[subs="specialchars, attributes"]
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql-dialect</artifactId>
+     <version>{sqlg-version}</version>
+ </dependency>
+
 === Start
 
 `SqlgGraph` is a singleton that can be shared among multiple threads. You instantiate `SqlgGraph` using the standard
@@ -123,6 +155,16 @@ The configuration object requires the following properties.
 .H2
  jdbc.url=jdbc:h2:file:target/tmp/yourdb
  jdbc.username=SA
+ jdbc.password=
+
+.MariaDB
+ jdbc.url=jdbc:mariadb://localhost:3306/?useSSL=false
+ jdbc.username=mariadb
+ jdbc.password=
+
+.MySQL
+ jdbc.url=jdbc:mysql://localhost:3306/?allowPublicKeyRetrieval=true&useSSL=false
+ jdbc.username=mysql
  jdbc.password=
 
 In the case of `Postgresql` the database must already exist.

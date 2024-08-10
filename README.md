@@ -7,7 +7,7 @@ Sqlg
 ====
 
 **Sqlg** is a implementation of [Tinkerpop3](https://github.com/apache/incubator-tinkerpop) on a [RDBMS](http://en.wikipedia.org/wiki/Relational_database_management_system).
-[H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/)
+[H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/), [MariaDB](https://mariadb.org/), [MySQL](https://www.mysql.com/)
 are supported.
 
 3.1.0 [Documentation](http://sqlg.org/docs/3.1.0)
