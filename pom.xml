@@ -211,6 +211,7 @@
         <module>sqlg-h2-parent</module>
         <module>sqlg-mariadb-parent</module>
         <module>sqlg-mysql-parent</module>
+        <module>sqlg-mssqlserver-parent</module>
         <module>sqlg-doc</module>
     </modules>
     <dependencyManagement>
@@ -310,6 +311,16 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-mysql-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mssqlserver</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mssqlserver-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
