@@ -71,6 +71,12 @@ public class TestTest extends BaseTest {
 //    }
 
     @Test
+    public void test1() {
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+    }
+
+//    @Test
     public void test3() {
         loadModern();
         for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {
