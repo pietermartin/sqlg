@@ -90,11 +90,6 @@ public class SqlgUtil {
         List<Emit<SqlgElement>> result = new ArrayList<>();
         if (resultSet.next()) {
             if (first) {
-                for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
-                    for (SchemaTableTree schemaTableTree : subQueryStack) {
-                        schemaTableTree.clearColumnNamePropertyNameMap();
-                    }
-                }
                 populateIdCountMap(resultSetMetaData, rootSchemaTableTree, idColumnCountMap);
             }
             int subQueryDepth = 1;
@@ -258,9 +253,9 @@ public class SqlgUtil {
                         }
                     } else {
                         if (forParent) {
-                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabelsCache(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            emit = new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(sqlgElement, schemaTableTree.getRealLabelsCache(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     }
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();

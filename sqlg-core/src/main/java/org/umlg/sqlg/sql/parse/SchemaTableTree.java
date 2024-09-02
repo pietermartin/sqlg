@@ -64,24 +64,22 @@ public class SchemaTableTree {
     private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
     //labels are immutable
     private Set<String> labels;
-    private Set<String> realLabels;
+    private Set<String> realLabelsCache;
     private String reducedLabels;
     //untilFirst is for the repeatStep optimization
-    private boolean untilFirst;
+    private final boolean untilFirst;
     //This counter must only ever be used on the root node of the schema table tree
     //It is used to alias the select clauses
     private int rootAliasCounter = 1;
-    private boolean emit;
-    //left join, as required by the optimized ChooseStep via the optional step
-    private boolean optionalLeftJoin;
-    //indicates NotStep
-    private boolean outerLeftJoin;
-    //Only root SchemaTableTrees have these maps;
-    private AliasMapHolder aliasMapHolder;
     //This counter is used for the within predicate when aliasing the temporary table
     private int tmpTableAliasCounter = 1;
-    //Cached for query load performance
-    private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
+    private final boolean emit;
+    //left join, as required by the optimized ChooseStep via the optional step
+    private final boolean optionalLeftJoin;
+    //indicates NotStep
+    private final boolean outerLeftJoin;
+    //Only root SchemaTableTrees have these maps;
+    private AliasMapHolder aliasMapHolder;
     private String labeledAliasId;
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
@@ -126,7 +124,11 @@ public class SchemaTableTree {
             List<HasContainer> hasContainers,
             List<AndOrHasContainer> andOrHasContainers,
             SqlgComparatorHolder sqlgComparatorHolder,
-            List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators) {
+            List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
+            boolean untilFirst,
+            boolean emit,
+            boolean optionalLeftJoin,
+            boolean outerLeftJoin) {
 
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -144,6 +146,10 @@ public class SchemaTableTree {
         this.hasContainers = hasContainers;
         this.sqlgComparatorHolder = sqlgComparatorHolder;
         this.dbComparators = new ArrayList<>(dbComparators);
+        this.untilFirst = untilFirst;
+        this.emit = emit;
+        this.optionalLeftJoin = optionalLeftJoin;
+        this.outerLeftJoin = outerLeftJoin;
     }
 
     /**
@@ -189,6 +195,7 @@ public class SchemaTableTree {
         this.emit = emit;
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
+        this.outerLeftJoin = false;
         this.drop = drop;
         this.aggregateFunction = aggregateFunction;
         this.groupBy = groupBy;
@@ -543,7 +550,7 @@ public class SchemaTableTree {
     }
 
     private void clearTempFakeLabels() {
-        this.realLabels = null;
+        this.realLabelsCache = null;
         Set<String> toRemove = new HashSet<>();
         for (String label : this.labels) {
             if (label.endsWith(BaseStrategy.SQLG_PATH_TEMP_FAKE_LABEL)) {
@@ -695,7 +702,11 @@ public class SchemaTableTree {
                     new ArrayList<>(hasContainers),
                     andOrHasContainers,
                     sqlgComparatorHolder,
-                    new ArrayList<>(dbComparators)
+                    new ArrayList<>(dbComparators),
+                    untilFirst,
+                    emit,
+                    leftJoin,
+                    outerLeftJoin
             );
 
             schemaTableTree.sqlgRangeHolder = sqlgRangeHolder;
@@ -713,16 +724,16 @@ public class SchemaTableTree {
                     new ArrayList<>(),
                     new ArrayList<>(),
                     sqlgComparatorHolder,
-                    new ArrayList<>()
+                    new ArrayList<>(),
+                    untilFirst,
+                    emit,
+                    leftJoin,
+                    outerLeftJoin
             );
 
         }
         this.children.add(schemaTableTree);
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
-        schemaTableTree.emit = emit;
-        schemaTableTree.untilFirst = untilFirst;
-        schemaTableTree.optionalLeftJoin = leftJoin;
-        schemaTableTree.outerLeftJoin = outerLeftJoin;
         schemaTableTree.drop = drop;
         schemaTableTree.getRestrictedProperties().addAll(restrictedProperties);
         schemaTableTree.aggregateFunction = aggregateFunction;
@@ -792,20 +803,12 @@ public class SchemaTableTree {
         return this.emit;
     }
 
-    public void setEmit(boolean emit) {
-        this.emit = emit;
-    }
-
     public boolean isOptionalLeftJoin() {
         return this.optionalLeftJoin;
     }
 
     public boolean isOuterLeftJoin() {
         return outerLeftJoin;
-    }
-
-    void setOptionalLeftJoin(boolean optionalLeftJoin) {
-        this.optionalLeftJoin = optionalLeftJoin;
     }
 
     public void resetColumnAliasMaps() {
@@ -2929,20 +2932,20 @@ public class SchemaTableTree {
         return !this.labels.isEmpty();
     }
 
-    public Set<String> getRealLabels() {
-        if (this.realLabels == null) {
-            this.realLabels = new HashSet<>();
+    public Set<String> getRealLabelsCache() {
+        if (this.realLabelsCache == null) {
+            this.realLabelsCache = new HashSet<>();
             for (String label : this.labels) {
                 if (label.contains(BaseStrategy.PATH_LABEL_SUFFIX)) {
-                    this.realLabels.add(label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length()));
+                    this.realLabelsCache.add(label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length()));
                 } else if (label.contains(BaseStrategy.EMIT_LABEL_SUFFIX)) {
-                    this.realLabels.add(label.substring(label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX) + BaseStrategy.EMIT_LABEL_SUFFIX.length()));
+                    this.realLabelsCache.add(label.substring(label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX) + BaseStrategy.EMIT_LABEL_SUFFIX.length()));
                 } else {
                     throw new IllegalStateException("label must contain " + BaseStrategy.PATH_LABEL_SUFFIX + " or " + BaseStrategy.EMIT_LABEL_SUFFIX);
                 }
             }
         }
-        return this.realLabels;
+        return Collections.unmodifiableSet(this.realLabelsCache);
     }
 
     private boolean isEdgeVertexStep() {
@@ -2955,10 +2958,6 @@ public class SchemaTableTree {
 
     public boolean isUntilFirst() {
         return untilFirst;
-    }
-
-    void setUntilFirst(boolean untilFirst) {
-        this.untilFirst = untilFirst;
     }
 
     int getTmpTableAliasCounter() {
@@ -3070,13 +3069,6 @@ public class SchemaTableTree {
             identifierObjects.add((Comparable) resultSet.getObject(count));
         }
         return identifierObjects;
-    }
-
-    public void clearColumnNamePropertyNameMap() {
-        if (this.columnNamePropertyName != null) {
-            this.columnNamePropertyName.clear();
-            this.columnNamePropertyName = null;
-        }
     }
 
     public boolean isLocalStep() {

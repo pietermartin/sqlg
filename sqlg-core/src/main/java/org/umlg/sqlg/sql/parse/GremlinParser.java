@@ -66,11 +66,12 @@ public class GremlinParser {
                 new ArrayList<>(),
                 new ArrayList<>(),
                 null,
-                new ArrayList<>()
+                new ArrayList<>(),
+                rootReplacedStep.isUntilFirst(),
+                rootReplacedStep.isEmit(),
+                rootReplacedStep.isLeftJoin(),
+                false
         );
-        rootSchemaTableTree.setOptionalLeftJoin(rootReplacedStep.isLeftJoin());
-        rootSchemaTableTree.setEmit(rootReplacedStep.isEmit());
-        rootSchemaTableTree.setUntilFirst(rootReplacedStep.isUntilFirst());
         rootSchemaTableTree.initializeAliasColumnNameMaps();
 
         rootSchemaTableTree.getRestrictedProperties().addAll(rootReplacedStep.getRestrictedProperties());
