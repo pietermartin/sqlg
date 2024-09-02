@@ -80,8 +80,10 @@ public class ReplacedStep<S, E> {
     //IDStep, i.e. only return the element's id.
     private boolean idOnly = false;
 
-    //NotStep, not(__.out())
-//    private what what
+    /**
+     * Hold information about the recursive repeat step.
+     */
+    private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
     private ReplacedStep() {
     }
@@ -142,9 +144,13 @@ public class ReplacedStep<S, E> {
         return !this.labels.isEmpty();
     }
 
+    public void setRecursiveRepeatStepConfig(RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+        this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
+    }
+
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
-        if (this.step instanceof VertexStep) {
-            return appendPathForVertexStep(schemaTableTree);
+        if (this.step instanceof VertexStep<?> vertexStep) {
+            return appendPathForVertexStep(schemaTableTree, vertexStep);
         } else if (this.step instanceof EdgeVertexStep) {
             return appendPathForEdgeVertexStep(schemaTableTree);
         } else if (this.step instanceof EdgeOtherVertexStep) {
@@ -165,7 +171,7 @@ public class ReplacedStep<S, E> {
         return calculatePathFromEdgeToVertex(schemaTableTree, schemaTableTree.getSchemaTable(), (schemaTableTree.getDirection() == Direction.IN ? Direction.OUT : Direction.IN));
     }
 
-    private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
+    private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree, VertexStep<? extends Element> vertexStep) {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
         Map<String, Map<String, PropertyDefinition>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
@@ -173,7 +179,6 @@ public class ReplacedStep<S, E> {
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
 
-        VertexStep<? extends Element> vertexStep = (VertexStep<? extends Element>) this.step;
         String[] edgeLabels = vertexStep.getEdgeLabels();
         Direction direction = vertexStep.getDirection();
         Class<? extends Element> elementClass = vertexStep.getReturnClass();
@@ -209,9 +214,11 @@ public class ReplacedStep<S, E> {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             inEdgeLabelToTravers,
                             Direction.IN,
-                            elementClass,
+                            Edge.class,
                             this,
-                            this.labels);
+                            this.labels,
+                            this.recursiveRepeatStepConfig
+                    );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), inEdgeLabelToTravers.toString());
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
@@ -243,11 +250,20 @@ public class ReplacedStep<S, E> {
                                 schemaTableTreeChild = schemaTableTree.addChild(
                                         inEdgeLabelToTravers,
                                         Direction.IN,
-                                        elementClass,
+                                        Vertex.class,
                                         this,
-                                        Collections.emptySet());
+                                        Collections.emptySet(),
+                                        this.recursiveRepeatStepConfig
+                                );
                             }
-                            result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, schemaTableTo, Direction.IN, groupedIds));
+                            result.addAll(
+                                    calculatePathFromVertexToEdge(
+                                            schemaTableTreeChild,
+                                            schemaTableTo,
+                                            Direction.IN,
+                                            groupedIds
+                                    )
+                            );
                         }
                     }
                 }
@@ -265,7 +281,9 @@ public class ReplacedStep<S, E> {
                             Direction.OUT,
                             elementClass,
                             this,
-                            this.labels);
+                            this.labels,
+                            this.recursiveRepeatStepConfig
+                    );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), outEdgeLabelToTravers.toString());
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
@@ -297,9 +315,18 @@ public class ReplacedStep<S, E> {
                                         Direction.OUT,
                                         elementClass,
                                         this,
-                                        Collections.emptySet());
+                                        Collections.emptySet(),
+                                        this.recursiveRepeatStepConfig
+                                );
                             }
-                            result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, schemaTableTo, Direction.OUT, groupedIds));
+                            result.addAll(
+                                    calculatePathFromVertexToEdge(
+                                            schemaTableTreeChild,
+                                            schemaTableTo,
+                                            Direction.OUT,
+                                            groupedIds
+                                    )
+                            );
                         }
                     }
                 }
@@ -335,7 +362,8 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             Direction.OUT,
                             this,
-                            this.labels
+                            this.labels,
+                            null
                     );
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
@@ -349,7 +377,8 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             Direction.IN,
                             this,
-                            this.labels
+                            this.labels,
+                            null
                     );
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
@@ -373,7 +402,8 @@ public class ReplacedStep<S, E> {
                 direction,
                 Vertex.class,
                 this,
-                this.labels
+                this.labels,
+                null
         );
         SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), schemaTableTo.toString());
         List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
@@ -469,7 +499,7 @@ public class ReplacedStep<S, E> {
      *
      * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
      */
-    Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph, int replacedStepDepth) {
+    Set<SchemaTableTree> calculateRootSchemaTableTrees(SqlgGraph sqlgGraph, int replacedStepDepth) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         Set<SchemaTableTree> result = new HashSet<>();
         final GraphStep<S, Element> graphStep = (GraphStep<S, Element>) this.step;

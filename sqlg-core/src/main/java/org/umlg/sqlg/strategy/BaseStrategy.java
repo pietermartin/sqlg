@@ -33,12 +33,15 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
 import org.umlg.sqlg.predicate.*;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
+import org.umlg.sqlg.sql.parse.RecursiveRepeatStepConfig;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -49,7 +52,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Compare.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Contains.within;
@@ -144,27 +146,30 @@ public abstract class BaseStrategy {
         } else {
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount, false);
-            } else if (step instanceof RepeatStep) {
-                if (!unoptimizableRepeatStep()) {
-                    handleRepeatStep((RepeatStep<?>) step, pathCount);
+            } else if (step instanceof RepeatStep repeatStep) {
+                List<RepeatStep> repeatSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, this.traversal);
+                if (isRecursiveRepeatStep(repeatSteps, repeatStep)) {
+                    handleRecursiveRepeatStep(repeatStep, pathCount);
+                } else if (optimizableRepeatStep(repeatSteps)) {
+                    handleRepeatStep(repeatStep, pathCount);
                 } else {
                     this.currentReplacedStep.addLabel((pathCount) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
                     return false;
                 }
-            } else if (step instanceof OptionalStep) {
-                if (!unoptimizableOptionalStep((OptionalStep<?>) step)) {
+            } else if (step instanceof OptionalStep optionalStep) {
+                if (!unoptimizableOptionalStep(optionalStep)) {
                     this.optionalStepStack.clear();
-                    handleOptionalStep(1, (OptionalStep<?>) step, this.traversal, pathCount);
+                    handleOptionalStep(1, optionalStep, this.traversal, pathCount);
                     this.optionalStepStack.clear();
                     //after choose steps the optimization starts over in VertexStrategy
                     this.reset = true;
                 } else {
                     return false;
                 }
-            } else if (step instanceof ChooseStep) {
-                if (!unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
+            } else if (step instanceof ChooseStep chooseStep) {
+                if (!unoptimizableChooseStep(chooseStep)) {
                     this.chooseStepStack.clear();
-                    handleChooseStep(1, (ChooseStep<?, ?, ?>) step, this.traversal, pathCount);
+                    handleChooseStep(1, chooseStep, this.traversal, pathCount);
                     this.chooseStepStack.clear();
                     //after choose steps the optimization starts over
                     this.reset = true;
@@ -436,6 +441,24 @@ public abstract class BaseStrategy {
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
+    private void handleRecursiveRepeatStep(RepeatStep repeatStep, MutableInt pathCount) {
+        Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
+        List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
+        VertexStep vertexStep = (VertexStep) repeatTraversalSteps.get(0);
+
+        this.currentReplacedStep = ReplacedStep.from(
+                this.sqlgGraph.getTopology(),
+                vertexStep,
+                pathCount.getValue()
+        );
+        this.currentReplacedStep.setRecursiveRepeatStepConfig(new RecursiveRepeatStepConfig());
+        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        int index = TraversalHelper.stepIndex(repeatStep, this.traversal);
+        if (index != -1) {
+            this.traversal.removeStep(repeatStep);
+        }
+    }
+
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount, boolean notStep) {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
@@ -443,7 +466,7 @@ public abstract class BaseStrategy {
                 pathCount.getValue()
         );
         //Important to add the replacedStep before collecting the additional steps.
-        //In particular the orderGlobalStep needs to the currentStepDepth setted.
+        //In particular the orderGlobalStep needs to have the currentStepDepth set.
         ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         handleHasSteps(stepIterator, pathCount.getValue());
         handleOrderGlobalSteps(stepIterator, pathCount);
@@ -683,14 +706,15 @@ public abstract class BaseStrategy {
                 }
                 iterator.remove();
                 countToGoPrevious--;
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing
-            } else {
-                for (int i = 0; i < countToGoPrevious; i++) {
-                    iterator.previous();
+            } else //noinspection StatementWithEmptyBody
+                if (currentStep instanceof IdentityStep) {
+                    // do nothing
+                } else {
+                    for (int i = 0; i < countToGoPrevious; i++) {
+                        iterator.previous();
+                    }
+                    break;
                 }
-                break;
-            }
         }
     }
 
@@ -766,8 +790,7 @@ public abstract class BaseStrategy {
                     }
                     iterator.previous();
                     Step previousStep = iterator.previous();
-                    if (previousStep instanceof SelectOneStep) {
-                        SelectOneStep selectOneStep = (SelectOneStep) previousStep;
+                    if (previousStep instanceof SelectOneStep selectOneStep) {
                         String key = (String) selectOneStep.getScopeKeys().iterator().next();
                         this.currentReplacedStep.getSqlgComparatorHolder().setPrecedingSelectOneLabel(key);
                         @SuppressWarnings("unchecked")
@@ -841,14 +864,15 @@ public abstract class BaseStrategy {
                     iterator.remove();
                     countToGoPrevious--;
                 }
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing
-            } else {
-                for (int i = 0; i < countToGoPrevious; i++) {
-                    iterator.previous();
+            } else //noinspection StatementWithEmptyBody
+                if (currentStep instanceof IdentityStep) {
+                    // do nothing
+                } else {
+                    for (int i = 0; i < countToGoPrevious; i++) {
+                        iterator.previous();
+                    }
+                    break;
                 }
-                break;
-            }
         }
     }
 
@@ -956,7 +980,7 @@ public abstract class BaseStrategy {
         //noinspection LoopStatementThatDoesntLoop
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
-            if (step instanceof RangeGlobalStep) {
+            if (step instanceof RangeGlobalStep<?> rgs) {
                 //add the label if any
                 if (fromStep instanceof SelectStep || fromStep instanceof SelectOneStep) {
                     //this is for blah().select("x").limit(1).as("y")
@@ -973,7 +997,6 @@ public abstract class BaseStrategy {
                 if (this.traversal.getSteps().contains(step)) {
                     this.traversal.removeStep(step);
                 }
-                RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
                 long high = rgs.getHighRange();
                 if (high == -1) {
                     //skip step
@@ -1261,11 +1284,11 @@ public abstract class BaseStrategy {
         List<Step> optionalTraversalSteps = new ArrayList<>(optionalTraversal.getSteps());
 
         //Can not optimize if the traversal contains a RangeGlobalStep
-        List<Step> rangeGlobalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());
+        List<Step> rangeGlobalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).toList();
         if (rangeGlobalSteps.size() > 1) {
             return true;
         }
-        if (rangeGlobalSteps.size() > 0) {
+        if (!rangeGlobalSteps.isEmpty()) {
             Step rangeGlobalStep = rangeGlobalSteps.get(0);
             //Only if the rangeGlobalStep is the last step can it be optimized
             if (optionalTraversalSteps.get(optionalTraversalSteps.size() - 1) != rangeGlobalStep) {
@@ -1273,9 +1296,7 @@ public abstract class BaseStrategy {
             }
         }
 
-        ListIterator<Step> stepListIterator = optionalTraversalSteps.listIterator();
-        while (stepListIterator.hasNext()) {
-            Step internalOptionalStep = stepListIterator.next();
+        for (Step internalOptionalStep : optionalTraversalSteps) {
             if (!(internalOptionalStep instanceof VertexStep || internalOptionalStep instanceof EdgeVertexStep ||
                     internalOptionalStep instanceof EdgeOtherVertexStep || internalOptionalStep instanceof ComputerAwareStep.EndStep ||
                     internalOptionalStep instanceof OptionalStep || internalOptionalStep instanceof HasStep ||
@@ -1284,7 +1305,7 @@ public abstract class BaseStrategy {
             }
         }
 
-        List<Step> optionalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(OptionalStep.class)).collect(Collectors.toList());
+        List<Step> optionalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(OptionalStep.class)).toList();
         for (Step step : optionalSteps) {
             if (unoptimizableOptionalStep((OptionalStep<?>) step)) {
                 return true;
@@ -1378,12 +1399,55 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private boolean unoptimizableRepeatStep() {
-        List<RepeatStep> repeatSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, this.traversal);
-        boolean hasUntil = repeatSteps.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(repeatStep -> repeatStep.getUntilTraversal() != null);
+    private boolean isRecursiveRepeatStep(List<RepeatStep> repeatSteps, RepeatStep repeatStep) {
+        Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
+        List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
+        if (repeatTraversalSteps.size() == 3 &&
+                repeatTraversalSteps.get(0) instanceof VertexStep<?> vertexStep &&
+                repeatTraversalSteps.get(1) instanceof PathFilterStep<?> pathFilterStep &&
+                repeatTraversalSteps.get(2) instanceof RepeatStep.RepeatEndStep<?> repeatEndStep) {
+
+            String[] edgeLabels = vertexStep.getEdgeLabels();
+            if (edgeLabels.length == 1) {
+                String _edgeLabel = edgeLabels[0];
+                Optional<EdgeLabel> edgeLabelOpt = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel(_edgeLabel);
+                if (edgeLabelOpt.isPresent()) {
+                    EdgeLabel recursiveEdgeLabel = edgeLabelOpt.get();
+                    Set<VertexLabel> inVertexLabels = recursiveEdgeLabel.getInVertexLabels();
+                    Set<VertexLabel> outVertexLabels = recursiveEdgeLabel.getOutVertexLabels();
+                    if (inVertexLabels.size() == 1 && outVertexLabels.size() == 1 && inVertexLabels.equals(outVertexLabels)) {
+
+                        Traversal.Admin<?, ?> untilTraversal = repeatStep.getUntilTraversal();
+                        List<Step> untilTraversalSteps = untilTraversal.getSteps();
+                        if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof NotStep<?> notStep) {
+                            List<? extends Traversal.Admin<?, ?>> notStepTraverals = notStep.getLocalChildren();
+                            if (notStepTraverals.size() == 1) {
+                                Traversal.Admin notStepTraversal = notStepTraverals.get(0);
+                                List<Step> notSteps = notStepTraversal.getSteps();
+                                if (notSteps.size() == 2 &&
+                                        notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
+                                        notSteps.get(1) instanceof PathFilterStep<?> notPathFilterStep) {
+
+                                    String[] notEdgeLabels = notVertexStep.getEdgeLabels();
+                                    if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {
+
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean optimizableRepeatStep(List<RepeatStep> repeatSteps) {
+        boolean hasUntil = repeatSteps.stream().allMatch(repeatStep -> repeatStep.getUntilTraversal() != null);
         boolean hasUnoptimizableUntil = false;
         if (hasUntil) {
-            hasUnoptimizableUntil = repeatSteps.stream().filter(s -> s.getClass().equals(RepeatStep.class)).noneMatch(repeatStep -> repeatStep.getUntilTraversal() instanceof LoopTraversal);
+            hasUnoptimizableUntil = repeatSteps.stream().noneMatch(repeatStep -> repeatStep.getUntilTraversal() instanceof LoopTraversal);
         }
         boolean badRepeat = !hasUntil || hasUnoptimizableUntil;
         //Check if the repeat step only contains optimizable steps
@@ -1392,20 +1456,20 @@ public abstract class BaseStrategy {
             for (Step step : repeatSteps) {
                 RepeatStep repeatStep = (RepeatStep) step;
                 @SuppressWarnings("unchecked")
-                List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+                List<Traversal.Admin> repeatTraversals = repeatStep.getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
                 @SuppressWarnings("unchecked")
                 List<Step> repeatInternalSteps = admin.getSteps();
                 collectedRepeatInternalSteps.addAll(repeatInternalSteps);
             }
             if (collectedRepeatInternalSteps.stream().map(s -> s.getClass()).anyMatch(c -> c.equals(RepeatStep.class))) {
-                return true;
+                return false;
             } else {
-                return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
+                return collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
                         .allMatch((s) -> isReplaceableStep(s.getClass()));
             }
         } else {
-            return true;
+            return false;
         }
     }
 
@@ -1544,8 +1608,7 @@ public abstract class BaseStrategy {
             } else if (valueTraversalSteps.size() == 2) {
                 Step one = valueTraversalSteps.get(0);
                 Step two = valueTraversalSteps.get(1);
-                if (one instanceof PropertiesStep && two instanceof ReducingBarrierStep) {
-                    PropertiesStep propertiesStep = (PropertiesStep) one;
+                if (one instanceof PropertiesStep propertiesStep && two instanceof ReducingBarrierStep) {
                     List<String> aggregationFunctionProperty = getRestrictedProperties(propertiesStep);
                     if (aggregationFunctionProperty == null) {
                         return false;
@@ -1612,10 +1675,4 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    public boolean handleFoldStep(ReplacedStep<?, ?> replacedStep, FoldStep<?, ?> foldStep) {
-        SqlgFoldStep<?, ?> sqlgFoldStep = new SqlgFoldStep(this.traversal, foldStep.getSeedSupplier(), foldStep.isListFold(), foldStep.getBiOperator());
-        //noinspection unchecked
-        TraversalHelper.replaceStep((Step) foldStep, sqlgFoldStep, this.traversal);
-        return false;
-    }
 }

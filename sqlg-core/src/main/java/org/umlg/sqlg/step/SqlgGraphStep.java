@@ -196,7 +196,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
-        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
+        Preconditions.checkState(!this.replacedSteps.isEmpty(), "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = prepare();
         return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
@@ -248,13 +248,13 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
 
     @SuppressWarnings("Duplicates")
     @Override
-    public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep) {
+    public ReplacedStepTree<S, E>.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
         if (this.replacedStepTree == null) {
             //the first root node
-            this.replacedStepTree = new ReplacedStepTree(replacedStep);
+            this.replacedStepTree = new ReplacedStepTree<>(replacedStep);
         } else {
             this.replacedStepTree.addReplacedStep(replacedStep);
         }

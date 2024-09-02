@@ -27,7 +27,7 @@ import java.util.ListIterator;
 @SuppressWarnings("rawtypes")
 public class GraphStrategy extends BaseStrategy {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphStrategy.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphStrategy.class);
 
     private GraphStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
@@ -46,7 +46,7 @@ public class GraphStrategy extends BaseStrategy {
             this.sqlgGraph.tx().flush();
         }
         if (this.canNotBeOptimized()) {
-            logger.debug("gremlin not optimized due to path or tree step. " + this.traversal + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            LOGGER.debug("gremlin not optimized due to path or tree step. {}\nPath to gremlin:\n{}", this.traversal, ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
         combineSteps();

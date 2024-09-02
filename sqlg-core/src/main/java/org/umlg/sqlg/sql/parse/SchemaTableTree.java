@@ -113,6 +113,8 @@ public class SchemaTableTree {
     private boolean hasIdentifierPrimaryKeyInHierarchy;
     private int hashCode = -1;
 
+    private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
+
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
@@ -565,7 +567,8 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             ReplacedStep<?, ?> replacedStep,
-            Set<String> labels) {
+            Set<String> labels,
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
         return addChild(
                 schemaTable,
                 direction,
@@ -585,7 +588,8 @@ public class SchemaTableTree {
                 replacedStep.isLeftJoin(),
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
-                labels);
+                labels,
+                recursiveRepeatStepConfig);
     }
 
     SchemaTableTree addChild(
@@ -593,7 +597,8 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             ReplacedStep<?, ?> replacedStep,
-            Set<String> labels) {
+            Set<String> labels,
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
 
         Preconditions.checkState(replacedStep.getStep() instanceof VertexStep, "addChild can only be called for a VertexStep, found %s", replacedStep.getStep().getClass().getSimpleName());
         //Do not emit the edge schema table for a vertex step.
@@ -625,7 +630,8 @@ public class SchemaTableTree {
                 replacedStep.isLeftJoin(),
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
-                labels);
+                labels,
+                recursiveRepeatStepConfig);
     }
 
     private SchemaTableTree addChild(
@@ -647,7 +653,8 @@ public class SchemaTableTree {
             boolean leftJoin,
             boolean outerLeftJoin,
             boolean drop,
-            Set<String> labels) {
+            Set<String> labels,
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
 
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth);
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(EDGE_PREFIX)) ||
@@ -671,6 +678,7 @@ public class SchemaTableTree {
         schemaTableTree.setRestrictedProperties(restrictedProperties);
         schemaTableTree.aggregateFunction = aggregateFunction;
         schemaTableTree.groupBy = groupBy;
+        schemaTableTree.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
         return schemaTableTree;
     }
 
@@ -762,11 +770,13 @@ public class SchemaTableTree {
 
     public String constructSql(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
-
         //If the same element occurs multiple times in the stack then the sql needs to be different.
         //This is because the same element can not be joined on more than once in sql
         //The way to overcome this is to break up the path in select sections with no duplicates and then join them together.
-        if (duplicatesInStack(distinctQueryStack)) {
+
+        if (distinctQueryStack.size() == 3 && recursiveQuery(distinctQueryStack)) {
+            return constructRecursiveQuery(distinctQueryStack);
+        } else if (duplicatesInStack(distinctQueryStack)) {
             List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
             return constructDuplicatePathSql(subQueryStacks, Collections.emptySet());
         } else {
@@ -948,6 +958,10 @@ public class SchemaTableTree {
             columnStartIndex = columnList.reindexColumnsExcludeForeignKey(columnStartIndex, stackContainsAggregate);
         }
         return result.toString();
+    }
+
+    private String constructRecursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        return "//TODO";
     }
 
     /**
@@ -1778,6 +1792,10 @@ public class SchemaTableTree {
             return this.parent.walkUp(predicate);
         }
         return null;
+    }
+
+    public boolean recursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        return distinctQueryStack.get(1).recursiveRepeatStepConfig != null;
     }
 
     /**
@@ -3112,47 +3130,46 @@ public class SchemaTableTree {
                 return false;
             }
         }
-        if (this.restrictedProperties == null) {
-            return true;
+        if (this.restrictedProperties != null) {
+            // explicit restriction
+            if (!this.hasIDPrimaryKey && hasAggregateFunction()) {
+                return this.restrictedProperties.contains(property);
+            } else {
+                return !this.identifiers.contains(property) && this.restrictedProperties.contains(property);
+            }
         }
-        // explicit restriction
-        if (!this.hasIDPrimaryKey && hasAggregateFunction()) {
-            return this.restrictedProperties.contains(property);
-        } else {
-            return !this.identifiers.contains(property) && this.restrictedProperties.contains(property);
-        }
+        return true;
     }
 
     /**
      * calculate property restrictions from explicit restrictions and required properties
      */
     private void calculatePropertyRestrictions() {
-        if (this.restrictedProperties == null) {
-            return;
-        }
-        // we use aliases for ordering, so we need the property in the select clause
-        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.dbComparators) {
+        if (this.restrictedProperties != null) {
+            // we use aliases for ordering, so we need the property in the select clause
+            for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.dbComparators) {
 
-            if (comparator.getValue1() instanceof ElementValueComparator) {
-                this.restrictedProperties.add(((ElementValueComparator<?>) comparator.getValue1()).getPropertyKey());
+                if (comparator.getValue1() instanceof ElementValueComparator) {
+                    this.restrictedProperties.add(((ElementValueComparator<?>) comparator.getValue1()).getPropertyKey());
 
-            } else if ((comparator.getValue0() instanceof ValueTraversal<?, ?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
-                    && comparator.getValue1() instanceof Order) {
-                Traversal.Admin<?, ?> t = comparator.getValue0();
-                String key;
-                if (t instanceof ValueTraversal<?, ?> elementValueTraversal) {
-                    key = elementValueTraversal.getPropertyKey();
-                } else {
-                    TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
-                    // see calculateLabeledAliasId
-                    if (tokenTraversal.getToken().equals(T.id)) {
-                        key = Topology.ID;
+                } else if ((comparator.getValue0() instanceof ValueTraversal<?, ?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
+                        && comparator.getValue1() instanceof Order) {
+                    Traversal.Admin<?, ?> t = comparator.getValue0();
+                    String key;
+                    if (t instanceof ValueTraversal<?, ?> elementValueTraversal) {
+                        key = elementValueTraversal.getPropertyKey();
                     } else {
-                        key = tokenTraversal.getToken().getAccessor();
+                        TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
+                        // see calculateLabeledAliasId
+                        if (tokenTraversal.getToken().equals(T.id)) {
+                            key = Topology.ID;
+                        } else {
+                            key = tokenTraversal.getToken().getAccessor();
+                        }
                     }
-                }
-                if (key != null) {
-                    this.restrictedProperties.add(key);
+                    if (key != null) {
+                        this.restrictedProperties.add(key);
+                    }
                 }
             }
         }

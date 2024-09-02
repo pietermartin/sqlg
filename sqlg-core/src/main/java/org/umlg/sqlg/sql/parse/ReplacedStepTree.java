@@ -12,10 +12,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
 import org.umlg.sqlg.strategy.BaseStrategy;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -71,12 +68,14 @@ public class ReplacedStepTree<S, E> {
         }
     }
 
-    void walkReplacedSteps(Set<SchemaTableTree> schemaTableTrees) {
+    void walkReplacedSteps(SchemaTableTree schemaTableTree) {
         //The tree only has one linear path from root to the deepest leaf node.
         //This represents the regular path where each ReplacedStep goes one step deeper down the graph.
         //First build the SchemaTableTrees for this path.
         //The other nodes in this ReplacedStepTree are nodes that need to join onto the left join nodes coming from optional steps.
         List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+        schemaTableTrees.add(schemaTableTree);
 
         for (ReplacedStep<S, E> replacedStep : replacedSteps) {
             //skip the graph step
@@ -138,9 +137,8 @@ public class ReplacedStepTree<S, E> {
 //            }
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
                 Traversal.Admin<?, ?> traversal = objects.getValue0();
-                if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
+                if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep<?, ?> selectOneStep) {
                     //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
-                    SelectOneStep<?, ?> selectOneStep = (SelectOneStep<?, ?>) traversal.getSteps().get(0);
                     Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                     Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                     Preconditions.checkState(
