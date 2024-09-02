@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,7 +54,20 @@ public class GremlinParser {
         Preconditions.checkArgument(!rootReplacedStep.isGraphStep(), "Expected VertexStep, found GraphStep");
 
         //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
-        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedStepTree.getDepth(), rootReplacedStep.isIdOnly());
+        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(
+                this.sqlgGraph,
+                null,
+                schemaTable,
+                null,
+                schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP,
+                0,
+                replacedStepTree.getDepth(),
+                rootReplacedStep.isIdOnly(),
+                new ArrayList<>(),
+                new ArrayList<>(),
+                null,
+                new ArrayList<>()
+        );
         rootSchemaTableTree.setOptionalLeftJoin(rootReplacedStep.isLeftJoin());
         rootSchemaTableTree.setEmit(rootReplacedStep.isEmit());
         rootSchemaTableTree.setUntilFirst(rootReplacedStep.isUntilFirst());
@@ -63,7 +77,6 @@ public class GremlinParser {
         rootSchemaTableTree.setAggregateFunction(rootReplacedStep.getAggregateFunction());
         rootSchemaTableTree.setGroupBy(rootReplacedStep.getGroupBy());
 
-        rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
         replacedStepTree.walkReplacedSteps(rootSchemaTableTree);
         rootSchemaTableTree.removeNodesInvalidatedByHas();
         rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth());

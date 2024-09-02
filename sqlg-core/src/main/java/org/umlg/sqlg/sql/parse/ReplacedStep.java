@@ -117,11 +117,11 @@ public class ReplacedStep<S, E> {
     }
 
     List<HasContainer> getHasContainers() {
-        return this.hasContainers;
+        return Collections.unmodifiableList(this.hasContainers);
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {
-        return this.andOrHasContainers;
+        return Collections.unmodifiableList(this.andOrHasContainers);
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
@@ -578,10 +578,11 @@ public class ReplacedStep<S, E> {
         }
         SchemaTableTree schemaTableTree = new SchemaTableTree(
                 sqlgGraph,
+                null,
                 schemaTable,
                 0,
                 schemaTableTreeHasContainers,
-                this.andOrHasContainers,
+                this.getAndOrHasContainers(),
                 this.sqlgComparatorHolder,
                 this.sqlgComparatorHolder.getComparators(),
                 this.sqlgRangeHolder,

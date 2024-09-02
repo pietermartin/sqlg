@@ -54,14 +54,14 @@ public class SchemaTableTree {
     private final Map<String, Map<String, PropertyDefinition>> filteredAllTables;
     private final int replacedStepDepth;
     private final boolean hasIDPrimaryKey;
-    private SchemaTableTree parent;
+    private final SchemaTableTree parent;
     //The root node does not have a direction. For the other nodes it indicates the direction from its parent to it.
-    private Direction direction;
-    private STEP_TYPE stepType;
-    private List<HasContainer> hasContainers;
-    private List<AndOrHasContainer> andOrHasContainers;
-    private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
-    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
+    private final Direction direction;
+    private final STEP_TYPE stepType;
+    private final List<HasContainer> hasContainers;
+    private final List<AndOrHasContainer> andOrHasContainers;
+    private final SqlgComparatorHolder sqlgComparatorHolder;
+    private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
     //labels are immutable
     private Set<String> labels;
     private Set<String> realLabels;
@@ -114,19 +114,36 @@ public class SchemaTableTree {
 
     private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
-    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth, boolean idOnly) {
+    SchemaTableTree(
+            SqlgGraph sqlgGraph,
+            SchemaTableTree parent,
+            SchemaTable schemaTable,
+            Direction direction,
+            STEP_TYPE stepType,
+            int stepDepth,
+            int replacedStepDepth,
+            boolean idOnly,
+            List<HasContainer> hasContainers,
+            List<AndOrHasContainer> andOrHasContainers,
+            SqlgComparatorHolder sqlgComparatorHolder,
+            List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators) {
+
         this.sqlgGraph = sqlgGraph;
+        this.parent = parent;
         this.schemaTable = schemaTable;
+        this.direction = direction;
+        this.stepType = stepType;
         this.stepDepth = stepDepth;
-        this.hasContainers = new ArrayList<>();
-        this.andOrHasContainers = new ArrayList<>();
+        this.andOrHasContainers = andOrHasContainers;
         this.replacedStepDepth = replacedStepDepth;
-        this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         this.idOnly = idOnly;
+        this.hasContainers = hasContainers;
+        this.sqlgComparatorHolder = sqlgComparatorHolder;
+        this.dbComparators = new ArrayList<>(dbComparators);
     }
 
     /**
@@ -137,6 +154,7 @@ public class SchemaTableTree {
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      */
     public SchemaTableTree(SqlgGraph sqlgGraph,
+                           SchemaTableTree parent,
                            SchemaTable schemaTable,
                            int stepDepth,
                            List<HasContainer> hasContainers,
@@ -156,13 +174,15 @@ public class SchemaTableTree {
                            boolean idOnly
     ) {
         this.sqlgGraph = sqlgGraph;
+        this.parent = parent;
         this.schemaTable = schemaTable;
+        this.direction = null;
         this.stepDepth = stepDepth;
-        this.hasContainers = hasContainers;
+        this.hasContainers = new ArrayList<>(hasContainers);
         this.andOrHasContainers = andOrHasContainers;
         this.replacedStepDepth = replacedStepDepth;
         this.sqlgComparatorHolder = sqlgComparatorHolder;
-        this.dbComparators = dbComparators;
+        this.dbComparators = new ArrayList<>(dbComparators);
         this.sqlgRangeHolder = sqlgRangeHolder;
         this.labels = Collections.unmodifiableSet(labels);
         this.stepType = stepType;
@@ -659,19 +679,45 @@ public class SchemaTableTree {
             Set<String> labels,
             RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
 
-        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth, idOnly);
+        SchemaTableTree schemaTableTree;
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(VERTEX_PREFIX))) {
-            schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
-            schemaTableTree.andOrHasContainers = new ArrayList<>(andOrHasContainers);
-            schemaTableTree.sqlgComparatorHolder = sqlgComparatorHolder;
-            schemaTableTree.dbComparators = new ArrayList<>(dbComparators);
+
+            schemaTableTree = new SchemaTableTree(
+                    this.sqlgGraph,
+                    this,
+                    schemaTable,
+                    direction,
+                    isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP,
+                    stepDepth,
+                    this.replacedStepDepth,
+                    idOnly,
+                    new ArrayList<>(hasContainers),
+                    andOrHasContainers,
+                    sqlgComparatorHolder,
+                    new ArrayList<>(dbComparators)
+            );
+
             schemaTableTree.sqlgRangeHolder = sqlgRangeHolder;
+        } else {
+
+            schemaTableTree = new SchemaTableTree(
+                    this.sqlgGraph,
+                    this,
+                    schemaTable,
+                    direction,
+                    isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP,
+                    stepDepth,
+                    this.replacedStepDepth,
+                    idOnly,
+                    new ArrayList<>(),
+                    new ArrayList<>(),
+                    sqlgComparatorHolder,
+                    new ArrayList<>()
+            );
+
         }
-        schemaTableTree.parent = this;
-        schemaTableTree.direction = direction;
         this.children.add(schemaTableTree);
-        schemaTableTree.stepType = isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP;
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
@@ -3061,10 +3107,6 @@ public class SchemaTableTree {
         return this.stepType;
     }
 
-    void setStepType(STEP_TYPE stepType) {
-        this.stepType = stepType;
-    }
-
     public List<Pair<RecordId.ID, Long>> getParentIdsAndIndexes() {
         return this.parentIdsAndIndexes;
     }
@@ -3074,7 +3116,7 @@ public class SchemaTableTree {
     }
 
     public void removeDbComparators() {
-        this.dbComparators = new ArrayList<>();
+        this.dbComparators.clear();
         for (SchemaTableTree child : this.children) {
             child.removeDbComparators();
         }
@@ -3122,7 +3164,7 @@ public class SchemaTableTree {
         }
         if (this.restrictedProperties.isEmpty() && this.idOnly) {
             return false;
-        } else if (this.restrictedProperties.isEmpty() ) {
+        } else if (this.restrictedProperties.isEmpty()) {
             return true;
         } else {
             // explicit restriction
