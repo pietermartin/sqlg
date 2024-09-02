@@ -53,13 +53,13 @@ public class GremlinParser {
         Preconditions.checkArgument(!rootReplacedStep.isGraphStep(), "Expected VertexStep, found GraphStep");
 
         //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
-        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedStepTree.getDepth());
+        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedStepTree.getDepth(), rootReplacedStep.isIdOnly());
         rootSchemaTableTree.setOptionalLeftJoin(rootReplacedStep.isLeftJoin());
         rootSchemaTableTree.setEmit(rootReplacedStep.isEmit());
         rootSchemaTableTree.setUntilFirst(rootReplacedStep.isUntilFirst());
         rootSchemaTableTree.initializeAliasColumnNameMaps();
 
-        rootSchemaTableTree.setRestrictedProperties(rootReplacedStep.getRestrictedProperties());
+        rootSchemaTableTree.getRestrictedProperties().addAll(rootReplacedStep.getRestrictedProperties());
         rootSchemaTableTree.setAggregateFunction(rootReplacedStep.getAggregateFunction());
         rootSchemaTableTree.setGroupBy(rootReplacedStep.getGroupBy());
 

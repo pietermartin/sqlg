@@ -59,12 +59,8 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
                     }
                 }
                 if (referTo instanceof ReplacedStep<?, ?> replacedStep) {
-                    if (replacedStep.getRestrictedProperties() == null) {
-                        replacedStep.setRestrictedProperties(new HashSet<>());
-                    }
                     replacedStep.getRestrictedProperties().addAll(restrict);
                 }
-
 
             }
             previous = step;

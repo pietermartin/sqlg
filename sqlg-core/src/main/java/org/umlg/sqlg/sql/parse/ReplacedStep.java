@@ -70,7 +70,7 @@ public class ReplacedStep<S, E> {
     /**
      * restrict properties to only a subset if not null
      */
-    private Set<String> restrictedProperties = null;
+    private final Set<String> restrictedProperties = new HashSet<>();
 
     /**
      * If the query is a for sqlg_schema only. i.e. sqlgGraph.topology().V()....
@@ -596,7 +596,7 @@ public class ReplacedStep<S, E> {
                 groupBy,
                 idOnly
         );
-        schemaTableTree.setRestrictedProperties(getRestrictedProperties());
+        schemaTableTree.getRestrictedProperties().addAll(this.restrictedProperties);
         return schemaTableTree;
     }
 
@@ -648,7 +648,10 @@ public class ReplacedStep<S, E> {
     }
 
     private boolean passesRestrictedProperties(Map<String, PropertyDefinition> propertyDefinitionMap) {
-        if (this.isIdOnly() || this.restrictedProperties == null) {
+        if (this.isIdOnly()) {
+            return true;
+        }
+        if (this.restrictedProperties.isEmpty()) {
             return true;
         }
         for (String restrictedProperty : this.restrictedProperties) {
@@ -898,10 +901,6 @@ public class ReplacedStep<S, E> {
 
     public Set<String> getRestrictedProperties() {
         return restrictedProperties;
-    }
-
-    public void setRestrictedProperties(Set<String> restrictedColumns) {
-        this.restrictedProperties = restrictedColumns;
     }
 
     public void markForSqlgSchema() {

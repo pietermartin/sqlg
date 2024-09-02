@@ -308,9 +308,6 @@ public abstract class BaseStrategy {
             //noinspection unchecked,rawtypes
             TraversalHelper.replaceStep((Step) step, sqlgIdStep, traversal);
             this.currentReplacedStep.setIdOnly(true);
-            if (this.currentReplacedStep.getRestrictedProperties() == null) {
-                this.currentReplacedStep.setRestrictedProperties(new HashSet<>());
-            }
         }
         return true;
     }
@@ -337,11 +334,7 @@ public abstract class BaseStrategy {
             PropertyMapStep propertyMapStep = (PropertyMapStep) step;
             List<String> propertiesToRestrict = getRestrictedProperties(step);
             if (propertiesToRestrict != null) {
-                if (this.currentReplacedStep.getRestrictedProperties() == null) {
-                    this.currentReplacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
-                } else {
-                    this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
-                }
+                this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
                 TraversalRing traversalRing;
                 try {
                     Field f = propertyMapStep.getClass().getDeclaredField("traversalRing");
@@ -386,11 +379,7 @@ public abstract class BaseStrategy {
         }
         List<String> propertiesToRestrict = getRestrictedProperties(step);
         if (propertiesToRestrict != null) {
-            if (replacedStep.getRestrictedProperties() == null) {
-                replacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
-            } else {
-                replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
-            }
+            replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
         }
         PropertiesStep propertiesStep = (PropertiesStep) step;
         SqlgPropertiesStep sqlgPropertiesStep = new SqlgPropertiesStep(propertiesStep.getTraversal(), propertiesStep.getReturnType(), propertiesStep.getPropertyKeys());
@@ -420,11 +409,7 @@ public abstract class BaseStrategy {
         }
         List<String> propertiesToRestrict = getRestrictedProperties(step);
         if (propertiesToRestrict != null) {
-            if (replacedStep.getRestrictedProperties() == null) {
-                replacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
-            } else {
-                replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
-            }
+            replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
         }
         ElementMapStep elementMapStep = (ElementMapStep) step;
         SqlgElementMapStep sqlgPropertiesStep = new SqlgElementMapStep(elementMapStep.getTraversal(), elementMapStep.getPropertyKeys());
@@ -1541,7 +1526,7 @@ public abstract class BaseStrategy {
             if (groupByCountTraversal instanceof ValueTraversal) {
                 ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal) groupByCountTraversal;
                 groupByKeys.add(elementValueTraversal.getPropertyKey());
-                replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
+                replacedStep.getRestrictedProperties().addAll(groupByKeys);
             } else if (groupByCountTraversal instanceof TokenTraversal) {
                 TokenTraversal<?, ?> tokenTraversal = (TokenTraversal) groupByCountTraversal;
                 if (tokenTraversal.getToken() == T.label) {
@@ -1599,7 +1584,7 @@ public abstract class BaseStrategy {
                     replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.count, List.of()));
                     replacedStep.setGroupBy(groupByKeys);
                     if (!(groupByKeys.size() == 1 && groupByKeys.contains(T.label.getAccessor()))) {
-                        replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
+                        replacedStep.getRestrictedProperties().addAll(groupByKeys);
                     }
                     SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, GraphTraversal.Symbols.count, isPropertiesStep, SqlgGroupStep.REDUCTION.COUNT);
                     //noinspection unchecked
@@ -1619,11 +1604,7 @@ public abstract class BaseStrategy {
                     }
                     handlePropertiesStep(replacedStep, propertiesStep, aggregateOverTraversal);
 
-                    if (replacedStep.getRestrictedProperties() == null) {
-                        replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
-                    } else {
-                        replacedStep.getRestrictedProperties().addAll(groupByKeys);
-                    }
+                    replacedStep.getRestrictedProperties().addAll(groupByKeys);
                     replacedStep.setGroupBy(groupByKeys);
 
                     final SqlgGroupStep.REDUCTION reduction;

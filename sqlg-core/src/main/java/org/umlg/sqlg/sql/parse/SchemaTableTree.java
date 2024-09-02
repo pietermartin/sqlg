@@ -86,7 +86,6 @@ public class SchemaTableTree {
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
     private boolean localStep = false;
-    private boolean isIdStep = false;
     private boolean fakeEmit = false;
     /**
      * Indicates the DropStep.
@@ -100,7 +99,7 @@ public class SchemaTableTree {
     private SqlgRangeHolder sqlgRangeHolder;
     //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
     private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
-    private Set<String> restrictedProperties = null;
+    private final Set<String> restrictedProperties = new HashSet<>();
     private boolean eagerLoad = false;
 
     private List<String> groupBy = null;
@@ -115,7 +114,7 @@ public class SchemaTableTree {
 
     private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
-    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
+    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth, boolean idOnly) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
@@ -127,7 +126,7 @@ public class SchemaTableTree {
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
-        this.idOnly = false;
+        this.idOnly = idOnly;
     }
 
     /**
@@ -492,15 +491,15 @@ public class SchemaTableTree {
     private static boolean invalidateByRestrictedProperty(SchemaTableTree schemaTableTree) {
         if (schemaTableTree.idOnly) {
             return false;
-        } else if (schemaTableTree.getRestrictedProperties() != null) {
+        } else if (schemaTableTree.getRestrictedProperties().isEmpty()) {
+            return false;
+        } else {
             for (String restrictedProperty : schemaTableTree.getRestrictedProperties()) {
                 if (schemaTableTree.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(restrictedProperty)) {
                     return false;
                 }
             }
             return true;
-        } else {
-            return false;
         }
     }
 
@@ -569,6 +568,7 @@ public class SchemaTableTree {
             ReplacedStep<?, ?> replacedStep,
             Set<String> labels,
             RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+
         return addChild(
                 schemaTable,
                 direction,
@@ -588,6 +588,7 @@ public class SchemaTableTree {
                 replacedStep.isLeftJoin(),
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
+                replacedStep.isIdOnly(),
                 labels,
                 recursiveRepeatStepConfig);
     }
@@ -630,6 +631,7 @@ public class SchemaTableTree {
                 replacedStep.isLeftJoin(),
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
+                replacedStep.isIdOnly(),
                 labels,
                 recursiveRepeatStepConfig);
     }
@@ -653,10 +655,11 @@ public class SchemaTableTree {
             boolean leftJoin,
             boolean outerLeftJoin,
             boolean drop,
+            boolean idOnly,
             Set<String> labels,
             RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
 
-        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth);
+        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth, idOnly);
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
@@ -675,7 +678,7 @@ public class SchemaTableTree {
         schemaTableTree.optionalLeftJoin = leftJoin;
         schemaTableTree.outerLeftJoin = outerLeftJoin;
         schemaTableTree.drop = drop;
-        schemaTableTree.setRestrictedProperties(restrictedProperties);
+        schemaTableTree.getRestrictedProperties().addAll(restrictedProperties);
         schemaTableTree.aggregateFunction = aggregateFunction;
         schemaTableTree.groupBy = groupBy;
         schemaTableTree.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
@@ -3038,15 +3041,6 @@ public class SchemaTableTree {
         this.localStep = true;
     }
 
-    public boolean isIdStep() {
-        return isIdStep;
-    }
-
-    @SuppressWarnings("unused")
-    public void setIdStep(boolean idStep) {
-        isIdStep = idStep;
-    }
-
     public boolean isLocalBarrierStep() {
         return localBarrierStep;
     }
@@ -3110,10 +3104,6 @@ public class SchemaTableTree {
         return restrictedProperties;
     }
 
-    public void setRestrictedProperties(Set<String> restrictedColumns) {
-        this.restrictedProperties = restrictedColumns;
-    }
-
     /**
      * should we select the given property?
      *
@@ -3130,7 +3120,11 @@ public class SchemaTableTree {
                 return false;
             }
         }
-        if (this.restrictedProperties != null) {
+        if (this.restrictedProperties.isEmpty() && this.idOnly) {
+            return false;
+        } else if (this.restrictedProperties.isEmpty() ) {
+            return true;
+        } else {
             // explicit restriction
             if (!this.hasIDPrimaryKey && hasAggregateFunction()) {
                 return this.restrictedProperties.contains(property);
@@ -3138,14 +3132,13 @@ public class SchemaTableTree {
                 return !this.identifiers.contains(property) && this.restrictedProperties.contains(property);
             }
         }
-        return true;
     }
 
     /**
      * calculate property restrictions from explicit restrictions and required properties
      */
     private void calculatePropertyRestrictions() {
-        if (this.restrictedProperties != null) {
+        if (!this.restrictedProperties.isEmpty()) {
             // we use aliases for ordering, so we need the property in the select clause
             for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.dbComparators) {
 

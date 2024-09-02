@@ -402,8 +402,9 @@ public class TestPropertyValues extends BaseTest {
                 .skip(1);
 //                .values("name");
         printTraversalForm(traversal);
-        // name because explicitly requested, age because we order on it
-        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "name", "age");
+        // name because explicitly requested,
+        // age only gets added to restricted properties inside SchemaTableTree, NOT in ReplacedStep
+        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "name");
         Assert.assertTrue(traversal.hasNext());
         Assert.assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
     }
@@ -480,7 +481,6 @@ public class TestPropertyValues extends BaseTest {
      * @param t          the traversal
      * @param properties the properties
      */
-    @SuppressWarnings({"resource", "unchecked"})
     public static void checkRestrictedProperties(Class<? extends Step> stepType, Traversal<?, ?> t, int replacedStepCount, String... properties) {
         boolean found = false;
         for (Step<?, ?> s : ((Traversal.Admin<?, ?>) t).getSteps()) {
@@ -507,14 +507,13 @@ public class TestPropertyValues extends BaseTest {
      *
      * @param t the traversal, EVALUATED (ie call printTraversalForm or getSQL first)
      */
-    @SuppressWarnings({"resource", "unchecked"})
     private void checkNoRestrictedProperties(Traversal<?, ?> t) {
         boolean found = false;
         for (Step<?, ?> s : ((Traversal.Admin<?, ?>) t).getSteps()) {
             if (s instanceof SqlgGraphStep) {
                 SqlgGraphStep<?, SqlgElement> gs = (SqlgGraphStep<?, SqlgElement>) s;
                 ReplacedStep<?, ?> rs = gs.getReplacedSteps().get(gs.getReplacedSteps().size() - 1);
-                Assert.assertNull(String.valueOf(rs.getRestrictedProperties()), rs.getRestrictedProperties());
+                Assert.assertTrue(String.valueOf(rs.getRestrictedProperties()), rs.getRestrictedProperties().isEmpty());
                 found = true;
             }
         }

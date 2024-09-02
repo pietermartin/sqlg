@@ -68,7 +68,7 @@ public class SqlgSelectOneStepStrategy extends AbstractTraversalStrategy<Travers
                         if (selectOneStep.getNextStep() instanceof PropertiesStep<?> propertiesStep) {
                             for (String propertyKey : propertiesStep.getPropertyKeys()) {
                                 ReplacedStep replacedStep = previous.getReplacedSteps().get(previous.getReplacedSteps().size() - 1);
-                                if (replacedStep.getRestrictedProperties() != null && !replacedStep.getRestrictedProperties().isEmpty()) {
+                                if (!replacedStep.getRestrictedProperties().isEmpty()) {
                                     replacedStep.getRestrictedProperties().add(propertyKey);
                                 }
                             }
@@ -81,7 +81,7 @@ public class SqlgSelectOneStepStrategy extends AbstractTraversalStrategy<Travers
                         if (selectOneStep.getNextStep() instanceof PropertiesStep<?> propertiesStep) {
                             for (String propertyKey : propertiesStep.getPropertyKeys()) {
                                 ReplacedStep replacedStep = previous.getReplacedSteps().get(previous.getReplacedSteps().size() - 1);
-                                if (replacedStep.getRestrictedProperties() != null && !replacedStep.getRestrictedProperties().isEmpty()) {
+                                if (!replacedStep.getRestrictedProperties().isEmpty()) {
                                     replacedStep.getRestrictedProperties().add(propertyKey);
                                 }
                             }
