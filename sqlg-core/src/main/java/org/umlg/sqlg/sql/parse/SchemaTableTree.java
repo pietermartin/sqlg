@@ -91,15 +91,13 @@ public class SchemaTableTree {
     private final boolean idOnly;
     private final RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
-
+    //NON FINAL properties
     //labels are immutable
     private Set<String> labels;
     private Set<String> realLabelsCache;
     private String reducedLabels;
     private String labeledAliasId;
 
-
-    //NON FINAL properties
     private boolean hasIdentifierPrimaryKeyInHierarchy;
     private int hashCode = -1;
     private boolean closed;
