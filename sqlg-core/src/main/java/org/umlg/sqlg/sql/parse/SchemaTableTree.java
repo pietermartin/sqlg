@@ -165,7 +165,7 @@ public class SchemaTableTree {
         this.localStep = localStep;
         this.localBarrierStep = localBarrierStep;
         this.sqlgRangeHolder = sqlgRangeHolder;
-        this.groupBy = groupBy == null ? null : Collections.unmodifiableList(groupBy);
+        this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
     }
 
     /**
@@ -215,7 +215,7 @@ public class SchemaTableTree {
         this.outerLeftJoin = false;
         this.drop = drop;
         this.aggregateFunction = aggregateFunction;
-        this.groupBy = groupBy == null ? null : Collections.unmodifiableList(groupBy);
+        this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         Pair<ListOrderedSet<String>, String> identifierAndDistributionColumn = setIdentifiersAndDistributionColumn();
         this.identifiers = identifierAndDistributionColumn.getLeft();
@@ -270,7 +270,7 @@ public class SchemaTableTree {
     private static String constructOuterGroupByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists, boolean dropStep) {
         SchemaTableTree lastSchemaTableTree = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast();
         StringBuilder result = new StringBuilder();
-        if (lastSchemaTableTree.groupBy != null && !lastSchemaTableTree.groupBy.isEmpty() && !lastSchemaTableTree.groupBy.get(0).equals(T.label.getAccessor())) {
+        if (!lastSchemaTableTree.groupBy.isEmpty() && !lastSchemaTableTree.groupBy.get(0).equals(T.label.getAccessor())) {
             result.append(lastSchemaTableTree.toOuterGroupByClause(sqlgGraph, "a" + subQueryLinkedLists.size()));
             if (!dropStep && subQueryLinkedLists.get(0).getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
                 result.append(",\n\t");
@@ -1374,8 +1374,7 @@ public class SchemaTableTree {
 
             //group by
             SchemaTableTree lastSchemaTableTree = distinctQueryStack.getLast();
-            if (lastSchemaTableTree.groupBy != null &&
-                    !lastSchemaTableTree.groupBy.isEmpty() &&
+            if (!lastSchemaTableTree.groupBy.isEmpty() &&
                     !lastSchemaTableTree.groupBy.get(0).equals(T.label.getAccessor())) {
 
                 singlePathSql.append(lastSchemaTableTree.toGroupByClause(this.sqlgGraph));
@@ -3179,7 +3178,7 @@ public class SchemaTableTree {
             //this is set to true for in-memory order by clauses where the property being ordered on needs to be in the result-set.
             return true;
         } else if (this.getAggregateFunction() != null && this.getAggregateFunction().getLeft().equals(GraphTraversal.Symbols.count)) {
-            if (this.groupBy == null || this.groupBy.contains(T.label.getAccessor())) {
+            if (this.groupBy.isEmpty() || this.groupBy.contains(T.label.getAccessor())) {
                 return false;
             }
         }
