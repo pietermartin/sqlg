@@ -12,7 +12,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Topology;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * List of column, managing serialization to SQL

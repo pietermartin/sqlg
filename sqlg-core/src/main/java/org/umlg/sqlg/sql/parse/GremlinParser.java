@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 
@@ -65,24 +66,28 @@ public class GremlinParser {
                 rootReplacedStep.isIdOnly(),
                 new ArrayList<>(),
                 new ArrayList<>(),
-                null,
+                new SqlgComparatorHolder(),
                 new ArrayList<>(),
                 rootReplacedStep.isUntilFirst(),
                 rootReplacedStep.isEmit(),
                 rootReplacedStep.isLeftJoin(),
-                false
+                false,
+                false,
+                true,
+                isSqlgLocalStepBarrierChild,
+                null,
+                rootReplacedStep.getGroupBy()
         );
+
         rootSchemaTableTree.initializeAliasColumnNameMaps();
 
         rootSchemaTableTree.getRestrictedProperties().addAll(rootReplacedStep.getRestrictedProperties());
         rootSchemaTableTree.setAggregateFunction(rootReplacedStep.getAggregateFunction());
-        rootSchemaTableTree.setGroupBy(rootReplacedStep.getGroupBy());
 
         replacedStepTree.walkReplacedSteps(rootSchemaTableTree);
         rootSchemaTableTree.removeNodesInvalidatedByHas();
         rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth());
-        rootSchemaTableTree.localStepTrue();
-        rootSchemaTableTree.setLocalBarrierStep(isSqlgLocalStepBarrierChild);
+
         return rootSchemaTableTree;
     }
 

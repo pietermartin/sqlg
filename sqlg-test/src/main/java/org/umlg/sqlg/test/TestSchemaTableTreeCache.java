@@ -95,6 +95,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
 //        boolean idOnly
         SchemaTableTree schemaTableTree1 = new SchemaTableTree(
                 this.sqlgGraph,
+                null,
                 SchemaTable.of("public", "V_A"),
                 0,
                 List.of(new HasContainer("key1", P.eq("what"))),

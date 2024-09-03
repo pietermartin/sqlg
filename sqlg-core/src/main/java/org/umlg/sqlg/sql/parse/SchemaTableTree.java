@@ -62,45 +62,29 @@ public class SchemaTableTree {
     private final List<AndOrHasContainer> andOrHasContainers;
     private final SqlgComparatorHolder sqlgComparatorHolder;
     private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
-    //labels are immutable
-    private Set<String> labels;
-    private Set<String> realLabelsCache;
-    private String reducedLabels;
     //untilFirst is for the repeatStep optimization
     private final boolean untilFirst;
-    //This counter must only ever be used on the root node of the schema table tree
-    //It is used to alias the select clauses
-    private int rootAliasCounter = 1;
-    //This counter is used for the within predicate when aliasing the temporary table
-    private int tmpTableAliasCounter = 1;
     private final boolean emit;
     //left join, as required by the optimized ChooseStep via the optional step
     private final boolean optionalLeftJoin;
     //indicates NotStep
     private final boolean outerLeftJoin;
-    //Only root SchemaTableTrees have these maps;
-    private AliasMapHolder aliasMapHolder;
-    private String labeledAliasId;
-    private ListOrderedSet<String> identifiers;
-    private String distributionColumn;
-    private boolean localStep = false;
-    private boolean fakeEmit = false;
+    private final ListOrderedSet<String> identifiers;
+    private final String distributionColumn;
+    private final boolean localStep;
     /**
      * Indicates the DropStep.
      */
-    private boolean drop;
+    private final boolean drop;
     //Indicates that the SchemaTableTree is a child of a SqlgLocalBarrierStep
-    private boolean localBarrierStep = false;
+    private final boolean localBarrierStep;
     /**
      * range limitation, if any
      */
-    private SqlgRangeHolder sqlgRangeHolder;
-    //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
-    private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
+    private final SqlgRangeHolder sqlgRangeHolder;
     private final Set<String> restrictedProperties = new HashSet<>();
-    private boolean eagerLoad = false;
 
-    private List<String> groupBy = null;
+    private final List<String> groupBy;
     private Pair<String, List<String>> aggregateFunction = null;
 
     //Indicates a IdStep, only the element id must be returned.
@@ -110,6 +94,26 @@ public class SchemaTableTree {
     private boolean hasIdentifierPrimaryKeyInHierarchy;
     private int hashCode = -1;
 
+    //labels are immutable
+    private Set<String> labels;
+    private Set<String> realLabelsCache;
+    private String reducedLabels;
+    private String labeledAliasId;
+
+
+    //NON FINAL properties
+    //Only root SchemaTableTrees have these maps;
+    private AliasMapHolder aliasMapHolder;
+    private boolean eagerLoad = false;
+    //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
+    private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
+
+    //This counter must only ever be used on the root node of the schema table tree
+    //It is used to alias the select clauses
+    private int rootAliasCounter = 1;
+    //This counter is used for the within predicate when aliasing the temporary table
+    private int tmpTableAliasCounter = 1;
+    private boolean fakeEmit = false;
     private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
     SchemaTableTree(
@@ -128,7 +132,12 @@ public class SchemaTableTree {
             boolean untilFirst,
             boolean emit,
             boolean optionalLeftJoin,
-            boolean outerLeftJoin) {
+            boolean outerLeftJoin,
+            boolean drop,
+            boolean localStep,
+            boolean localBarrierStep,
+            SqlgRangeHolder sqlgRangeHolder,
+            List<String> groupBy) {
 
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -140,7 +149,9 @@ public class SchemaTableTree {
         this.replacedStepDepth = replacedStepDepth;
         this.labels = Collections.emptySet();
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
-        setIdentifiersAndDistributionColumn();
+        Pair<ListOrderedSet<String>, String> identifierAndDistributionColumn = setIdentifiersAndDistributionColumn();
+        this.identifiers = identifierAndDistributionColumn.getLeft();
+        this.distributionColumn = identifierAndDistributionColumn.getRight();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         this.idOnly = idOnly;
         this.hasContainers = hasContainers;
@@ -150,6 +161,11 @@ public class SchemaTableTree {
         this.emit = emit;
         this.optionalLeftJoin = optionalLeftJoin;
         this.outerLeftJoin = outerLeftJoin;
+        this.drop = drop;
+        this.localStep = localStep;
+        this.localBarrierStep = localBarrierStep;
+        this.sqlgRangeHolder = sqlgRangeHolder;
+        this.groupBy = groupBy == null ? null : Collections.unmodifiableList(groupBy);
     }
 
     /**
@@ -159,25 +175,26 @@ public class SchemaTableTree {
      * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      */
-    public SchemaTableTree(SqlgGraph sqlgGraph,
-                           SchemaTableTree parent,
-                           SchemaTable schemaTable,
-                           int stepDepth,
-                           List<HasContainer> hasContainers,
-                           List<AndOrHasContainer> andOrHasContainers,
-                           SqlgComparatorHolder sqlgComparatorHolder,
-                           List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
-                           SqlgRangeHolder sqlgRangeHolder,
-                           STEP_TYPE stepType,
-                           boolean emit,
-                           boolean untilFirst,
-                           boolean optionalLeftJoin,
-                           boolean drop,
-                           int replacedStepDepth,
-                           Set<String> labels,
-                           Pair<String, List<String>> aggregateFunction,
-                           List<String> groupBy,
-                           boolean idOnly
+    public SchemaTableTree(
+            SqlgGraph sqlgGraph,
+            SchemaTableTree parent,
+            SchemaTable schemaTable,
+            int stepDepth,
+            List<HasContainer> hasContainers,
+            List<AndOrHasContainer> andOrHasContainers,
+            SqlgComparatorHolder sqlgComparatorHolder,
+            List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
+            SqlgRangeHolder sqlgRangeHolder,
+            STEP_TYPE stepType,
+            boolean emit,
+            boolean untilFirst,
+            boolean optionalLeftJoin,
+            boolean drop,
+            int replacedStepDepth,
+            Set<String> labels,
+            Pair<String, List<String>> aggregateFunction,
+            List<String> groupBy,
+            boolean idOnly
     ) {
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -198,12 +215,16 @@ public class SchemaTableTree {
         this.outerLeftJoin = false;
         this.drop = drop;
         this.aggregateFunction = aggregateFunction;
-        this.groupBy = groupBy;
+        this.groupBy = groupBy == null ? null : Collections.unmodifiableList(groupBy);
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
-        setIdentifiersAndDistributionColumn();
+        Pair<ListOrderedSet<String>, String> identifierAndDistributionColumn = setIdentifiersAndDistributionColumn();
+        this.identifiers = identifierAndDistributionColumn.getLeft();
+        this.distributionColumn = identifierAndDistributionColumn.getRight();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         initializeAliasColumnNameMaps();
         this.idOnly = idOnly;
+        this.localStep = false;
+        this.localBarrierStep = false;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -562,31 +583,40 @@ public class SchemaTableTree {
         this.labels = Collections.unmodifiableSet(newLabels);
     }
 
-    private void setIdentifiersAndDistributionColumn() {
+    private Pair<ListOrderedSet<String>, String> setIdentifiersAndDistributionColumn() {
+        ListOrderedSet<String> _identifiers;
+        String _distributionColumn;
         Supplier<IllegalStateException> illegalStateExceptionSupplier = () -> new IllegalStateException(String.format("Label '%s' must be present.", this.schemaTable.toString()));
         if (this.schemaTable.isVertexTable()) {
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getVertexLabel(
                     this.schemaTable.withOutPrefix().getSchema(),
                     this.schemaTable.withOutPrefix().getTable()
             ).orElseThrow(illegalStateExceptionSupplier);
-            this.identifiers = vertexLabel.getIdentifiers();
+//            this.identifiers = vertexLabel.getIdentifiers();
+            _identifiers = vertexLabel.getIdentifiers();
             if (vertexLabel.isDistributed()) {
-                this.distributionColumn = vertexLabel.getDistributionPropertyColumn().getName();
+//                this.distributionColumn = vertexLabel.getDistributionPropertyColumn().getName();
+                _distributionColumn = vertexLabel.getDistributionPropertyColumn().getName();
             } else {
-                this.distributionColumn = null;
+//                this.distributionColumn = null;
+                _distributionColumn = null;
             }
         } else {
             EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(
                     this.schemaTable.withOutPrefix().getSchema(),
                     this.schemaTable.withOutPrefix().getTable()
             ).orElseThrow(illegalStateExceptionSupplier);
-            this.identifiers = edgeLabel.getIdentifiers();
+//            this.identifiers = edgeLabel.getIdentifiers();
+            _identifiers = edgeLabel.getIdentifiers();
             if (edgeLabel.isDistributed()) {
-                this.distributionColumn = edgeLabel.getDistributionPropertyColumn().getName();
+//                this.distributionColumn = edgeLabel.getDistributionPropertyColumn().getName();
+                _distributionColumn = edgeLabel.getDistributionPropertyColumn().getName();
             } else {
-                this.distributionColumn = null;
+//                this.distributionColumn = null;
+                _distributionColumn = null;
             }
         }
+        return Pair.of(_identifiers, _distributionColumn);
     }
 
     SchemaTableTree addChild(
@@ -706,10 +736,14 @@ public class SchemaTableTree {
                     untilFirst,
                     emit,
                     leftJoin,
-                    outerLeftJoin
+                    outerLeftJoin,
+                    drop,
+                    false,
+                    false,
+                    sqlgRangeHolder,
+                    groupBy
             );
 
-            schemaTableTree.sqlgRangeHolder = sqlgRangeHolder;
         } else {
 
             schemaTableTree = new SchemaTableTree(
@@ -728,16 +762,19 @@ public class SchemaTableTree {
                     untilFirst,
                     emit,
                     leftJoin,
-                    outerLeftJoin
+                    outerLeftJoin,
+                    drop,
+                    false,
+                    false,
+                    null,
+                    groupBy
             );
 
         }
         this.children.add(schemaTableTree);
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
-        schemaTableTree.drop = drop;
         schemaTableTree.getRestrictedProperties().addAll(restrictedProperties);
         schemaTableTree.aggregateFunction = aggregateFunction;
-        schemaTableTree.groupBy = groupBy;
         schemaTableTree.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
         return schemaTableTree;
     }
@@ -3075,16 +3112,8 @@ public class SchemaTableTree {
         return this.localStep;
     }
 
-    void localStepTrue() {
-        this.localStep = true;
-    }
-
     public boolean isLocalBarrierStep() {
         return localBarrierStep;
-    }
-
-    public void setLocalBarrierStep(boolean localBarrierStep) {
-        this.localBarrierStep = localBarrierStep;
     }
 
     public boolean isFakeEmit() {
@@ -3104,7 +3133,7 @@ public class SchemaTableTree {
     }
 
     public void setParentIdsAndIndexes(List<Pair<RecordId.ID, Long>> parentIdsAndIndexes) {
-        this.parentIdsAndIndexes = parentIdsAndIndexes;
+        this.parentIdsAndIndexes = Collections.unmodifiableList(parentIdsAndIndexes);
     }
 
     public void removeDbComparators() {
@@ -3266,10 +3295,6 @@ public class SchemaTableTree {
         return groupBy;
     }
 
-    public void setGroupBy(List<String> groupBy) {
-        this.groupBy = groupBy;
-    }
-
     private String toGroupByClause(SqlgGraph sqlgGraph) {
         return "\nGROUP BY\n\t" + this.groupBy.stream()
                 .map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schemaTable.getSchema()) + "." +
@@ -3308,4 +3333,5 @@ public class SchemaTableTree {
         VERTEX_STEP,
         EDGE_VERTEX_STEP
     }
+
 }
