@@ -167,7 +167,7 @@ public class SchemaTableTree {
         this.localBarrierStep = localBarrierStep;
         this.sqlgRangeHolder = sqlgRangeHolder;
         this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
-        this.aggregateFunction = aggregateFunction;
+        this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
     }
 
     /**
@@ -216,7 +216,7 @@ public class SchemaTableTree {
         this.optionalLeftJoin = optionalLeftJoin;
         this.outerLeftJoin = false;
         this.drop = drop;
-        this.aggregateFunction = aggregateFunction;
+        this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
         this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         Pair<ListOrderedSet<String>, String> identifierAndDistributionColumn = setIdentifiersAndDistributionColumn();
