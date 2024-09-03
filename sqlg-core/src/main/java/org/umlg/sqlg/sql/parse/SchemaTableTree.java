@@ -90,9 +90,6 @@ public class SchemaTableTree {
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
 
-    private boolean closed;
-    private boolean hasIdentifierPrimaryKeyInHierarchy;
-    private int hashCode = -1;
 
     //labels are immutable
     private Set<String> labels;
@@ -102,6 +99,9 @@ public class SchemaTableTree {
 
 
     //NON FINAL properties
+    private boolean hasIdentifierPrimaryKeyInHierarchy;
+    private int hashCode = -1;
+    private boolean closed;
     //Only root SchemaTableTrees have these maps;
     private AliasMapHolder aliasMapHolder;
     private boolean eagerLoad = false;
