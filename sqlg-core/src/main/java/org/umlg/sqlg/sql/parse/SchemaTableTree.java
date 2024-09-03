@@ -89,6 +89,7 @@ public class SchemaTableTree {
 
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
+    private final RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
 
     //labels are immutable
@@ -114,7 +115,6 @@ public class SchemaTableTree {
     //This counter is used for the within predicate when aliasing the temporary table
     private int tmpTableAliasCounter = 1;
     private boolean fakeEmit = false;
-    private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
     SchemaTableTree(
             SqlgGraph sqlgGraph,
@@ -138,7 +138,8 @@ public class SchemaTableTree {
             boolean localBarrierStep,
             SqlgRangeHolder sqlgRangeHolder,
             List<String> groupBy,
-            Pair<String, List<String>> aggregateFunction) {
+            Pair<String, List<String>> aggregateFunction,
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
 
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -168,6 +169,7 @@ public class SchemaTableTree {
         this.sqlgRangeHolder = sqlgRangeHolder;
         this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
         this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
+        this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
     }
 
     /**
@@ -227,6 +229,7 @@ public class SchemaTableTree {
         this.idOnly = idOnly;
         this.localStep = false;
         this.localBarrierStep = false;
+        this.recursiveRepeatStepConfig = null;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -744,7 +747,8 @@ public class SchemaTableTree {
                     false,
                     sqlgRangeHolder,
                     groupBy,
-                    aggregateFunction
+                    aggregateFunction,
+                    recursiveRepeatStepConfig
             );
 
         } else {
@@ -771,14 +775,14 @@ public class SchemaTableTree {
                     false,
                     null,
                     groupBy,
-                    aggregateFunction
+                    aggregateFunction,
+                    recursiveRepeatStepConfig
             );
 
         }
         this.children.add(schemaTableTree);
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.getRestrictedProperties().addAll(restrictedProperties);
-        schemaTableTree.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
         return schemaTableTree;
     }
 
