@@ -85,7 +85,7 @@ public class SchemaTableTree {
     private final Set<String> restrictedProperties = new HashSet<>();
 
     private final List<String> groupBy;
-    private Pair<String, List<String>> aggregateFunction = null;
+    private final Pair<String, List<String>> aggregateFunction;
 
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
@@ -137,7 +137,8 @@ public class SchemaTableTree {
             boolean localStep,
             boolean localBarrierStep,
             SqlgRangeHolder sqlgRangeHolder,
-            List<String> groupBy) {
+            List<String> groupBy,
+            Pair<String, List<String>> aggregateFunction) {
 
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -166,6 +167,7 @@ public class SchemaTableTree {
         this.localBarrierStep = localBarrierStep;
         this.sqlgRangeHolder = sqlgRangeHolder;
         this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
+        this.aggregateFunction = aggregateFunction;
     }
 
     /**
@@ -741,7 +743,8 @@ public class SchemaTableTree {
                     false,
                     false,
                     sqlgRangeHolder,
-                    groupBy
+                    groupBy,
+                    aggregateFunction
             );
 
         } else {
@@ -767,14 +770,14 @@ public class SchemaTableTree {
                     false,
                     false,
                     null,
-                    groupBy
+                    groupBy,
+                    aggregateFunction
             );
 
         }
         this.children.add(schemaTableTree);
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.getRestrictedProperties().addAll(restrictedProperties);
-        schemaTableTree.aggregateFunction = aggregateFunction;
         schemaTableTree.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
         return schemaTableTree;
     }
@@ -3284,10 +3287,6 @@ public class SchemaTableTree {
 
     public Pair<String, List<String>> getAggregateFunction() {
         return this.aggregateFunction;
-    }
-
-    public void setAggregateFunction(Pair<String, List<String>> aggregateFunction) {
-        this.aggregateFunction = aggregateFunction;
     }
 
     public List<String> getGroupBy() {

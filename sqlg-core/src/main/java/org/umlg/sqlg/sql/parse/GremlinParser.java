@@ -76,13 +76,13 @@ public class GremlinParser {
                 true,
                 isSqlgLocalStepBarrierChild,
                 null,
-                rootReplacedStep.getGroupBy()
+                rootReplacedStep.getGroupBy(),
+                rootReplacedStep.getAggregateFunction()
         );
 
         rootSchemaTableTree.initializeAliasColumnNameMaps();
 
         rootSchemaTableTree.getRestrictedProperties().addAll(rootReplacedStep.getRestrictedProperties());
-        rootSchemaTableTree.setAggregateFunction(rootReplacedStep.getAggregateFunction());
 
         replacedStepTree.walkReplacedSteps(rootSchemaTableTree);
         rootSchemaTableTree.removeNodesInvalidatedByHas();
