@@ -24,10 +24,10 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     private Path path;
     private E element;
-    private Set<String> labels;
+    private final Set<String> labels;
     private boolean repeat;
     private boolean repeated;
-    private boolean fake;
+    private final boolean fake;
     //This is set to true for local optional step where the query has no labels, i.e. for a single SchemaTableTree only.
     //In this case the element will already be on the traverser i.e. the incoming element.
     private boolean incomingOnlyLocalOptionalStep;
@@ -48,14 +48,33 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     /**
      * The {@link org.umlg.sqlg.sql.parse.ReplacedStep}'s depth
      */
-    private int replacedStepDepth;
+    private final int replacedStepDepth;
 
     public Emit() {
         this.fake = true;
-        this.labels = Collections.emptySet();
+        this.labels = Set.of();
+        this.replacedStepDepth = -1;
+    }
+
+    public Emit(E element, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
+        this.fake = false;
+        this.element = element;
+        this.labels = Set.of();
+        this.replacedStepDepth = replacedStepDepth;
+        this.sqlgComparatorHolder = sqlgComparatorHolder;
+    }
+
+    public Emit(long parentIndex, E element, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
+        this.fake = false;
+        this.parentIndex = parentIndex;
+        this.element = element;
+        this.labels = Set.of();
+        this.replacedStepDepth = replacedStepDepth;
+        this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
     public Emit(E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
+        this.fake = false;
         this.element = element;
         this.labels = labels;
         this.replacedStepDepth = replacedStepDepth;
@@ -63,6 +82,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     public Emit(long parentIndex, E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
+        this.fake = false;
         this.parentIndex = parentIndex;
         this.element = element;
         this.labels = labels;
