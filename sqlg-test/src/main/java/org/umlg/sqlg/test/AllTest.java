@@ -307,7 +307,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPropertyDefinitionMultiplicity.class,
         TestConcat.class,
         TestNotOutStep.class,
-        TestRemoveIdentifierProperty.class
+        TestRemoveIdentifierProperty.class,
+        TestRepeatPostgresqlRecursiveQuery.class
 })
 public class AllTest {
 

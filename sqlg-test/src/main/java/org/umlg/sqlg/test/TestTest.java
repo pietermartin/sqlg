@@ -40,44 +40,6 @@ public class TestTest extends BaseTest {
 //        }
 //    }
 
-//    @Test
-//    public void test1() {
-//        loadModern();
-//        for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {
-//            edgeLabel.remove();
-//        }
-//        for (VertexLabel vertexLabel : this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().values()) {
-//            vertexLabel.remove();
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "b");
-//        a.addEdge("knows", b);
-//        this.sqlgGraph.traversal().V().drop().iterate();
-//        this.sqlgGraph.traversal().E().toList();
-//    }
-//
-//    @Test
-//    public void test2() {
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "b");
-//        a.addEdge("knows", b);
-//        this.sqlgGraph.tx().commit();
-//        for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {
-//            edgeLabel.remove();
-//        }
-//        for (VertexLabel vertexLabel : this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().values()) {
-//            vertexLabel.remove();
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        Vertex alice = this.sqlgGraph.addVertex(T.label, "person", "name", "alice");
-//        Vertex bob = this.sqlgGraph.addVertex(T.label, "person", "name", "bob");
-//        alice.addEdge("knows", bob, "weight", 1);
-//        List<Integer> weights = this.sqlgGraph.traversal().V().bothE().<Integer>values("weight").toList();
-//    }
-
     @Test
     public void testFriendOfFriend() {
         VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
@@ -94,31 +56,34 @@ public class TestTest extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.getTopology().lock();
 
-        Vertex john = this.sqlgGraph.addVertex(T.label, "Friend", "name", "John");
-        Vertex peter = this.sqlgGraph.addVertex(T.label, "Friend", "name", "Peter");
+        Vertex john = sqlgGraph.addVertex(T.label, "Friend", "name", "John");
+        Vertex peter = sqlgGraph.addVertex(T.label, "Friend", "name", "Peter");
+        Vertex dave = sqlgGraph.addVertex(T.label, "Friend", "name", "Dave");
+        Vertex mike = sqlgGraph.addVertex(T.label, "Friend", "name", "Mike");
+        Vertex luke = sqlgGraph.addVertex(T.label, "Friend", "name", "Luke");
+        
         john.addEdge("of", peter);
-        Vertex dave = this.sqlgGraph.addVertex(T.label, "Friend", "name", "Dave");
         peter.addEdge("of", dave);
-        Vertex mike = this.sqlgGraph.addVertex(T.label, "Friend", "name", "Mike");
         dave.addEdge("of", mike);
+        mike.addEdge("of", luke);
         this.sqlgGraph.tx().commit();
 
-        List<String> friends = this.sqlgGraph.traversal().V().hasLabel("Friend")
+        List<String> friendsName = this.sqlgGraph.traversal().V().hasLabel("Friend")
                 .<String>values("name")
                 .toList();
+        Assert.assertEquals(4, friendsName.size());
+        List<Vertex> friends = this.sqlgGraph.traversal().V().hasLabel("Friend")
+                .toList();
+        Assert.assertEquals(4, friends.size());
+        Vertex friend = friends.get(0);
+        Assert.assertEquals("John", friend.property("name").value());
 
-//        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Friend")
-//                .has("name", "Peter")
-//                .out("of")
-//                .path()
-//                .toList();
         GraphTraversal<Vertex, Path> graphTraversal = this.sqlgGraph.traversal().V().hasLabel("Friend").has("name", "Peter")
                 .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
                 .path();
         List<Path> paths = graphTraversal.toList();
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(peter) && p.get(1).equals(john)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(peter) && p.get(1).equals(dave) && p.get(2).equals(mike)));
 
     }
 

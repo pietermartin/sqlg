@@ -1,4 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-public record RecursiveRepeatStepConfig() {
+import org.apache.tinkerpop.gremlin.structure.Direction;
+
+public record RecursiveRepeatStepConfig(Direction direction, String edge) {
 }

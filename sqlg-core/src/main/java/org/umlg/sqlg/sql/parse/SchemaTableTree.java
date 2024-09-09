@@ -136,8 +136,7 @@ public class SchemaTableTree {
             boolean localBarrierStep,
             SqlgRangeHolder sqlgRangeHolder,
             List<String> groupBy,
-            Pair<String, List<String>> aggregateFunction,
-            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+            Pair<String, List<String>> aggregateFunction) {
 
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -165,9 +164,9 @@ public class SchemaTableTree {
         this.localStep = localStep;
         this.localBarrierStep = localBarrierStep;
         this.sqlgRangeHolder = sqlgRangeHolder;
-        this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
+        this.groupBy = groupBy == null ? List.of() : Collections.unmodifiableList(groupBy);
         this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
-        this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
+        this.recursiveRepeatStepConfig = null;
     }
 
     /**
@@ -196,7 +195,8 @@ public class SchemaTableTree {
             Set<String> labels,
             Pair<String, List<String>> aggregateFunction,
             List<String> groupBy,
-            boolean idOnly
+            boolean idOnly,
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig
     ) {
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -217,7 +217,7 @@ public class SchemaTableTree {
         this.outerLeftJoin = false;
         this.drop = drop;
         this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
-        this.groupBy = groupBy == null ? List.of(): Collections.unmodifiableList(groupBy);
+        this.groupBy = groupBy == null ? List.of() : Collections.unmodifiableList(groupBy);
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         Pair<ListOrderedSet<String>, String> identifierAndDistributionColumn = setIdentifiersAndDistributionColumn();
         this.identifiers = identifierAndDistributionColumn.getLeft();
@@ -227,7 +227,7 @@ public class SchemaTableTree {
         this.idOnly = idOnly;
         this.localStep = false;
         this.localBarrierStep = false;
-        this.recursiveRepeatStepConfig = null;
+        this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -626,8 +626,7 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             ReplacedStep<?, ?> replacedStep,
-            Set<String> labels,
-            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+            Set<String> labels) {
 
         return addChild(
                 schemaTable,
@@ -649,8 +648,7 @@ public class SchemaTableTree {
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
                 replacedStep.isIdOnly(),
-                labels,
-                recursiveRepeatStepConfig);
+                labels);
     }
 
     SchemaTableTree addChild(
@@ -658,8 +656,7 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             ReplacedStep<?, ?> replacedStep,
-            Set<String> labels,
-            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+            Set<String> labels) {
 
         Preconditions.checkState(replacedStep.getStep() instanceof VertexStep, "addChild can only be called for a VertexStep, found %s", replacedStep.getStep().getClass().getSimpleName());
         //Do not emit the edge schema table for a vertex step.
@@ -692,8 +689,7 @@ public class SchemaTableTree {
                 replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
                 replacedStep.isIdOnly(),
-                labels,
-                recursiveRepeatStepConfig);
+                labels);
     }
 
     private SchemaTableTree addChild(
@@ -716,8 +712,7 @@ public class SchemaTableTree {
             boolean outerLeftJoin,
             boolean drop,
             boolean idOnly,
-            Set<String> labels,
-            RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
+            Set<String> labels) {
 
         SchemaTableTree schemaTableTree;
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(EDGE_PREFIX)) ||
@@ -745,8 +740,7 @@ public class SchemaTableTree {
                     false,
                     sqlgRangeHolder,
                     groupBy,
-                    aggregateFunction,
-                    recursiveRepeatStepConfig
+                    aggregateFunction
             );
 
         } else {
@@ -773,8 +767,7 @@ public class SchemaTableTree {
                     false,
                     null,
                     groupBy,
-                    aggregateFunction,
-                    recursiveRepeatStepConfig
+                    aggregateFunction
             );
 
         }
@@ -868,7 +861,7 @@ public class SchemaTableTree {
         //This is because the same element can not be joined on more than once in sql
         //The way to overcome this is to break up the path in select sections with no duplicates and then join them together.
 
-        if (distinctQueryStack.size() == 3 && recursiveQuery(distinctQueryStack)) {
+        if (distinctQueryStack.size() == 1 && recursiveQuery(distinctQueryStack)) {
             return constructRecursiveQuery(distinctQueryStack);
         } else if (duplicatesInStack(distinctQueryStack)) {
             List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
@@ -1055,7 +1048,94 @@ public class SchemaTableTree {
     }
 
     private String constructRecursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
-        return "//TODO";
+        Preconditions.checkState(distinctQueryStack.size() == 1);
+        SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+        Preconditions.checkNotNull(schemaTableTree.recursiveRepeatStepConfig);
+        Preconditions.checkState(this == schemaTableTree);
+
+        //If there are no duplicates in the path then one select statement will suffice.
+        String startSql = constructSinglePathSql(
+                false,
+                distinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+
+        return switch (this.recursiveRepeatStepConfig.direction()) {
+            case OUT -> constructRecursiveOutQuery(startSql);
+            case IN -> constructRecursiveInQuery();
+            case BOTH -> constructRecursiveBothQuery();
+        };
+        //
+//
+//
+//        StringBuilder sql = new StringBuilder("WITH RECURSIVE search_tree(");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+//        sql.append(", ");
+//        sql.append(inForeignKey);
+//        sql.append(", ");
+//        sql.append(outForeignKey);
+//        sql.append(", depth) AS (\n");
+//        sql.append("\tSELECT e.");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+//        sql.append(", e.");
+//        sql.append(inForeignKey);
+//        sql.append(", e.");
+//        sql.append(outForeignKey);
+//        sql.append(", 0\n");
+//        sql.append("\tFROM ");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree2.getSchemaTable().getTable()));
+//        sql.append(" e\n");
+//
+//        //TODO hasContainer logic
+//        sql.append("\tWHERE ");
+//        sql.append(outForeignKey);
+//        sql.append(" IN (");
+//
+//        sql.append("SELECT");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+//        sql.append(" FROM ");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getSchema()));
+//        sql.append(".");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getTable()));
+//        MutableBoolean mutableWhere = new MutableBoolean(false);
+//        String whereClause = schemaTableTree1.toWhereClause(mutableWhere);
+//        whereClause = whereClause.replace("\n", "");
+//        sql.append(" ");
+//        sql.append(whereClause);
+//        sql.append(")\n");
+//
+//
+//        sql.append("\tUNION ALL\n");
+//        sql.append("\tSELECT e.");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+//        sql.append(", e.");
+//        sql.append(inForeignKey);
+//        sql.append(", e.");
+//        sql.append(outForeignKey);
+//        sql.append(", depth + 1\n");
+//        sql.append("\tFROM ");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree2.getSchemaTable().getTable()));
+//        sql.append(" e, search_tree st\n");
+//        sql.append("\tWHERE e.");
+//        sql.append(outForeignKey);
+//        sql.append(" = st.");
+//        sql.append(inForeignKey);
+//        sql.append("\n) CYCLE ");
+//        sql.append(outForeignKey);
+//        sql.append(" SET is_cycle USING path\n");
+//        sql.append("SELECT a.* FROM search_tree JOIN ");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getSchema()));
+//        sql.append(".");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getTable()));
+//        sql.append(" a on search_tree.");
+//        sql.append(inForeignKey);
+//        sql.append(" = a.");
+//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+//        sql.append("\nORDER BY depth");
+//        return sql.toString();
     }
 
     /**
@@ -1888,7 +1968,7 @@ public class SchemaTableTree {
     }
 
     public boolean recursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
-        return distinctQueryStack.get(1).recursiveRepeatStepConfig != null;
+        return distinctQueryStack.get(0).recursiveRepeatStepConfig != null;
     }
 
     /**
@@ -3334,4 +3414,41 @@ public class SchemaTableTree {
         EDGE_VERTEX_STEP
     }
 
+    private String constructRecursiveOutQuery(String startSql) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String sql = """
+                WITH start AS (
+                    %s
+                ), recursive AS (
+                    WITH a AS (
+                        WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path) AS (
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            UNION ALL
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
+                            FROM "E_of" e, search_tree st
+                            WHERE st.{inForeignKey} = e.{outForeignKey} AND NOT is_cycle
+                        )
+                        SELECT * FROM search_tree WHERE NOT is_cycle
+                    )
+                    SELECT a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    WHERE a.path NOT IN (SELECT previous from a)
+                    ORDER BY a.path, ordinal
+                )
+                SELECT recursive.path, output.* from recursive JOIN "V_Friend" output ON recursive.vertex_id = output."ID";
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey);
+        return sql;
+    }
+
+    private String constructRecursiveInQuery() {
+        return "";
+    }
+
+    private String constructRecursiveBothQuery() {
+        return "";
+    }
 }

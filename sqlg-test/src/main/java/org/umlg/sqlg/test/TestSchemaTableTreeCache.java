@@ -112,7 +112,8 @@ public class TestSchemaTableTreeCache extends BaseTest {
                 Set.of("label1"),
                 Pair.of("String1", List.of("what")),
                 List.of("groupBy1"),
-                false
+                false,
+                null
         );
         LOGGER.info(Integer.toString(schemaTableTree1.hashCode()));
     }

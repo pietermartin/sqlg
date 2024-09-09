@@ -35,13 +35,13 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
      * This is the SqlgComparatorHolder for the SqlgElement that is being emitted.
      * It represents the {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep} for the SqlgElement that is being emitted.
      */
-    private SqlgComparatorHolder sqlgComparatorHolder;
+    private final SqlgComparatorHolder sqlgComparatorHolder;
     /**
      * This represents all the {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep}s, one for each element along the path.
      */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
-    private long parentIndex;
+    private final long parentIndex;
     private Traverser.Admin<E> traverser;
     private List<Pair<Object, Comparator<?>>> comparatorValues;
 
@@ -54,10 +54,13 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         this.fake = true;
         this.labels = Set.of();
         this.replacedStepDepth = -1;
+        this.sqlgComparatorHolder = null;
+        this.parentIndex = -1;
     }
 
     public Emit(E element, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
         this.fake = false;
+        this.parentIndex = -1;
         this.element = element;
         this.labels = Set.of();
         this.replacedStepDepth = replacedStepDepth;
@@ -75,6 +78,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     public Emit(E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
         this.fake = false;
+        this.parentIndex = -1;
         this.element = element;
         this.labels = labels;
         this.replacedStepDepth = replacedStepDepth;
@@ -259,6 +263,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     public long getParentIndex() {
+        Preconditions.checkState(this.parentIndex != -1);
         return this.parentIndex;
     }
 

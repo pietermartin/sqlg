@@ -241,15 +241,15 @@ public class SqlgUtil {
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
                         if (forParent) {
                             //1 is the parentIndex. This is the id of the incoming parent.
-                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            emit = new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(sqlgElement, schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
                         if (forParent) {
-                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            emit = new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(sqlgElement, schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     } else {
                         if (forParent) {

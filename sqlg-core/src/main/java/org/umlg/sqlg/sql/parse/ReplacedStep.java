@@ -216,8 +216,7 @@ public class ReplacedStep<S, E> {
                             Direction.IN,
                             Edge.class,
                             this,
-                            this.labels,
-                            this.recursiveRepeatStepConfig
+                            this.labels
                     );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), inEdgeLabelToTravers.toString());
@@ -252,8 +251,7 @@ public class ReplacedStep<S, E> {
                                         Direction.IN,
                                         Vertex.class,
                                         this,
-                                        Collections.emptySet(),
-                                        this.recursiveRepeatStepConfig
+                                        Collections.emptySet()
                                 );
                             }
                             result.addAll(
@@ -281,8 +279,7 @@ public class ReplacedStep<S, E> {
                             Direction.OUT,
                             elementClass,
                             this,
-                            this.labels,
-                            this.recursiveRepeatStepConfig
+                            this.labels
                     );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), outEdgeLabelToTravers.toString());
@@ -315,8 +312,7 @@ public class ReplacedStep<S, E> {
                                         Direction.OUT,
                                         elementClass,
                                         this,
-                                        Collections.emptySet(),
-                                        this.recursiveRepeatStepConfig
+                                        Collections.emptySet()
                                 );
                             }
                             result.addAll(
@@ -362,8 +358,7 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             Direction.OUT,
                             this,
-                            this.labels,
-                            null
+                            this.labels
                     );
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
@@ -377,8 +372,7 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             Direction.IN,
                             this,
-                            this.labels,
-                            null
+                            this.labels
                     );
                     List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
@@ -402,8 +396,7 @@ public class ReplacedStep<S, E> {
                 direction,
                 Vertex.class,
                 this,
-                this.labels,
-                null
+                this.labels
         );
         SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), schemaTableTo.toString());
         List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
@@ -595,7 +588,8 @@ public class ReplacedStep<S, E> {
                 this.labels,
                 aggregateFunction,
                 groupBy,
-                idOnly
+                idOnly,
+                this.recursiveRepeatStepConfig
         );
         schemaTableTree.getRestrictedProperties().addAll(this.restrictedProperties);
         return schemaTableTree;

@@ -430,14 +430,7 @@ public abstract class BaseStrategy {
         Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
         List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
         VertexStep vertexStep = (VertexStep) repeatTraversalSteps.get(0);
-
-        this.currentReplacedStep = ReplacedStep.from(
-                this.sqlgGraph.getTopology(),
-                vertexStep,
-                pathCount.getValue()
-        );
-        this.currentReplacedStep.setRecursiveRepeatStepConfig(new RecursiveRepeatStepConfig());
-        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.currentReplacedStep.setRecursiveRepeatStepConfig(new RecursiveRepeatStepConfig(vertexStep.getDirection(), vertexStep.getEdgeLabels()[0]));
         int index = TraversalHelper.stepIndex(repeatStep, this.traversal);
         if (index != -1) {
             this.traversal.removeStep(repeatStep);

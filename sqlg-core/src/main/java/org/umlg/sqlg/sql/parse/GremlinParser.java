@@ -77,8 +77,7 @@ public class GremlinParser {
                 isSqlgLocalStepBarrierChild,
                 null,
                 rootReplacedStep.getGroupBy(),
-                rootReplacedStep.getAggregateFunction(),
-                null
+                rootReplacedStep.getAggregateFunction()
         );
 
         rootSchemaTableTree.initializeAliasColumnNameMaps();
