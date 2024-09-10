@@ -22,18 +22,15 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private final SqlgGraph sqlgGraph;
     private final Set<SchemaTableTree> rootSchemaTableTrees;
-    private boolean forParent = false;
-    private Iterator<SchemaTableTree> rootSchemaTableTreeIterator = EmptyIterator.instance();
+    private final boolean forParent;
+    private Iterator<SchemaTableTree> rootSchemaTableTreeIterator;
     private SchemaTableTree currentRootSchemaTableTree;
 
     private Iterator<LinkedList<SchemaTableTree>> distinctQueriesIterator = EmptyIterator.instance();
-    private LinkedList<SchemaTableTree> currentDistinctQueryStack;
 
     private Iterator<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> optionalLeftJoinResultsIterator = EmptyIterator.instance();
-    private Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> optionalCurrentLeftJoinResult;
 
     private Iterator<LinkedList<SchemaTableTree>> emitLeftJoinResultsIterator = EmptyIterator.instance();
-    private LinkedList<SchemaTableTree> emitCurrentLeftJoinResult;
 
     private List<LinkedList<SchemaTableTree>> subQueryStacks;
 
@@ -48,7 +45,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     /**
      * are we reading the query results lazily?
      */
-    private boolean lazy = true;
+    private final boolean lazy;
 
     private boolean first = true;
     private final Map<String, Integer> lastElementIdCountMap = new HashMap<>();
@@ -92,7 +89,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     /**
      * lazy evaluation of next results
      *
-     * @return
+     * @return true is there is a next in the query result
      */
     private boolean hasNextLazy() {
         try {
@@ -103,22 +100,22 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateRegularQueries();
+                                iterateQueries();
                                 this.first = false;
                             }
                             if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.distinctQueriesIterator.hasNext()) {
-                                    this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
-                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
+                                    LinkedList<SchemaTableTree> currentDistinctQueryStack = this.distinctQueriesIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(currentDistinctQueryStack);
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     //if there are duplicates in the stack we can not execute drop steps.
                                     //execute the query as per normal and the proper DropStep will do the rest.
-                                    if (this.currentDistinctQueryStack.getLast().isDrop() && !this.currentRootSchemaTableTree.duplicatesInStack(this.currentDistinctQueryStack)) {
-                                        executeDropQuery();
+                                    if (currentDistinctQueryStack.getLast().isDrop() && !this.currentRootSchemaTableTree.duplicatesInStack(currentDistinctQueryStack)) {
+                                        SqlgSqlExecutor.executeDropQuery(this.sqlgGraph, this.currentRootSchemaTableTree, currentDistinctQueryStack);
                                     } else {
-                                        executeRegularQuery();
+                                        this.queryResult = SqlgSqlExecutor.executeRegularQuery(this.sqlgGraph, this.currentRootSchemaTableTree, currentDistinctQueryStack);
                                     }
                                     this.first = true;
                                 } else {
@@ -142,17 +139,17 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateOptionalQueries();
+                                iterateQueries();
                                 this.first = false;
                             }
                             if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.optionalLeftJoinResultsIterator.hasNext()) {
-                                    this.optionalCurrentLeftJoinResult = this.optionalLeftJoinResultsIterator.next();
-                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.optionalCurrentLeftJoinResult.getLeft());
+                                    Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> optionalCurrentLeftJoinResult = this.optionalLeftJoinResultsIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(optionalCurrentLeftJoinResult.getLeft());
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
-                                    executeOptionalQuery();
+                                    this.queryResult = SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, this.currentRootSchemaTableTree, optionalCurrentLeftJoinResult);
                                     this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
@@ -177,17 +174,17 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateEmitQueries();
+                                iterateQueries();
                                 this.first = false;
                             }
                             if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.emitLeftJoinResultsIterator.hasNext()) {
-                                    this.emitCurrentLeftJoinResult = this.emitLeftJoinResultsIterator.next();
-                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.emitCurrentLeftJoinResult);
+                                    LinkedList<SchemaTableTree> emitCurrentLeftJoinResult = this.emitLeftJoinResultsIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(emitCurrentLeftJoinResult);
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
-                                    executeEmitQuery();
+                                    this.queryResult = SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, this.currentRootSchemaTableTree, emitCurrentLeftJoinResult);
                                     this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
@@ -240,105 +237,17 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         return (E) result;
     }
 
-    private void executeDropQuery() {
-        SqlgSqlExecutor.executeDropQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.currentDistinctQueryStack);
-    }
-
-    private void executeRegularQuery() {
-        this.queryResult = SqlgSqlExecutor.executeRegularQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.currentDistinctQueryStack);
-    }
-
-    private void executeOptionalQuery() {
-        this.queryResult = SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.optionalCurrentLeftJoinResult);
-    }
-
-    private void executeEmitQuery() {
-        this.queryResult = SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.emitCurrentLeftJoinResult);
-    }
-
-    private void iterateRegularQueries() throws SQLException {
-        List<Emit<SqlgElement>> result;
-        if (!this.forParent) {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap
-            );
-        } else {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap,
-                    true
-            );
-        }
-        if (!result.isEmpty()) {
-            this.elements = result;
-        }
-    }
-
-    private void iterateOptionalQueries() throws SQLException {
-        List<Emit<SqlgElement>> result;
-        if (!this.forParent) {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap
-            );
-        } else {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap,
-                    true
-            );
-        }
-        if (!result.isEmpty()) {
-            this.elements = result;
-        }
-    }
-
-    private void iterateEmitQueries() throws SQLException {
-        List<Emit<SqlgElement>> result;
-        if (!this.forParent) {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap
-            );
-        } else {
-            result = SqlgUtil.loadResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap,
-                    true
-            );
-
-        }
+    private void iterateQueries() throws SQLException {
+        List<Emit<SqlgElement>> result = SqlgUtil.loadResultSetIntoResultIterator(
+                this.sqlgGraph,
+                this.queryResult.getMiddle(),
+                this.queryResult.getLeft(),
+                this.currentRootSchemaTableTree,
+                this.subQueryStacks,
+                this.first,
+                this.lastElementIdCountMap,
+                this.forParent
+        );
         if (!result.isEmpty()) {
             this.elements = result;
         }

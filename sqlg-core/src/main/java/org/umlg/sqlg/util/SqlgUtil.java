@@ -49,7 +49,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 @SuppressWarnings("Duplicates")
 public class SqlgUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgUtil.class);
 
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
@@ -57,19 +57,6 @@ public class SqlgUtil {
     private static final String PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL = "Property array value elements may not be null.";
 
     private SqlgUtil() {
-    }
-
-    public static List<Emit<SqlgElement>> loadResultSetIntoResultIterator(
-            SqlgGraph sqlgGraph,
-            ResultSetMetaData resultSetMetaData,
-            ResultSet resultSet,
-            SchemaTableTree rootSchemaTableTree,
-            List<LinkedList<SchemaTableTree>> subQueryStacks,
-            boolean first,
-            Map<String, Integer> lastElementIdCountMap
-
-    ) throws SQLException {
-        return loadResultSetIntoResultIterator(sqlgGraph, resultSetMetaData, resultSet, rootSchemaTableTree, subQueryStacks, first, lastElementIdCountMap, false);
     }
 
     /**
@@ -820,8 +807,8 @@ public class SqlgUtil {
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(sql.toString());
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
@@ -846,8 +833,8 @@ public class SqlgUtil {
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(sql.toString());
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
@@ -859,8 +846,8 @@ public class SqlgUtil {
             for (String schema : schemaNames) {
                 if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
                     String sql = sqlDialect.dropSchemaStatement(schema);
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(sql);
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
                         preparedStatement.executeUpdate();
@@ -1090,30 +1077,12 @@ public class SqlgUtil {
         return target;
     }
 
-    public static float[] convertFloatArrayToPrimitiveFloat(Float[] floatArray) {
-        float[] target = new float[floatArray.length];
-        for (int i = 0; i < floatArray.length; i++) {
-            Array.set(target, i, floatArray[i]);
-        }
-        return target;
-    }
-
     public static <T> T copyToLocalDateTime(Timestamp[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, value[i].toLocalDateTime());
-        }
-        return target;
-    }
-
-    public static <T> T copyObjectArrayOfOffsetDateTimeToLocalDateTime(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
-            }
-            Array.set(target, i, ((OffsetDateTime) value[i]).toLocalDateTime());
         }
         return target;
     }
@@ -1158,32 +1127,12 @@ public class SqlgUtil {
         return target;
     }
 
-    private static <T> T copyToLocalDate(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
-            }
-            Array.set(target, i, ((Date) value[i]).toLocalDate());
-        }
-        return target;
-    }
-
     public static <T> T copyToLocalTime(Time[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, (value[i]).toLocalTime());
-        }
-        return target;
-    }
-
-    public static <T> T copyObjectArrayOfOffsetTimeToLocalTime(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
-            }
-            Array.set(target, i, ((OffsetTime) value[i]).toLocalTime());
         }
         return target;
     }

@@ -2827,7 +2827,7 @@ public class SchemaTableTree {
     }
 
     private void internalToString(StringBuilder sb) {
-        if (sb.length() > 0) {
+        if (!sb.isEmpty()) {
             sb.append("\n");
         }
         sb.append("\t".repeat(Math.max(0, this.stepDepth)));
