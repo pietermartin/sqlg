@@ -136,7 +136,11 @@ public class SqlgSqlExecutor {
 //            		logger.warn(sqle.getMessage());
 //            	}
 //            }
-            PreparedStatement preparedStatement = conn.prepareStatement(sql);
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    sql,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY
+            );
             sqlgGraph.tx().add(preparedStatement);
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, false);
             // https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor

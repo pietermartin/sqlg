@@ -118,6 +118,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         this.queryResult = SqlgSqlExecutor.executeRegularQuery(this.sqlgGraph, this.currentRootSchemaTableTree, currentDistinctQueryStack);
                                     }
                                     this.first = true;
+                                    this.lastElementIdCountMap.clear();
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -151,6 +152,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     this.queryResult = SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, this.currentRootSchemaTableTree, optionalCurrentLeftJoinResult);
                                     this.first = true;
+                                    this.lastElementIdCountMap.clear();
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -186,6 +188,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     this.queryResult = SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, this.currentRootSchemaTableTree, emitCurrentLeftJoinResult);
                                     this.first = true;
+                                    this.lastElementIdCountMap.clear();
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -238,16 +241,30 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     }
 
     private void iterateQueries() throws SQLException {
-        List<Emit<SqlgElement>> result = SqlgUtil.loadResultSetIntoResultIterator(
-                this.sqlgGraph,
-                this.queryResult.getMiddle(),
-                this.queryResult.getLeft(),
-                this.currentRootSchemaTableTree,
-                this.subQueryStacks,
-                this.first,
-                this.lastElementIdCountMap,
-                this.forParent
-        );
+        List<Emit<SqlgElement>> result;
+        if (this.currentRootSchemaTableTree.isRecursiveQuery()) {
+            result = SqlgUtil.loadRecursiveResultSetIntoResultIterator(
+                    this.sqlgGraph,
+                    this.queryResult.getMiddle(),
+                    this.queryResult.getLeft(),
+                    this.currentRootSchemaTableTree,
+                    this.first,
+                    this.lastElementIdCountMap,
+                    this.forParent
+            );
+
+        } else {
+            result = SqlgUtil.loadResultSetIntoResultIterator(
+                    this.sqlgGraph,
+                    this.queryResult.getMiddle(),
+                    this.queryResult.getLeft(),
+                    this.currentRootSchemaTableTree,
+                    this.subQueryStacks,
+                    this.first,
+                    this.lastElementIdCountMap,
+                    this.forParent
+            );
+        }
         if (!result.isEmpty()) {
             this.elements = result;
         }

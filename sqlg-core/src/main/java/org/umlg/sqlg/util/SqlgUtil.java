@@ -59,6 +59,42 @@ public class SqlgUtil {
     private SqlgUtil() {
     }
 
+    public static List<Emit<SqlgElement>> loadRecursiveResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent
+    ) throws SQLException {
+
+        List<Emit<SqlgElement>> result = new ArrayList<>();
+
+        List<List<SqlgVertex>> paths = new ArrayList<>();
+        while (resultSet.next()) {
+            List<SqlgVertex> pathAsVertices = new ArrayList<>();
+            paths.add(pathAsVertices);
+            Long[] path = (Long[])resultSet.getArray(1).getArray();
+            for (int i = 1; i <= path.length; i++) {
+                long id = resultSet.getLong(2);
+                String rawLabel = rootSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+                SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, id, rootSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                rootSchemaTableTree.loadProperty(resultSet, sqlgVertex);
+                pathAsVertices.add(sqlgVertex);
+                Emit<SqlgElement> emit = new Emit<>(sqlgVertex, rootSchemaTableTree.getRealLabelsCache(), rootSchemaTableTree.getStepDepth(), rootSchemaTableTree.getSqlgComparatorHolder());
+                result.add(emit);
+                if (i < path.length) {
+                    Preconditions.checkState(resultSet.next());
+                } else {
+                    return result;
+                }
+            }
+
+        }
+        return result;
+    }
+
     /**
      * @param forParent Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
@@ -77,7 +113,8 @@ public class SqlgUtil {
         List<Emit<SqlgElement>> result = new ArrayList<>();
         if (resultSet.next()) {
             if (first) {
-                populateIdCountMap(resultSetMetaData, rootSchemaTableTree, idColumnCountMap);
+                Preconditions.checkState(idColumnCountMap.isEmpty());
+                idColumnCountMap.putAll(populateIdCountMap(resultSetMetaData, rootSchemaTableTree));
             }
             int subQueryDepth = 1;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
@@ -109,12 +146,12 @@ public class SqlgUtil {
     }
 
     //TODO the identifier logic here is very suboptimal
-    private static void populateIdCountMap(
+    private static Map<String, Integer> populateIdCountMap(
             ResultSetMetaData resultSetMetaData,
-            SchemaTableTree rootSchemaTableTree,
-            Map<String, Integer> lastElementIdCountMap) throws SQLException {
+            SchemaTableTree rootSchemaTableTree
+            ) throws SQLException {
 
-        lastElementIdCountMap.clear();
+        Map<String, Integer> lastElementIdCountMap = new HashMap<>();
         //First load all labeled entries from the resultSet
         //Translate the columns back from alias to meaningful column headings
         Set<String> identifiers = null;
@@ -135,6 +172,7 @@ public class SqlgUtil {
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
+        return lastElementIdCountMap;
     }
 
     //TODO the identifier logic here is very suboptimal

@@ -39,8 +39,10 @@ import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
 import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -148,7 +150,7 @@ public abstract class BaseStrategy {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount, false);
             } else if (step instanceof RepeatStep repeatStep) {
                 List<RepeatStep> repeatSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, this.traversal);
-                if (isRecursiveRepeatStep(repeatSteps, repeatStep)) {
+                if (isRecursiveRepeatStep(repeatStep)) {
                     handleRecursiveRepeatStep(repeatStep, pathCount);
                 } else if (optimizableRepeatStep(repeatSteps)) {
                     handleRepeatStep(repeatStep, pathCount);
@@ -631,7 +633,7 @@ public abstract class BaseStrategy {
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(isForSqlgSchema(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeHasLabel(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
                     toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
@@ -1084,7 +1086,7 @@ public abstract class BaseStrategy {
         return result;
     }
 
-    private List<HasContainer> optimizeLabelHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+    private List<HasContainer> optimizeHasLabel(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey() != null &&
@@ -1377,7 +1379,7 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private boolean isRecursiveRepeatStep(List<RepeatStep> repeatSteps, RepeatStep repeatStep) {
+    private boolean isRecursiveRepeatStep(RepeatStep repeatStep) {
         Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
         List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
         if (repeatTraversalSteps.size() == 3 &&
@@ -1386,34 +1388,57 @@ public abstract class BaseStrategy {
                 repeatTraversalSteps.get(2) instanceof RepeatStep.RepeatEndStep<?> repeatEndStep) {
 
             String[] edgeLabels = vertexStep.getEdgeLabels();
-            if (edgeLabels.length == 1) {
+            List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+            if (edgeLabels.length == 1 && labelHasContainers.size() == 1) {
                 String _edgeLabel = edgeLabels[0];
-                Optional<EdgeLabel> edgeLabelOpt = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel(_edgeLabel);
-                if (edgeLabelOpt.isPresent()) {
-                    EdgeLabel recursiveEdgeLabel = edgeLabelOpt.get();
-                    Set<VertexLabel> inVertexLabels = recursiveEdgeLabel.getInVertexLabels();
-                    Set<VertexLabel> outVertexLabels = recursiveEdgeLabel.getOutVertexLabels();
-                    if (inVertexLabels.size() == 1 && outVertexLabels.size() == 1 && inVertexLabels.equals(outVertexLabels)) {
+                HasContainer labelHasContainer = labelHasContainers.get(0);
+                String vertexLabel;
+                if (labelHasContainer.getValue() instanceof String _vertexLabel) {
+                    vertexLabel = _vertexLabel;
+                } else if (labelHasContainer.getValue() instanceof Set vertexLabelSet) {
+                    vertexLabel = (String) vertexLabelSet.iterator().next();
+                } else {
+                    throw new IllegalStateException("Unhandled label HasContainer");
+                }
+                SchemaTable schemaTable = SchemaTable.from(sqlgGraph, vertexLabel);
+                Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+                if (schemaOpt.isPresent()) {
+                    Optional<VertexLabel> vertexLabelOptional = schemaOpt.get().getVertexLabel(schemaTable.getTable());
+                    if (vertexLabelOptional.isPresent()) {
+                        Optional<EdgeLabel> edgeLabelOpt = schemaOpt.get().getEdgeLabel(_edgeLabel);
+                        if (edgeLabelOpt.isPresent()) {
+                            EdgeLabel recursiveEdgeLabel = edgeLabelOpt.get();
+                            Set<VertexLabel> inVertexLabels = recursiveEdgeLabel.getInVertexLabels();
+                            Set<VertexLabel> outVertexLabels = recursiveEdgeLabel.getOutVertexLabels();
+                            if (inVertexLabels.size() == 1 && outVertexLabels.size() == 1) {
+                                VertexLabel inVertexLabel = inVertexLabels.iterator().next();
+                                VertexLabel outVertexLabel = outVertexLabels.iterator().next();
 
-                        Traversal.Admin<?, ?> untilTraversal = repeatStep.getUntilTraversal();
-                        List<Step> untilTraversalSteps = untilTraversal.getSteps();
-                        if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof NotStep<?> notStep) {
-                            List<? extends Traversal.Admin<?, ?>> notStepTraverals = notStep.getLocalChildren();
-                            if (notStepTraverals.size() == 1) {
-                                Traversal.Admin notStepTraversal = notStepTraverals.get(0);
-                                List<Step> notSteps = notStepTraversal.getSteps();
-                                if (notSteps.size() == 2 &&
-                                        notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
-                                        notSteps.get(1) instanceof PathFilterStep<?> notPathFilterStep) {
+                                Preconditions.checkState(inVertexLabel.equals(vertexLabelOptional.get()));
+                                Preconditions.checkState(outVertexLabel.equals(vertexLabelOptional.get()));
 
-                                    String[] notEdgeLabels = notVertexStep.getEdgeLabels();
-                                    if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {
+                                Traversal.Admin<?, ?> untilTraversal = repeatStep.getUntilTraversal();
+                                List<Step> untilTraversalSteps = untilTraversal.getSteps();
+                                if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof NotStep<?> notStep) {
+                                    List<? extends Traversal.Admin<?, ?>> notStepTraverals = notStep.getLocalChildren();
+                                    if (notStepTraverals.size() == 1) {
+                                        Traversal.Admin notStepTraversal = notStepTraverals.get(0);
+                                        List<Step> notSteps = notStepTraversal.getSteps();
+                                        if (notSteps.size() == 2 &&
+                                                notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
+                                                notSteps.get(1) instanceof PathFilterStep<?> notPathFilterStep) {
 
-                                        return true;
+                                            String[] notEdgeLabels = notVertexStep.getEdgeLabels();
+                                            if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {
+
+                                                return true;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+
                     }
                 }
             }

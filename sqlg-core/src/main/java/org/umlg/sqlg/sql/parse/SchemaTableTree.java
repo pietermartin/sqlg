@@ -861,7 +861,7 @@ public class SchemaTableTree {
         //This is because the same element can not be joined on more than once in sql
         //The way to overcome this is to break up the path in select sections with no duplicates and then join them together.
 
-        if (distinctQueryStack.size() == 1 && recursiveQuery(distinctQueryStack)) {
+        if (distinctQueryStack.size() == 1 && distinctQueryStack.getFirst().isRecursiveQuery()) {
             return constructRecursiveQuery(distinctQueryStack);
         } else if (duplicatesInStack(distinctQueryStack)) {
             List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
@@ -1065,77 +1065,9 @@ public class SchemaTableTree {
 
         return switch (this.recursiveRepeatStepConfig.direction()) {
             case OUT -> constructRecursiveOutQuery(startSql);
-            case IN -> constructRecursiveInQuery();
-            case BOTH -> constructRecursiveBothQuery();
+            case IN -> constructRecursiveInQuery(startSql);
+            case BOTH -> constructRecursiveBothQuery(startSql);
         };
-        //
-//
-//
-//        StringBuilder sql = new StringBuilder("WITH RECURSIVE search_tree(");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(", ");
-//        sql.append(inForeignKey);
-//        sql.append(", ");
-//        sql.append(outForeignKey);
-//        sql.append(", depth) AS (\n");
-//        sql.append("\tSELECT e.");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(", e.");
-//        sql.append(inForeignKey);
-//        sql.append(", e.");
-//        sql.append(outForeignKey);
-//        sql.append(", 0\n");
-//        sql.append("\tFROM ");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree2.getSchemaTable().getTable()));
-//        sql.append(" e\n");
-//
-//        //TODO hasContainer logic
-//        sql.append("\tWHERE ");
-//        sql.append(outForeignKey);
-//        sql.append(" IN (");
-//
-//        sql.append("SELECT");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(" FROM ");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getSchema()));
-//        sql.append(".");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getTable()));
-//        MutableBoolean mutableWhere = new MutableBoolean(false);
-//        String whereClause = schemaTableTree1.toWhereClause(mutableWhere);
-//        whereClause = whereClause.replace("\n", "");
-//        sql.append(" ");
-//        sql.append(whereClause);
-//        sql.append(")\n");
-//
-//
-//        sql.append("\tUNION ALL\n");
-//        sql.append("\tSELECT e.");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(", e.");
-//        sql.append(inForeignKey);
-//        sql.append(", e.");
-//        sql.append(outForeignKey);
-//        sql.append(", depth + 1\n");
-//        sql.append("\tFROM ");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree2.getSchemaTable().getTable()));
-//        sql.append(" e, search_tree st\n");
-//        sql.append("\tWHERE e.");
-//        sql.append(outForeignKey);
-//        sql.append(" = st.");
-//        sql.append(inForeignKey);
-//        sql.append("\n) CYCLE ");
-//        sql.append(outForeignKey);
-//        sql.append(" SET is_cycle USING path\n");
-//        sql.append("SELECT a.* FROM search_tree JOIN ");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getSchema()));
-//        sql.append(".");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree1.getSchemaTable().getTable()));
-//        sql.append(" a on search_tree.");
-//        sql.append(inForeignKey);
-//        sql.append(" = a.");
-//        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append("\nORDER BY depth");
-//        return sql.toString();
     }
 
     /**
@@ -1967,8 +1899,8 @@ public class SchemaTableTree {
         return null;
     }
 
-    public boolean recursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
-        return distinctQueryStack.get(0).recursiveRepeatStepConfig != null;
+    public boolean isRecursiveQuery() {
+        return this.recursiveRepeatStepConfig != null;
     }
 
     /**
@@ -3417,7 +3349,7 @@ public class SchemaTableTree {
     private String constructRecursiveOutQuery(String startSql) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
-        String sql = """
+        return """
                 WITH start AS (
                     %s
                 ), recursive AS (
@@ -3441,14 +3373,105 @@ public class SchemaTableTree {
                 .formatted(startSql)
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey);
-        return sql;
     }
 
-    private String constructRecursiveInQuery() {
-        return "";
+    private String constructRecursiveInQuery(String startSql) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        return """
+                WITH start AS (
+                    %s
+                ), recursive AS (
+                    WITH a AS (
+                        WITH RECURSIVE search_tree("ID", {inForeignKey}, {outForeignKey}, depth, is_cycle, previous, path) AS (
+                            SELECT e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            UNION ALL
+                            SELECT e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
+                            FROM "E_of" e, search_tree st
+                            WHERE st.{outForeignKey} = e.{inForeignKey} AND NOT is_cycle
+                        )
+                        SELECT * FROM search_tree WHERE NOT is_cycle
+                    )
+                    SELECT a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    WHERE a.path NOT IN (SELECT previous from a)
+                    ORDER BY a.path, ordinal
+                )
+                SELECT recursive.path, output.* from recursive JOIN "V_Friend" output ON recursive.vertex_id = output."ID";
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey);
     }
 
-    private String constructRecursiveBothQuery() {
-        return "";
+    private String constructRecursiveBothQuery(String startSql) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        return """
+                WITH start as (
+                    %s
+                ), recursive AS (
+                    WITH a AS (
+                        WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, direction) AS (
+                            WITH start_out as (
+                                SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                    ARRAY[e.{outForeignKey}],
+                                    ARRAY[e.{outForeignKey}, e.{inForeignKey}],
+                                    'OUT'
+                                FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            ), start_in as (
+                                SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                    ARRAY[e.{inForeignKey}],
+                                    ARRAY[e.{inForeignKey}, e.{outForeignKey}],
+                                    'IN'
+                                FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            )
+                            SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+                            UNION ALL
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1,
+                                CASE
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                                END,
+                                CASE
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path
+                                END,
+                                CASE
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                                END,
+                                CASE
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN 'OUT'
+                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN 'IN'
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN 'IN'
+                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
+                                END
+                            FROM "E_of" e, search_tree st
+                            WHERE (
+                                (st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
+                                OR
+                                (st.direction = 'IN' AND (st.{outForeignKey} = e.{inForeignKey} OR st.{outForeignKey} = e.{outForeignKey})))
+                                AND NOT is_cycle
+                        )
+                        SELECT *, gen_random_uuid() AS uuid FROM search_tree
+                        WHERE NOT is_cycle
+                    )
+                    SELECT a.uuid, a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    WHERE a.path NOT IN (SELECT previous from a)
+                    ORDER BY a.uuid, a.path, ordinal
+                )
+                SELECT recursive.path, output.* from recursive JOIN "V_Friend" output ON recursive.vertex_id = output."ID";
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey);
+
     }
 }
