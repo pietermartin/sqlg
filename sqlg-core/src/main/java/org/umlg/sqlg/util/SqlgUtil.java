@@ -59,6 +59,76 @@ public class SqlgUtil {
     private SqlgUtil() {
     }
 
+    public static List<Emit<SqlgElement>> loadRecursiveIncludeEdgeResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent) throws SQLException {
+
+        Preconditions.checkState(subQueryStacks.size() == 1);
+
+        LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
+        Preconditions.checkState(schemaTableTrees.size() == 2);
+        SchemaTableTree vertexSchemaTableTree = schemaTableTrees.getFirst();
+        SchemaTable vertexSchemaTable= vertexSchemaTableTree.getSchemaTable().withOutPrefix();
+        SchemaTableTree edgeSchemaTableTree = schemaTableTrees.get(1);
+        SchemaTable edgeSchemaTable= edgeSchemaTableTree.getSchemaTable().withOutPrefix();
+
+        List<Emit<SqlgElement>> result = new ArrayList<>();
+        while (resultSet.next()) {
+
+            Long[] path = (Long[]) resultSet.getArray(1).getArray();
+            String type = resultSet.getString(2);
+            Long outVertexId = null;
+
+            int totalPathLength = (path.length * 2) - 1;
+            for (int i = 1; i <= totalPathLength; i++) {
+
+                if (i == 1) {
+                    outVertexId = resultSet.getLong(3);
+                    String outVertexRawLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+                    SqlgVertex outVertex = SqlgVertex.of(sqlgGraph, outVertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), outVertexRawLabel);
+                    vertexSchemaTableTree.loadProperty(resultSet, outVertex);
+                    Emit<SqlgElement> outVertexEmit = new Emit<>(outVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+                    result.add(outVertexEmit);
+                    Preconditions.checkState(resultSet.next());
+                    i++;
+                }
+
+                Long edgeId = resultSet.getLong(3);
+                String edgeRawLabel = edgeSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), edgeRawLabel);
+                edgeSchemaTableTree.loadProperty(resultSet, sqlgEdge);
+                Emit<SqlgElement> edgeEmit = new Emit<>(sqlgEdge, edgeSchemaTableTree.getRealLabelsCache(), edgeSchemaTableTree.getStepDepth(), edgeSchemaTableTree.getSqlgComparatorHolder());
+                result.add(edgeEmit);
+
+                Preconditions.checkState(resultSet.next());
+                i++;
+                Long inVertexId = resultSet.getLong(3);
+                String inVertexRawLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+                SqlgVertex inVertex = SqlgVertex.of(sqlgGraph, inVertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), inVertexRawLabel);
+                vertexSchemaTableTree.loadProperty(resultSet, inVertex);
+                Emit<SqlgElement> inVertexEmit = new Emit<>(inVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+                result.add(inVertexEmit);
+
+                sqlgEdge.loadEdgeInOutVertices(vertexSchemaTable, outVertexId, edgeSchemaTable, inVertexId);
+
+                if (i < totalPathLength) {
+                    Preconditions.checkState(resultSet.next());
+                    outVertexId = inVertexId;
+                } else {
+                    return result;
+                }
+            }
+        }
+        return result;
+
+    }
+
     public static List<Emit<SqlgElement>> loadRecursiveResultSetIntoResultIterator(
             SqlgGraph sqlgGraph,
             ResultSetMetaData resultSetMetaData,
@@ -71,17 +141,17 @@ public class SqlgUtil {
 
         List<Emit<SqlgElement>> result = new ArrayList<>();
 
-        List<List<SqlgVertex>> paths = new ArrayList<>();
+//        List<List<SqlgVertex>> paths = new ArrayList<>();
         while (resultSet.next()) {
-            List<SqlgVertex> pathAsVertices = new ArrayList<>();
-            paths.add(pathAsVertices);
-            Long[] path = (Long[])resultSet.getArray(1).getArray();
+//            List<SqlgVertex> pathAsVertices = new ArrayList<>();
+//            paths.add(pathAsVertices);
+            Long[] path = (Long[]) resultSet.getArray(1).getArray();
             for (int i = 1; i <= path.length; i++) {
                 long id = resultSet.getLong(2);
                 String rawLabel = rootSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
                 SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, id, rootSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
                 rootSchemaTableTree.loadProperty(resultSet, sqlgVertex);
-                pathAsVertices.add(sqlgVertex);
+//                pathAsVertices.add(sqlgVertex);
                 Emit<SqlgElement> emit = new Emit<>(sqlgVertex, rootSchemaTableTree.getRealLabelsCache(), rootSchemaTableTree.getStepDepth(), rootSchemaTableTree.getSqlgComparatorHolder());
                 result.add(emit);
                 if (i < path.length) {
@@ -149,7 +219,7 @@ public class SqlgUtil {
     private static Map<String, Integer> populateIdCountMap(
             ResultSetMetaData resultSetMetaData,
             SchemaTableTree rootSchemaTableTree
-            ) throws SQLException {
+    ) throws SQLException {
 
         Map<String, Integer> lastElementIdCountMap = new HashMap<>();
         //First load all labeled entries from the resultSet

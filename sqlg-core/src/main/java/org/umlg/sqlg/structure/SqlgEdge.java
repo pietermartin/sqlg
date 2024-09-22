@@ -168,7 +168,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         writeColumnNames(propertyDefinitionValueMap, sql);
-        if (keyValueMap.size() > 0) {
+        if (!keyValueMap.isEmpty()) {
             sql.append(", ");
         }
         if (inVertexLabel.getIdentifiers().isEmpty()) {
@@ -216,7 +216,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
         sql.append(") VALUES (");
         writeColumnParameters(propertyDefinitionValueMap, sql);
-        if (keyValueMap.size() > 0) {
+        if (!keyValueMap.isEmpty()) {
             sql.append(", ");
         }
         buildQuestionMark(sql, inVertexLabel);
@@ -424,7 +424,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-
+    public void loadEdgeInOutVertices(SchemaTable outVertexSchemaTable, Long outId, SchemaTable inVertexSchemaTable, Long inId) {
+        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexSchemaTable.getSchema(), outVertexSchemaTable.getTable());
+        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexSchemaTable.getSchema(), inVertexSchemaTable.getTable());
+    }
 
     public void loadInVertex(ResultSet resultSet, SchemaTable inVertexSchemaTable, int columnIdx) throws SQLException {
         Long inId = resultSet.getLong(columnIdx);

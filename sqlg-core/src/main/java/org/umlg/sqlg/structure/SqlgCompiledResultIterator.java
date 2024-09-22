@@ -243,15 +243,30 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private void iterateQueries() throws SQLException {
         List<Emit<SqlgElement>> result;
         if (this.currentRootSchemaTableTree.isRecursiveQuery()) {
-            result = SqlgUtil.loadRecursiveResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.first,
-                    this.lastElementIdCountMap,
-                    this.forParent
-            );
+
+            if (this.currentRootSchemaTableTree.getRecursiveRepeatStepConfig().includeEdge()) {
+                result = SqlgUtil.loadRecursiveIncludeEdgeResultSetIntoResultIterator(
+                        this.sqlgGraph,
+                        this.queryResult.getMiddle(),
+                        this.queryResult.getLeft(),
+                        this.currentRootSchemaTableTree,
+                        this.subQueryStacks,
+                        this.first,
+                        this.lastElementIdCountMap,
+                        this.forParent
+                );
+
+            } else {
+                result = SqlgUtil.loadRecursiveResultSetIntoResultIterator(
+                        this.sqlgGraph,
+                        this.queryResult.getMiddle(),
+                        this.queryResult.getLeft(),
+                        this.currentRootSchemaTableTree,
+                        this.first,
+                        this.lastElementIdCountMap,
+                        this.forParent
+                );
+            }
 
         } else {
             result = SqlgUtil.loadResultSetIntoResultIterator(

@@ -150,6 +150,7 @@ public abstract class BaseStrategy {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount, false);
             } else if (step instanceof RepeatStep repeatStep) {
                 List<RepeatStep> repeatSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, this.traversal);
+//                if (false && isRecursiveRepeatStep(repeatStep)) {
                 if (isRecursiveRepeatStep(repeatStep)) {
                     handleRecursiveRepeatStep(repeatStep, pathCount);
                 } else if (optimizableRepeatStep(repeatSteps)) {
@@ -431,8 +432,20 @@ public abstract class BaseStrategy {
     private void handleRecursiveRepeatStep(RepeatStep repeatStep, MutableInt pathCount) {
         Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
         List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
+        boolean includeEdge = repeatTraversalSteps.size() == 4;
         VertexStep vertexStep = (VertexStep) repeatTraversalSteps.get(0);
-        this.currentReplacedStep.setRecursiveRepeatStepConfig(new RecursiveRepeatStepConfig(vertexStep.getDirection(), vertexStep.getEdgeLabels()[0]));
+        this.currentReplacedStep.setRecursiveRepeatStepConfig(new RecursiveRepeatStepConfig(vertexStep.getDirection(), vertexStep.getEdgeLabels()[0], includeEdge));
+        if (includeEdge) {
+            this.currentReplacedStep = ReplacedStep.from(
+                    this.sqlgGraph.getTopology(),
+                    vertexStep,
+                    pathCount.getValue()
+            );
+            //Important to add the replacedStep before collecting the additional steps.
+            //In particular the orderGlobalStep needs to have the currentStepDepth set.
+            this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        }
+
         int index = TraversalHelper.stepIndex(repeatStep, this.traversal);
         if (index != -1) {
             this.traversal.removeStep(repeatStep);
@@ -1382,11 +1395,23 @@ public abstract class BaseStrategy {
     private boolean isRecursiveRepeatStep(RepeatStep repeatStep) {
         Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
         List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
-        if (repeatTraversalSteps.size() == 3 &&
-                repeatTraversalSteps.get(0) instanceof VertexStep<?> vertexStep &&
-                repeatTraversalSteps.get(1) instanceof PathFilterStep<?> pathFilterStep &&
-                repeatTraversalSteps.get(2) instanceof RepeatStep.RepeatEndStep<?> repeatEndStep) {
+        if (
+                (
+                        repeatTraversalSteps.size() == 3 &&
+                                repeatTraversalSteps.get(0) instanceof VertexStep<?> &&
+                                repeatTraversalSteps.get(1) instanceof PathFilterStep<?> pathFilterStep && pathFilterStep.isSimple() &&
+                                repeatTraversalSteps.get(2) instanceof RepeatStep.RepeatEndStep<?>
+                ) ||
+                        (
+                                repeatTraversalSteps.size() == 4 &&
+                                        repeatTraversalSteps.get(0) instanceof VertexStep<?> &&
+                                        repeatTraversalSteps.get(1) instanceof EdgeVertexStep &&
+                                        repeatTraversalSteps.get(2) instanceof PathFilterStep<?> _pathFilterStep && _pathFilterStep.isSimple() &&
+                                        repeatTraversalSteps.get(3) instanceof RepeatStep.RepeatEndStep<?>
+                        )
+        ) {
 
+            VertexStep<?> vertexStep = (VertexStep<?>) repeatTraversalSteps.get(0);
             String[] edgeLabels = vertexStep.getEdgeLabels();
             List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
             if (edgeLabels.length == 1 && labelHasContainers.size() == 1) {
