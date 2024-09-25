@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatPostgresqlRecursiveQuery;
 @Suite.SuiteClasses({
 //        TestMultiThread.class
         TestRepeatPostgresqlRecursiveQuery.class,
+//        TestUnoptimizedRepeatStep.class
 //        TestGremlinOptional.class,
 //        TestHasLabelAndId.class,
 //        TestPropertyValues.class
