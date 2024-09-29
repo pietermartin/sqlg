@@ -4,9 +4,9 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -26,32 +27,652 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRepeatPostgresqlRecursiveQuery.class);
 
     @Test
-    public void g_VX6X_repeatXa_bothXcreatedX_simplePathX_emitXrepeatXb_bothXknowsXX_untilXloopsXbX_asXb_whereXloopsXaX_asXbX_hasXname_vadasXX_dedup_name() {
-        loadModern();
-        Object peterId = this.convertToVertexId("peter");
-        Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V(peterId)
-                .repeat("a", __.both("created").simplePath())
-                .emit(
-                        __.repeat("b", __.both("knows"))
-                                .until(
-                                        __.loops("b").as("c").where(__.loops("a").as("c"))
-                                )
-                                .has("name", "vadas")
-                ).dedup().values("name");
+    public void testFriendOfFriendBothIncludeEdgeWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
 
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        Edge e1 = a.addEdge("of", b);
+        Edge e2 = b.addEdge("of", c);
+        Edge e3 = c.addEdge("of", d);
+        Edge e4 = d.addEdge("of", e);
+        Edge e5 = e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
 
-        this.printTraversalForm(traversal);
-        Assert.assertTrue(traversal.hasNext());
-        String name = (String) traversal.next();
-        Assert.assertEquals("josh", name);
-        Assert.assertFalse(traversal.hasNext());
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(c)
+                .repeat(
+                        __.bothE("of").as("e").otherV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.bothE("of").simplePath()),
+                                __.select("v").has("name", P.within("b", "e"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(c) && p.get(1).equals(e2) && p.get(2).equals(b)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(c) && p.get(1).equals(e3) && p.get(2).equals(d) && p.get(3).equals(e4) && p.get(4).equals(e)));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(c)
+                .repeat(
+                        __.bothE("of").otherV().simplePath()
+                ).until(
+                        __.or(
+                                __.has("name", P.within("b", "e")),
+                                __.not(__.bothE("of").simplePath())
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(c) && p.get(1).equals(e2) && p.get(2).equals(b)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(c) && p.get(1).equals(e3) && p.get(2).equals(d) && p.get(3).equals(e4) && p.get(4).equals(e)));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(c)
+                .repeat(
+                        __.bothE("of").as("e").otherV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.bothE("of").simplePath()),
+                                __.has("name", P.within("b", "e"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(c) && p.get(1).equals(e2) && p.get(2).equals(b)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(c) && p.get(1).equals(e3) && p.get(2).equals(d) && p.get(3).equals(e4) && p.get(4).equals(e)));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(c)
+                .repeat(
+                        __.bothE("of").as("e").otherV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.bothE("of").simplePath()),
+                                __.select("v").has("name", P.within("b", "e"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(c) && p.get(1).equals(e2) && p.get(2).equals(b)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(c) && p.get(1).equals(e3) && p.get(2).equals(d) && p.get(3).equals(e4) && p.get(4).equals(e)));
+    }
+
+    @Test
+    public void testFriendOfFriendBothWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        a.addEdge("of", b);
+        b.addEdge("of", c);
+        c.addEdge("of", d);
+        d.addEdge("of", e);
+        e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.both("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.both("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(e) && p.get(1).equals(f)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(c)));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.both("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.both("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(2, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(e) && p.get(1).equals(f)));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(c)));
+    }
+
+    @Test
+    public void testFriendOfFriendInWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        a.addEdge("of", b);
+        b.addEdge("of", c);
+        c.addEdge("of", d);
+        d.addEdge("of", e);
+        e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.in("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.in("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Path p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 3 && p1.get(0).equals(e) && p1.get(1).equals(d) && p1.get(2).equals(c));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.in("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.in("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 3 && p1.get(0).equals(e) && p1.get(1).equals(d) && p1.get(2).equals(c));
+    }
+
+    @Test
+    public void testFriendOfFriendOutWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        a.addEdge("of", b);
+        b.addEdge("of", c);
+        c.addEdge("of", d);
+        d.addEdge("of", e);
+        e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.out("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.out("of").simplePath()),
+                                __.has("name", P.within("e", "f"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Path p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 4 && p1.get(0).equals(b) && p1.get(1).equals(c) && p1.get(2).equals(d) && p1.get(3).equals(e));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+                .repeat(
+                        __.out("of").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.out("of").simplePath()),
+                                __.has("name", P.neq("c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(b)));
+    }
+
+    @Test
+    public void testFriendOfFriendOutIncludeEdgeWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        Edge e1 = a.addEdge("of", b);
+        Edge e2 = b.addEdge("of", c);
+        Edge e3 = c.addEdge("of", d);
+        Edge e4 = d.addEdge("of", e);
+        Edge e5 = e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.outE("of").as("e").inV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.outE("of").simplePath()),
+                                __.select("v").has("name", P.within("e", "f"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Path p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 7 && p1.get(0).equals(b) && p1.get(1).equals(e2) && p1.get(2).equals(c) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(d) && p1.get(5).equals(e4) && p1.get(6).equals(e));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.outE("of").inV().simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.outE("of").simplePath()),
+                                __.has("name", P.within("e", "f"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 7 && p1.get(0).equals(b) && p1.get(1).equals(e2) && p1.get(2).equals(c) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(d) && p1.get(5).equals(e4) && p1.get(6).equals(e));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.outE("of").as("e").inV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.outE("of").simplePath()),
+                                __.has("name", P.within("e", "f"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 7 && p1.get(0).equals(b) && p1.get(1).equals(e2) && p1.get(2).equals(c) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(d) && p1.get(5).equals(e4) && p1.get(6).equals(e));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.outE("of").as("e").inV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.outE("of").simplePath()),
+                                __.select("v").has("name", P.within("e", "f"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 7 && p1.get(0).equals(b) && p1.get(1).equals(e2) && p1.get(2).equals(c) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(d) && p1.get(5).equals(e4) && p1.get(6).equals(e));
+    }
+
+    @Test
+    public void testFriendOfFriendInIncludeEdgeWithUtil() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        Edge e1 = a.addEdge("of", b);
+        Edge e2 = b.addEdge("of", c);
+        Edge e3 = c.addEdge("of", d);
+        Edge e4 = d.addEdge("of", e);
+        Edge e5 = e.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.inE("of").as("e").outV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.inE("of").simplePath()),
+                                __.select("v").has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Path p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 5 && p1.get(0).equals(e) && p1.get(1).equals(e4) && p1.get(2).equals(d) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(c));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.inE("of").outV().simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.inE("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 5 && p1.get(0).equals(e) && p1.get(1).equals(e4) && p1.get(2).equals(d) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(c));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.inE("of").as("e").outV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.inE("of").simplePath()),
+                                __.has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 5 && p1.get(0).equals(e) && p1.get(1).equals(e4) && p1.get(2).equals(d) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(c));
+
+        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+                .repeat(
+                        __.inE("of").as("e").outV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.inE("of").simplePath()),
+                                __.select("v").has("name", P.within("b", "c"))
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 5 && p1.get(0).equals(e) && p1.get(1).equals(e4) && p1.get(2).equals(d) &&
+                p1.get(3).equals(e3) && p1.get(4).equals(c));
+    }
+
+    @Test
+    public void testFriendOfFriendOutIncludeEdgeWithUtilValueOnEdge() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                ), new LinkedHashMap<>() {{
+                    put("ename", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                }}
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+        Edge e1 = a.addEdge("of", b, "ename", "e1");
+        Edge e2 = b.addEdge("of", c, "ename", "e2");
+        Edge e3 = c.addEdge("of", d, "ename", "e3");
+        Edge e4 = d.addEdge("of", e, "ename", "e4");
+        Edge e5 = e.addEdge("of", f, "ename", "e5");
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(b)
+                .repeat(
+                        __.outE("of").as("e").inV().as("v").simplePath()
+                ).until(
+                        __.or(
+                                __.not(__.outE("of").simplePath()),
+                                __.select("e").has("ename", "e3"),
+                                __.select("v").has("name", "b")
+                        )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+
+        Assert.assertEquals(1, paths.size());
+        Path p1 = paths.get(0);
+        Assert.assertTrue(p1.size() == 5 && p1.get(0).equals(b) && p1.get(1).equals(e2) && p1.get(2).equals(c) && p1.get(3).equals(e3) && p1.get(4).equals(d));
     }
 
     @Test
@@ -83,12 +704,9 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Edge e2 = b.addEdge("of", c, "field1", "of2", "field2", "of22");
         this.sqlgGraph.tx().commit();
 
-//        List<Path> _paths = this.sqlgGraph.traversal().V().hasId(a.id()).outE("of")
-//                .path()
-//                .toList();
-
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>)this.sqlgGraph.traversal().V().hasId(c.id())
-                .repeat(__.inE("of").outV().simplePath()).until(__.not(__.inE("of").simplePath()))
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasId(c.id())
+                .repeat(__.inE("of").outV().simplePath())
+                .until(__.not(__.inE("of").simplePath()))
                 .path();
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> inPaths = traversal.toList();
@@ -144,14 +762,15 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Edge e2 = b.addEdge("of", c, "field1", "of2", "field2", "of22");
         this.sqlgGraph.tx().commit();
 
-//        List<Path> _paths = this.sqlgGraph.traversal().V().hasId(a.id()).outE("of")
-//                .path()
-//                .toList();
-
-        List<Path> outPaths = this.sqlgGraph.traversal().V().hasId(a.id())
-                .repeat(__.outE("of").inV().simplePath()).until(__.not(__.outE("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+                .repeat(__.outE("of").inV().simplePath())
+                .until(__.not(__.outE("of").simplePath()))
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> outPaths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
 
         Assert.assertEquals(1, outPaths.size());
         Path p1 = outPaths.get(0);
@@ -201,21 +820,19 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Edge e2 = b.addEdge("of", c, "edgeName", "of2");
         this.sqlgGraph.tx().commit();
 
-//        List<Path> _paths = this.sqlgGraph.traversal().V().hasId(a.id())
-//                .outE("of")
-//                .path()
-//                .toList();
-
-        List<Path> paths = this.sqlgGraph.traversal().V().hasId(a.id())
-                .repeat(__.outE("of").inV().simplePath()).until(__.not(__.outE("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasId(a.id())
+                .repeat(__.outE("of").inV().simplePath())
+                .until(__.not(__.outE("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
 
         Assert.assertEquals(1, paths.size());
         Path p1 = paths.get(0);
         Assert.assertEquals(5, p1.size());
-        Assert.assertTrue(p1.get(0).equals(a) && p1.get(1).equals(e1) && p1.get(2).equals(b) && p1.get(3).equals(e2) && p1.get(4).equals(c));
-
     }
 
     @Test
@@ -245,10 +862,15 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         StopWatch stopWatch = StopWatch.createStarted();
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Friend").has("name", "a")
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasLabel("Friend").has("name", "a")
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
 
@@ -288,13 +910,17 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         a.addEdge("of", b);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a"))
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(1, paths.size());
-
     }
 
     @Test
@@ -324,10 +950,17 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Edge e2 = b.addEdge("of", c, "edgeName", "of2");
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasId(a.id())
-                .repeat(__.bothE("of").otherV().simplePath()).until(__.not(__.bothE("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasId(a.id())
+                .repeat(__.bothE("of").otherV().simplePath())
+                .until(
+                        __.not(__.bothE("of").simplePath())
+                )
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
 
         Assert.assertEquals(1, paths.size());
         Path p1 = paths.get(0);
@@ -370,11 +1003,16 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a"))
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
         Assert.assertEquals(3, paths.size());
@@ -382,30 +1020,45 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a) && p.get(1).equals(b) && p.get(2).equals(c) && p.get(3).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(f)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("b"))
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b) && p.get(1).equals(c) && p.get(2).equals(d)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b) && p.get(1).equals(c) && p.get(2).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b) && p.get(1).equals(a) && p.get(2).equals(f)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d"))
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a) && p.get(4).equals(f)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d", "c"))
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(5, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a) && p.get(4).equals(f)));
@@ -449,11 +1102,16 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a"))
-                .repeat(__.bothE("of").otherV().simplePath()).until(__.not(__.bothE("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.bothE("of").otherV().simplePath())
+                .until(__.not(__.bothE("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
         Assert.assertEquals(3, paths.size());
@@ -461,30 +1119,42 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 7 && p.get(0).equals(a) && p.get(1).equals(e1) && p.get(2).equals(b) && p.get(3).equals(e2) && p.get(4).equals(c) && p.get(5).equals(e4) && p.get(6).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(e5) && p.get(2).equals(f)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("b"))
                 .repeat(__.bothE("of").otherV().simplePath()).until(__.not(__.bothE("of").simplePath()))
-                .path()
-                .toList();
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(b) && p.get(1).equals(e2) && p.get(2).equals(c) && p.get(3).equals(e3) && p.get(4).equals(d)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(b) && p.get(1).equals(e2) && p.get(2).equals(c) && p.get(3).equals(e4) && p.get(4).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(b) && p.get(1).equals(e1) && p.get(2).equals(a) && p.get(3).equals(e5) && p.get(4).equals(f)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d"))
                 .repeat(__.bothE("of").otherV().simplePath()).until(__.not(__.bothE("of").simplePath()))
-                .path()
-                .toList();
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 9 && p.get(0).equals(d) && p.get(1).equals(e3) && p.get(2).equals(c) && p.get(3).equals(e2) && p.get(4).equals(b) && p.get(5).equals(e1) && p.get(6).equals(a) && p.get(7).equals(e5) && p.get(8).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(d) && p.get(1).equals(e3) && p.get(2).equals(c) && p.get(3).equals(e4) && p.get(4).equals(e)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d", "c"))
                 .repeat(__.bothE("of").otherV().simplePath()).until(__.not(__.bothE("of").simplePath()))
-                .path()
-                .toList();
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(5, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 9 && p.get(0).equals(d) && p.get(1).equals(e3) && p.get(2).equals(c) && p.get(3).equals(e2) && p.get(4).equals(b) && p.get(5).equals(e1) && p.get(6).equals(a) && p.get(7).equals(e5) && p.get(8).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(d) && p.get(1).equals(e3) && p.get(2).equals(c) && p.get(3).equals(e4) && p.get(4).equals(e)));
@@ -528,22 +1198,32 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("e", "f"))
-                .repeat(__.in("of").simplePath()).until(__.not(__.in("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.in("of").simplePath())
+                .until(__.not(__.in("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(e) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(f) && p.get(1).equals(a)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("e", "f", "d"))
-                .repeat(__.in("of").simplePath()).until(__.not(__.in("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.in("of").simplePath())
+                .until(__.not(__.in("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(e) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a)));
@@ -585,22 +1265,32 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("e", "f"))
-                .repeat(__.inE("of").outV().simplePath()).until(__.not(__.inE("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.inE("of").outV().simplePath())
+                .until(__.not(__.inE("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 7 && p.get(0).equals(e) && p.get(1).equals(e4) && p.get(2).equals(c) && p.get(3).equals(e2) && p.get(4).equals(b) && p.get(5).equals(e1) && p.get(6).equals(a)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(f) && p.get(1).equals(e5) && p.get(2).equals(a)));
 
-        paths = sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("e", "f", "d"))
-                .repeat(__.inE("of").outV().simplePath()).until(__.not(__.inE("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.inE("of").outV().simplePath())
+                .until(__.not(__.inE("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 7 && p.get(0).equals(e) && p.get(1).equals(e4) && p.get(2).equals(c) && p.get(3).equals(e2) && p.get(4).equals(b) && p.get(5).equals(e1) && p.get(6).equals(a)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(f) && p.get(1).equals(e5) && p.get(2).equals(a)));
@@ -642,11 +1332,16 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a", "b"))
-                .repeat(__.out("of").simplePath()).until(__.not(__.out("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.out("of").simplePath())
+                .until(__.not(__.out("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         Assert.assertEquals(5, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a) && p.get(1).equals(b) && p.get(2).equals(c) && p.get(3).equals(d)));
@@ -692,11 +1387,16 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a", "b"))
-                .repeat(__.outE("of").inV().simplePath()).until(__.not(__.outE("of").simplePath()))
-                .path()
-                .toList();
+                .repeat(__.outE("of").inV().simplePath())
+                .until(__.not(__.outE("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         Assert.assertEquals(5, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 7 && p.get(0).equals(a) && p.get(1).equals(e1) && p.get(2).equals(b) && p.get(3).equals(e2) && p.get(4).equals(c) && p.get(5).equals(e3) && p.get(6).equals(d)));
@@ -743,10 +1443,15 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.start();
 
         Vertex first = this.sqlgGraph.traversal().V().hasLabel("Friend").has("name", "a").tryNext().orElseThrow();
-        List<Path> paths = this.sqlgGraph.traversal().V(first)
-                .repeat(__.out("of").simplePath()).until(__.not(__.out("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(first)
+                .repeat(__.out("of").simplePath())
+                .until(__.not(__.out("of").simplePath()))
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(f)));
@@ -818,10 +1523,15 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         stopWatch.start();
 
         Vertex first = this.sqlgGraph.traversal().V().hasLabel("Friend").has("name", "a").tryNext().orElseThrow();
-        List<Path> paths = this.sqlgGraph.traversal().V(first)
-                .repeat(__.out("of").simplePath()).until(__.not(__.out("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(first)
+                .repeat(__.out("of").simplePath())
+                .until(__.not(__.out("of").simplePath()))
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         stopWatch.stop();
         LOGGER.info("repeat query time: {}", stopWatch);
         Assert.assertEquals(1, paths.size());
@@ -856,7 +1566,6 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         Assert.assertTrue(result.stream().anyMatch(r -> Arrays.equals(r.path, new Long[]{1L, 3L, 2L})));
     }
 
-
     @Test
     public void testFriendOfFriendBOTHComplicated() {
         VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
@@ -887,11 +1596,16 @@ public class TestRepeatPostgresqlRecursiveQuery extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         StopWatch stopWatch = StopWatch.createStarted();
-        List<Path> paths = this.sqlgGraph.traversal().V(a)
-                .repeat(__.both("of").simplePath()).until(__.not(__.both("of").simplePath()))
-                .path()
-                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
         stopWatch.stop();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
         LOGGER.info("repeat query time: {}", stopWatch);
 
         Assert.assertEquals(2, paths.size());

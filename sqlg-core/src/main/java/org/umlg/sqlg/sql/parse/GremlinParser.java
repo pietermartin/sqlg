@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -25,6 +26,25 @@ public class GremlinParser {
         ReplacedStep<?, ?> startReplacedStep = replacedStepTree.root().getReplacedStep();
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.calculateRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth());
+
+        if (startReplacedStep.getRecursiveRepeatStepConfig() != null) {
+            //We create a separate SchemaTableTree for the until traversal.
+            //This is needed to generate the WHERE clause
+            Preconditions.checkState(rootSchemaTableTrees.size() == 1);
+            SchemaTableTree rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
+            Preconditions.checkState(startReplacedStep.getRecursiveRepeatStepConfig() == rootSchemaTableTree.getRecursiveRepeatStepConfig());
+            ReplacedStepTree<Vertex, Vertex> untilReplacedStepTree = startReplacedStep.getRecursiveRepeatStepConfig().untilReplacedStepTree();
+
+            ReplacedStep<Vertex, Vertex> untilReplacedStep = untilReplacedStepTree.root().getReplacedStep();
+            Set<SchemaTableTree> untilTraversalRootSchemaTableTrees = untilReplacedStep.calculateRootSchemaTableTrees(this.sqlgGraph, untilReplacedStepTree.getDepth());
+
+            Preconditions.checkState(untilTraversalRootSchemaTableTrees.size() == 1);
+            SchemaTableTree untilSchemaTableTree = untilTraversalRootSchemaTableTrees.iterator().next();
+            untilReplacedStepTree.walkReplacedSteps(untilSchemaTableTree);
+            untilSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(untilReplacedStepTree.getDepth());
+            rootSchemaTableTree.setUntilTraversalRootSchemaTableTree(untilSchemaTableTree);
+        }
+
         Set<SchemaTableTree> result = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             replacedStepTree.walkReplacedSteps(rootSchemaTableTree);

@@ -121,7 +121,8 @@ public class ReplacedStep<S, E> {
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {
-        return Collections.unmodifiableList(this.andOrHasContainers);
+//        return Collections.unmodifiableList(this.andOrHasContainers);
+        return this.andOrHasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
@@ -146,6 +147,10 @@ public class ReplacedStep<S, E> {
 
     public void setRecursiveRepeatStepConfig(RecursiveRepeatStepConfig recursiveRepeatStepConfig) {
         this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
+    }
+
+    public RecursiveRepeatStepConfig getRecursiveRepeatStepConfig() {
+        return recursiveRepeatStepConfig;
     }
 
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {

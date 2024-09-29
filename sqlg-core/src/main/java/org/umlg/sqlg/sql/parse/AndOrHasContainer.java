@@ -19,8 +19,7 @@ import java.util.*;
  */
 public class AndOrHasContainer {
 
-
-    private Set<String> connectiveStepLabels;
+    public static final String DEFAULT  = "default";
 
     //AND and OR means its represents a nested and/or traversal.
     //NONE means it represents an HasContainer.
@@ -44,22 +43,14 @@ public class AndOrHasContainer {
     //This represents the type's traversals.
     //i.e. g.V().or(__.traversal1, __.traversal2)
     private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
-    private final List<HasContainer> hasContainers = new ArrayList<>();
+    private final Map<String, List<HasContainer>> hasContainers = new HashMap<>();
 
     public AndOrHasContainer(TYPE type) {
         this.type = type;
     }
 
-    public Set<String> getConnectiveStepLabels() {
-        return connectiveStepLabels;
-    }
-
-    public void setConnectiveStepLabels(Set<String> connectiveStepLabels) {
-        this.connectiveStepLabels = connectiveStepLabels;
-    }
-
-    public void addHasContainer(HasContainer hasContainer) {
-        this.hasContainers.add(hasContainer);
+    public void addHasContainer(String selectLabel, HasContainer hasContainer) {
+        this.hasContainers.computeIfAbsent(selectLabel, k -> new ArrayList<>()).add(hasContainer);
     }
 
     public void addAndOrHasContainer(AndOrHasContainer andOrHasContainer) {
@@ -70,19 +61,6 @@ public class AndOrHasContainer {
         return type;
     }
 
-    public List<HasContainer> getAllHasContainers() {
-        List<HasContainer> result = new ArrayList<>(this.hasContainers);
-        internalAllHasContainers(result);
-        return result;
-    }
-
-    private void internalAllHasContainers(List<HasContainer> result) {
-        result.addAll(this.hasContainers);
-        for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
-            andOrHasContainer.internalAllHasContainers(result);
-        }
-    }
-
     void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result) {
         toSql(sqlgGraph, schemaTableTree, result, 0);
     }
@@ -90,40 +68,47 @@ public class AndOrHasContainer {
     private void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result, int depth) {
         if (!this.hasContainers.isEmpty()) {
             boolean first = true;
-            for (HasContainer h : this.hasContainers) {
-                if (first) {
-                    first = false;
-                    result.append("(");
-                } else {
-                    result.append(" AND ");
-                }
-                String k = h.getKey();
-                WhereClause whereClause = WhereClause.from(h.getPredicate());
+            for (String selectLabel : this.hasContainers.keySet()) {
 
-                // check if property exists
-                String bool = null;
-                if (!k.equals(T.id.getAccessor())) {
-                    Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
-                    if (pts != null && !pts.containsKey(k)) {
-                        // verify if we have a value
-                        Multimap<PropertyDefinition, Object> keyValueMapAgain = LinkedListMultimap.create();
-                        whereClause.putKeyValueMap(h, schemaTableTree, keyValueMapAgain);
-                        // we do
-                        if (keyValueMapAgain.size() > 0) {
-                            bool = "? is null";
-                        } else {
-                            if (Existence.NULL.equals(h.getBiPredicate())) {
-                                bool = "1=1";
+                //get the schemaTableTree for the label
+                SchemaTableTree schemaTableTreeForLabel = selectLabel.equals(DEFAULT) ? schemaTableTree : schemaTableTree.schemaTableTreeForLabel(selectLabel);
+
+                List<HasContainer> _hasContainers = this.hasContainers.get(selectLabel);
+                for (HasContainer h : _hasContainers) {
+                    if (first) {
+                        first = false;
+                        result.append("(");
+                    } else {
+                        result.append(" AND ");
+                    }
+                    String k = h.getKey();
+                    WhereClause whereClause = WhereClause.from(h.getPredicate());
+
+                    // check if property exists
+                    String bool = null;
+                    if (!k.equals(T.id.getAccessor())) {
+                        Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTreeForLabel.getSchemaTable());
+                        if (pts != null && !pts.containsKey(k)) {
+                            // verify if we have a value
+                            Multimap<PropertyDefinition, Object> keyValueMapAgain = LinkedListMultimap.create();
+                            whereClause.putKeyValueMap(h, schemaTableTreeForLabel, keyValueMapAgain);
+                            // we do
+                            if (!keyValueMapAgain.isEmpty()) {
+                                bool = "? is null";
                             } else {
-                                bool = "1=0";
+                                if (Existence.NULL.equals(h.getBiPredicate())) {
+                                    bool = "1=1";
+                                } else {
+                                    bool = "1=0";
+                                }
                             }
                         }
                     }
-                }
-                if (bool != null) {
-                    result.append(bool);
-                } else {
-                    result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h, true));
+                    if (bool != null) {
+                        result.append(bool);
+                    } else {
+                        result.append(whereClause.toSql(sqlgGraph, schemaTableTreeForLabel, h, true));
+                    }
                 }
             }
             result.append(")");
@@ -142,14 +127,10 @@ public class AndOrHasContainer {
             andOrHasContainer.toSql(sqlgGraph, schemaTableTree, result, depth + 1);
             if (count++ < this.andOrHasContainers.size()) {
                 switch (this.type) {
-                    case AND:
-                        result.append(" AND ");
-                        break;
-                    case OR:
-                        result.append(" OR ");
-                        break;
-                    case NONE:
-                        break;
+                    case AND -> result.append(" AND ");
+                    case OR -> result.append(" OR ");
+                    case NONE -> {
+                    }
                 }
             }
         }
@@ -161,9 +142,12 @@ public class AndOrHasContainer {
     }
 
     public void setParameterOnStatement(Multimap<PropertyDefinition, Object> keyValueMapAgain, SchemaTableTree schemaTableTree) {
-        for (HasContainer hasContainer : this.hasContainers) {
-            WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-            whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+        for (String selectLabel : this.hasContainers.keySet()) {
+            List<HasContainer> _hasContainers = this.hasContainers.get(selectLabel);
+            for (HasContainer hasContainer : _hasContainers) {
+                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+            }
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
             andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
