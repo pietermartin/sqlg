@@ -1091,21 +1091,40 @@ public class SchemaTableTree {
         );
         String sql;
         if (distinctQueryStack.size() == 2) {
-            sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                case OUT ->
-                        constructRecursiveIncludeEdgeOutQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
-                case IN -> constructRecursiveIncludeEdgeInQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
-                case BOTH -> constructRecursiveIncludeEdgeBothQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
-            };
+            if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
+                sql = switch (this.recursiveRepeatStepConfig.direction()) {
+                    case OUT ->
+                            constructRecursiveIncludeEdgeOutQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
+                    case IN ->
+                            constructRecursiveIncludeEdgeInQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
+                    case BOTH ->
+                            constructRecursiveIncludeEdgeBothQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
+                };
+            } else {
+                throw new IllegalStateException("Implement me");
+            }
         } else {
-            sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                case OUT -> constructRecursiveOutQuery(startSql, optionalUntilWhereClause);
-                case IN -> constructRecursiveInQuery(startSql, optionalUntilWhereClause);
-                case BOTH -> constructRecursiveBothQuery(startSql, optionalUntilWhereClause);
-            };
+            if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
+                sql = switch (this.recursiveRepeatStepConfig.direction()) {
+                    case OUT -> constructRecursiveOutQuery(startSql, optionalUntilWhereClause);
+                    case IN -> constructRecursiveInQuery(startSql, optionalUntilWhereClause);
+                    case BOTH -> constructRecursiveBothQuery(startSql, optionalUntilWhereClause);
+                };
+            } else {
+                sql = switch (this.recursiveRepeatStepConfig.direction()) {
+                    case OUT -> constructRecursiveOutQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
+                    case IN -> constructRecursiveInQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
+                    default -> constructRecursiveBothQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
+                };
+
+            }
         }
         //merge the main distinctQueryStack and until distinctQueryStack
         schemaTableTree.getAndOrHasContainers().addAll(untilSchemaTableTree.getAndOrHasContainers());
+        if (!this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
+            //Do it again for the second generated WHERE clause
+            schemaTableTree.getAndOrHasContainers().addAll(untilSchemaTableTree.getAndOrHasContainers());
+        }
         return sql;
     }
 
@@ -3709,38 +3728,135 @@ public class SchemaTableTree {
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
         return """
                 WITH start AS (
                     %s
-                ), recursive AS (
-                    WITH a AS (
-                        WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path) AS (
-                            SELECT
-                                e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
-                            FROM
-                                "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
-                            UNION ALL
-                            SELECT
-                                e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
-                            FROM
-                                "E_of" e JOIN
-                                search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
-                                {vertexSchemaTable} v ON st.{inForeignKey} = v."ID"
-                            WHERE NOT is_cycle {optionalUntilWhereClause}
-                        )
-                        SELECT * FROM search_tree WHERE NOT is_cycle
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path) AS (
+                        SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
+                        FROM
+                            "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                        UNION ALL
+                        SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{inForeignKey} = v."ID"
+                        WHERE NOT is_cycle {optionalUntilWhereClause}
                     )
-                    SELECT a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
                     WHERE a.path NOT IN (SELECT previous from a)
-                    ORDER BY a.path, ordinal
                 )
-                SELECT recursive.path, output.* from recursive JOIN {vertexSchemaTable} output ON recursive.vertex_id = output."ID";
+                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID"
+                ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
                 """
                 .formatted(startSql)
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
+    }
+
+    private String constructRecursiveInQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
+        return """
+                WITH start AS (
+                    %s
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {inForeignKey}, {outForeignKey}, depth, is_cycle, previous, path) AS (
+                        SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
+                        FROM
+                            "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                        UNION ALL
+                        SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{outForeignKey} = v."ID"
+                        WHERE NOT is_cycle {optionalUntilWhereClause}
+                    )
+                    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                    SELECT * FROM a JOIN "public"."V_Friend" v ON a."public.Friend__O" = v."ID"
+                    WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                    SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
+                    WHERE b.path NOT IN (SELECT previous from b)
+                )
+                SELECT c.path, output.* from c JOIN {vertexSchemaTable} output ON c.vertex_id = output."ID"
+                ORDER BY c.gen_random_uuid, c.path, c.path, c.ordinal;
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+    }
+
+    private String constructRecursiveOutQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
+        return """
+                WITH start AS (
+                    %s
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path) AS (
+                        SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
+                        FROM
+                            "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                        UNION ALL
+                        SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{inForeignKey} = v."ID"
+                        WHERE NOT is_cycle {optionalUntilWhereClause}
+                    )
+                    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                    SELECT * FROM a JOIN "public"."V_Friend" v ON a."public.Friend__I" = v."ID"
+                    WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                    SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
+                    WHERE b.path NOT IN (SELECT previous from b)
+                )
+                SELECT c.path, output.* from c JOIN "public"."V_Friend" output ON c.vertex_id = output."ID"
+                ORDER BY c.gen_random_uuid, c.path, c.path, c.ordinal;
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
     }
 
     private String constructRecursiveInQuery(String startSql, String optionalUntilWhereClause) {
@@ -3749,32 +3865,33 @@ public class SchemaTableTree {
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
         return """
                 WITH start AS (
                     %s
-                ), recursive AS (
-                    WITH a AS (
-                        WITH RECURSIVE search_tree("ID", {inForeignKey}, {outForeignKey}, depth, is_cycle, previous, path) AS (
-                            SELECT
-                                e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
-                            FROM
-                                "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
-                            UNION ALL
-                            SELECT
-                                e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
-                            FROM
-                                "E_of" e JOIN
-                                search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
-                                {vertexSchemaTable} v ON st.{outForeignKey} = v."ID"
-                            WHERE NOT is_cycle {optionalUntilWhereClause}
-                        )
-                        SELECT * FROM search_tree WHERE NOT is_cycle
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {inForeignKey}, {outForeignKey}, depth, is_cycle, previous, path) AS (
+                        SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
+                        FROM
+                            "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                        UNION ALL
+                        SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{outForeignKey} = v."ID"
+                        WHERE NOT is_cycle {optionalUntilWhereClause}
                     )
-                    SELECT a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
                     WHERE a.path NOT IN (SELECT previous from a)
-                    ORDER BY a.path, ordinal
                 )
-                SELECT recursive.path, output.* from recursive JOIN {vertexSchemaTable} output ON recursive.vertex_id = output."ID";
+                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID"
+                ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
                 """
                 .formatted(startSql)
                 .replace("{outForeignKey}", outForeignKey)
@@ -3783,86 +3900,178 @@ public class SchemaTableTree {
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
     }
 
+    private String constructRecursiveBothQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
+        return """
+                WITH start as (
+                    %s
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, direction) AS (
+                        WITH start_out as (
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                ARRAY[e.{outForeignKey}],
+                                ARRAY[e.{outForeignKey}, e.{inForeignKey}],
+                                'OUT'
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                        ), start_in as (
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                ARRAY[e.{inForeignKey}],
+                                ARRAY[e.{inForeignKey}, e.{outForeignKey}],
+                                'IN'
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                        )
+                        SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+                        UNION ALL
+                        SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN 'OUT'
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN 'IN'
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN 'IN'
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
+                            END
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON
+                                ((st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
+                                OR
+                                 (st.direction = 'IN' AND (st.{outForeignKey} = e.{inForeignKey} OR st.{outForeignKey} = e.{outForeignKey}))) JOIN
+                            {vertexSchemaTable} v ON
+                                ((st.direction = 'OUT' AND (st.{inForeignKey} = v."ID"))
+                                OR
+                                (st.direction = 'IN' AND (st.{outForeignKey} = v."ID")))
+                        WHERE
+                            NOT is_cycle {optionalUntilWhereClause}
+                    )
+                    SELECT *, gen_random_uuid() FROM search_tree
+                    WHERE NOT is_cycle
+                ), b AS (
+                    SELECT * FROM a JOIN {vertexSchemaTable} v ON\s
+                				((a.direction = 'OUT' AND (a.{inForeignKey} = v."ID"))
+                				OR
+                				(a.direction = 'IN' AND (a.{outForeignKey} = v."ID")))
+                    WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                    SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
+                    WHERE b.path NOT IN (SELECT previous from b)
+                )
+                SELECT c.path, output.* from c JOIN {vertexSchemaTable} output ON c.vertex_id = output."ID"
+                ORDER BY c.gen_random_uuid, c.path, c.ordinal
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+    }
+
     private String constructRecursiveBothQuery(String startSql, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("v.\"depth\"", "\"depth\"");
         return """
                 WITH start as (
                     %s
-                ), recursive AS (
-                    WITH a AS (
-                        WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, direction) AS (
-                            WITH start_out as (
-                                SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
-                                    ARRAY[e.{outForeignKey}],
-                                    ARRAY[e.{outForeignKey}, e.{inForeignKey}],
-                                    'OUT'
-                                FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
-                            ), start_in as (
-                                SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
-                                    ARRAY[e.{inForeignKey}],
-                                    ARRAY[e.{inForeignKey}, e.{outForeignKey}],
-                                    'IN'
-                                FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
-                            )
-                            SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
-                            UNION ALL
-                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1,
-                                CASE
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
-                                END,
-                                CASE
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path
-                                END,
-                                CASE
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
-                                END,
-                                CASE
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN 'OUT'
-                                WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN 'IN'
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN 'IN'
-                                WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
-                                END
-                            FROM
-                                "E_of" e JOIN
-                                search_tree st ON
-                                    ((st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
-                                    OR
-                                     (st.direction = 'IN' AND (st.{outForeignKey} = e.{inForeignKey} OR st.{outForeignKey} = e.{outForeignKey}))) JOIN
-                                {vertexSchemaTable} v ON
-                                    ((st.direction = 'OUT' AND (st.{inForeignKey} = v."ID"))
-                                    OR
-                                    (st.direction = 'IN' AND (st.{outForeignKey} = v."ID")))
-                            WHERE
-                                NOT is_cycle {optionalUntilWhereClause}
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, direction) AS (
+                        WITH start_out as (
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                ARRAY[e.{outForeignKey}],
+                                ARRAY[e.{outForeignKey}, e.{inForeignKey}],
+                                'OUT'
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                        ), start_in as (
+                            SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                                ARRAY[e.{inForeignKey}],
+                                ARRAY[e.{inForeignKey}, e.{outForeignKey}],
+                                'IN'
+                            FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
                         )
-                        SELECT *, gen_random_uuid() AS uuid FROM search_tree
-                        WHERE NOT is_cycle
+                        SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+                        UNION ALL
+                        SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                            END,
+                            CASE
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN 'OUT'
+                            WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN 'IN'
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN 'IN'
+                            WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
+                            END
+                        FROM
+                            "E_of" e JOIN
+                            search_tree st ON
+                                ((st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
+                                OR
+                                 (st.direction = 'IN' AND (st.{outForeignKey} = e.{inForeignKey} OR st.{outForeignKey} = e.{outForeignKey}))) JOIN
+                            {vertexSchemaTable} v ON
+                                ((st.direction = 'OUT' AND (st.{inForeignKey} = v."ID"))
+                                OR
+                                (st.direction = 'IN' AND (st.{outForeignKey} = v."ID")))
+                        WHERE
+                            NOT is_cycle {optionalUntilWhereClause}
                     )
-                    SELECT a.uuid, a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+                    SELECT *, gen_random_uuid() FROM search_tree
+                    WHERE NOT is_cycle
+                ), b AS (
+                    SELECT a.gen_random_uuid, a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
                     WHERE a.path NOT IN (SELECT previous from a)
-                    ORDER BY a.uuid, a.path, ordinal
+                    ORDER BY a.gen_random_uuid, a.path, ordinal
                 )
-                SELECT recursive.path, output.* from recursive JOIN {vertexSchemaTable} output ON recursive.vertex_id = output."ID";
+                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID";
                 """
                 .formatted(startSql)
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
-
     }
 
     public SchemaTableTree schemaTableTreeForLabel(String label) {

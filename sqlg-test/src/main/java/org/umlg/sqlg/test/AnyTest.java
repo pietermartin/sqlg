@@ -2,7 +2,8 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatPostgresqlRecursiveQuery;
+import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithNotStep;
+import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithoutNotStep;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +12,8 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatPostgresqlRecursiveQuery;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestMultiThread.class
-        TestRepeatPostgresqlRecursiveQuery.class,
+        TestRecursiveRepeatWithNotStep.class,
+        TestRecursiveRepeatWithoutNotStep.class
 //        TestUnoptimizedRepeatStep.class
 //        TestGremlinOptional.class,
 //        TestHasLabelAndId.class,

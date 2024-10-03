@@ -30,11 +30,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventS
 import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.javatuples.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.*;
-import org.umlg.sqlg.sql.parse.AndOrHasContainer;
-import org.umlg.sqlg.sql.parse.RecursiveRepeatStepConfig;
-import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.sql.parse.ReplacedStepTree;
+import org.umlg.sqlg.sql.parse.*;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
 import org.umlg.sqlg.structure.RecordId;
@@ -65,6 +64,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTrav
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class BaseStrategy {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseStrategy.class);
 
     static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
             VertexStep.class,
@@ -469,6 +470,8 @@ public abstract class BaseStrategy {
         List<Step<?, ?>> untilTraversalSteps = new ArrayList<>(untilTraversal.getSteps());
         List<Step<?, ?>> _untilTraversalSteps;
         Traversal.Admin _untilTraversal;
+        boolean hasNotStep = false;
+        boolean hasLoopAndIsStep = false;
         if (untilTraversalSteps.get(0) instanceof OrStep<?> orStep) {
             //remove the NotStep
             _untilTraversal = untilTraversal;
@@ -477,9 +480,14 @@ public abstract class BaseStrategy {
             Traversal.Admin<?, ?> notStepTraversal = null;
             for (Traversal.Admin<?, ?> connectiveTraversal : connectiveTraversals) {
                 List<NotStep> notSteps = TraversalHelper.getStepsOfAssignableClass(NotStep.class, connectiveTraversal);
+                hasNotStep = hasNotStep || !notSteps.isEmpty();
+                hasLoopAndIsStep = hasLoopAndIsStep ||
+                        (!TraversalHelper.getStepsOfAssignableClass(LoopsStep.class, untilTraversal).isEmpty() &&
+                        !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty());
                 for (NotStep notStep : notSteps) {
                     connectiveTraversal.removeStep(notStep);
                     notStepTraversal = connectiveTraversal;
+
                 }
                 if (TraversalHelper.getStepsOfAssignableClass(SelectOneStep.class, connectiveTraversal).isEmpty()) {
                     connectiveTraversal.asAdmin().addStep(0, new SelectOneStep<>(connectiveTraversal, Pop.last, "v"));
@@ -491,6 +499,9 @@ public abstract class BaseStrategy {
             _untilTraversalSteps = new ArrayList<>(_untilTraversal.getSteps());
         } else {
             //warp the untilTraversal in a AndConnectiveStep, make sure the first step after the AndStep is a SelectOneStep
+            hasNotStep = !TraversalHelper.getStepsOfAssignableClassRecursively(NotStep.class, untilTraversal).isEmpty();
+            hasLoopAndIsStep = !TraversalHelper.getStepsOfAssignableClass(LoopsStep.class, untilTraversal).isEmpty() &&
+                    !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty();
             _untilTraversal = new DefaultGraphTraversal<>();
             _untilTraversal.asAdmin().addStep(new AndStep<Vertex>(_untilTraversal, untilTraversal));
             if (!(untilTraversal.getSteps().get(0) instanceof SelectOneStep<?,?>)) {
@@ -513,7 +524,9 @@ public abstract class BaseStrategy {
                 new RecursiveRepeatStepConfig(
                         repeatVertexStep.getDirection(), repeatVertexStep.getEdgeLabels()[0],
                         includeEdge,
-                        untilReplacedStepTree
+                        untilReplacedStepTree,
+                        hasNotStep,
+                        hasLoopAndIsStep
                 )
         );
         if (includeEdge) {
@@ -546,6 +559,7 @@ public abstract class BaseStrategy {
         } else {
             handleHasSteps(untilReplacedStep, _untilTraversal, untilTraversalStepIterator, pathCount.getValue());
             handleConnectiveSteps(untilReplacedStep, _untilTraversal, untilTraversalStepIterator, pathCount);
+            handleLoopsStep(untilReplacedStep, _untilTraversal, untilTraversalStepIterator, pathCount.getValue());
         }
 
         int index = TraversalHelper.stepIndex(repeatStep, this.traversal);
@@ -734,6 +748,34 @@ public abstract class BaseStrategy {
     protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass);
 
     protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep);
+
+    static void handleLoopsStep(ReplacedStep<?, ?> replacedStep, final Traversal.Admin<?, ?> traversal, ListIterator<Step<?, ?>> iterator, int pathCount) {
+        LoopsStep loopsStep = null;
+        IsStep isStep = null;
+        int countToGoPrevious = 0;
+        while (iterator.hasNext()) {
+            Step<?, ?> currentStep = iterator.next();
+            countToGoPrevious++;
+            String notNullKey;
+            String nullKey;
+            if (currentStep instanceof LoopsStep _loopsStep) {
+                loopsStep = _loopsStep;
+            } else if (currentStep instanceof IsStep<?> _isStep) {
+                isStep = _isStep;
+            } else //noinspection StatementWithEmptyBody
+                if (currentStep instanceof IdentityStep) {
+                    // do nothing
+                } else {
+                    for (int i = 0; i < countToGoPrevious; i++) {
+                        iterator.previous();
+                    }
+                    break;
+                }
+        }
+        if (loopsStep != null && isStep != null) {
+            replacedStep.setLoopsStepIsStepContainer(new LoopsStepIsStepContainer(loopsStep, isStep));
+        }
+    }
 
     static void handleHasSteps(ReplacedStep<?, ?> replacedStep, final Traversal.Admin<?, ?> traversal, ListIterator<Step<?, ?>> iterator, int pathCount) {
         //Collect the hasSteps
@@ -980,11 +1022,14 @@ public abstract class BaseStrategy {
         @SuppressWarnings("unchecked")
         List<Traversal.Admin<?, ?>> localTraversals = connectiveStep.getLocalChildren();
         for (Traversal.Admin<?, ?> localTraversal : localTraversals) {
-            if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class, TraversalFilterStep.class, NotStep.class, SelectOneStep.class)) {
+            if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class, TraversalFilterStep.class, NotStep.class, SelectOneStep.class, LoopsStep.class, IsStep.class)) {
                 return Optional.empty();
             }
+
             AndOrHasContainer andOrHasContainer = new AndOrHasContainer(AndOrHasContainer.TYPE.NONE);
             outerAndOrHasContainer.addAndOrHasContainer(andOrHasContainer);
+            LoopsStep loopsStep = null;
+            IsStep isStep = null;
             String selectLabel = AndOrHasContainer.DEFAULT;
             for (Step<?, ?> step : localTraversal.getSteps()) {
                 if (step instanceof HasStep) {
@@ -1040,6 +1085,10 @@ public abstract class BaseStrategy {
                     }
                 } else if (step instanceof SelectOneStep<?, ?> selectOneStep) {
                     selectLabel = selectOneStep.getScopeKeys().iterator().next();
+                } else if (step instanceof LoopsStep<?> _loopsStep) {
+                    loopsStep = _loopsStep;
+                } else if (step instanceof IsStep<?> _isStep) {
+                    isStep = _isStep;
                 } else {
                     ConnectiveStep connectiveStepLocalChild = (ConnectiveStep) step;
                     Optional<AndOrHasContainer> result = handleConnectiveStepInternal(connectiveStepLocalChild);
@@ -1048,6 +1097,9 @@ public abstract class BaseStrategy {
                     } else {
                         return Optional.empty();
                     }
+                }
+                if (loopsStep != null && isStep != null) {
+                    andOrHasContainer.setLoopsStepIsStepContainer(new LoopsStepIsStepContainer(loopsStep, isStep));
                 }
             }
         }
@@ -1570,30 +1622,21 @@ public abstract class BaseStrategy {
                                         }
                                     } else if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof OrStep<?> orStep) {
                                         //check that one of the OrStep traversals is a NotStep
-                                        List<? extends Traversal.Admin<?, ?>> orTraversals = orStep.getLocalChildren();
-                                        for (Traversal.Admin<?, ?> orTraversal : orTraversals) {
-                                            List<NotStep> notSteps = TraversalHelper.getStepsOfAssignableClass(NotStep.class, orTraversal);
-                                            for (NotStep notStep : notSteps) {
-
-                                                List<? extends Traversal.Admin<?, ?>> notStepTraverals = notStep.getLocalChildren();
-                                                if (notStepTraverals.size() == 1) {
-                                                    Traversal.Admin notStepTraversal = notStepTraverals.get(0);
-                                                    List<Step> internalNotSteps = notStepTraversal.getSteps();
-                                                    if (internalNotSteps.size() == 2 &&
-                                                            internalNotSteps.get(0) instanceof VertexStep<?> notVertexStep &&
-                                                            internalNotSteps.get(1) instanceof PathFilterStep<?> notPathFilterStep) {
-
-                                                        String[] notEdgeLabels = notVertexStep.getEdgeLabels();
-                                                        if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {
-                                                            return true;
-                                                        }
-                                                    }
-                                                }
+                                        return true;
+                                    } else if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof AndStep<?> andStep) {
+                                        //we can not optimize NotStep nested inside a top level AndStep
+                                        List<? extends Traversal.Admin<?, ?>> andStepTraversals = andStep.getLocalChildren();
+                                        for (Traversal.Admin<?, ?> andStepTraveral : andStepTraversals) {
+                                            if (!TraversalHelper.getStepsOfAssignableClassRecursively(andStepTraveral, NotStep.class).isEmpty()) {
+                                                LOGGER.debug("Unable to optimize recursive repeat step because of NotStep inside a AndStep: {}", andStepTraveral);
+                                                return false;
                                             }
                                         }
-                                        return false;
-//                                    } else if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof HasStep<?> hasStep) {
-//                                        return true;
+                                        return true;
+                                    } else if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof HasStep<?> hasStep) {
+                                        return true;
+                                    } else if (untilTraversalSteps.size() == 2 && untilTraversalSteps.get(0) instanceof LoopsStep<?> loopsStep && untilTraversalSteps.get(1) instanceof IsStep<?> isStep) {
+                                        return true;
 //                                    } else if (untilTraversalSteps.size() == 2 && untilTraversalSteps.get(0) instanceof LoopsStep<?> loopsStep && untilTraversalSteps.get(1) instanceof IsStep<?> isStep) {
 //                                        return true;
 //                                    } else if (!untilTraversalSteps.isEmpty() && untilTraversalSteps.get(0) instanceof SelectOneStep<?, ?> selectOneStep) {
@@ -1601,7 +1644,6 @@ public abstract class BaseStrategy {
                                     }
                                 }
                             }
-
                         }
                     }
                 }

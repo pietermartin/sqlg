@@ -5,10 +5,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -44,6 +41,7 @@ public class ReplacedStep<S, E> {
     private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
     private final SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
+    private LoopsStepIsStepContainer loopsStepIsStepContainer;
     /**
      * range limitation if any
      */
@@ -862,6 +860,14 @@ public class ReplacedStep<S, E> {
 
     public List<HasContainer> getLabelHasContainers() {
         return labelHasContainers;
+    }
+
+    public LoopsStepIsStepContainer getLoopsStepIsStepContainer() {
+        return loopsStepIsStepContainer;
+    }
+
+    public void setLoopsStepIsStepContainer(LoopsStepIsStepContainer loopsStepIsStepContainer) {
+        this.loopsStepIsStepContainer = loopsStepIsStepContainer;
     }
 
     /**

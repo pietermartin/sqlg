@@ -44,6 +44,7 @@ public class AndOrHasContainer {
     //i.e. g.V().or(__.traversal1, __.traversal2)
     private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
     private final Map<String, List<HasContainer>> hasContainers = new HashMap<>();
+    private LoopsStepIsStepContainer loopsStepIsStepContainer;
 
     public AndOrHasContainer(TYPE type) {
         this.type = type;
@@ -55,6 +56,14 @@ public class AndOrHasContainer {
 
     public void addAndOrHasContainer(AndOrHasContainer andOrHasContainer) {
         this.andOrHasContainers.add(andOrHasContainer);
+    }
+
+    public LoopsStepIsStepContainer getLoopsStepIsStepContainer() {
+        return loopsStepIsStepContainer;
+    }
+
+    public void setLoopsStepIsStepContainer(LoopsStepIsStepContainer loopsStepIsStepContainer) {
+        this.loopsStepIsStepContainer = loopsStepIsStepContainer;
     }
 
     public TYPE getType() {
@@ -112,6 +121,10 @@ public class AndOrHasContainer {
                 }
             }
             result.append(")");
+        } else if (this.loopsStepIsStepContainer != null) {
+            WhereClause whereClause = WhereClause.from(this.loopsStepIsStepContainer.isStep().getPredicate());
+            result.append(whereClause.toSql(sqlgGraph, schemaTableTree, new HasContainer("depth", this.loopsStepIsStepContainer.isStep().getPredicate()), true));
+//            result.append("(depth < ").append("2").append(")");
         }
         int count = 1;
         if (!this.andOrHasContainers.isEmpty()) {
@@ -148,6 +161,11 @@ public class AndOrHasContainer {
                 WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                 whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
             }
+        }
+        if (this.loopsStepIsStepContainer != null) {
+            HasContainer hasContainer = new HasContainer("depth", this.loopsStepIsStepContainer.isStep().getPredicate());
+            WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+            whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
             andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
