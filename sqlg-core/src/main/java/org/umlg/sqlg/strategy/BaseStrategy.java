@@ -1639,8 +1639,8 @@ public abstract class BaseStrategy {
                                         return true;
 //                                    } else if (untilTraversalSteps.size() == 2 && untilTraversalSteps.get(0) instanceof LoopsStep<?> loopsStep && untilTraversalSteps.get(1) instanceof IsStep<?> isStep) {
 //                                        return true;
-//                                    } else if (!untilTraversalSteps.isEmpty() && untilTraversalSteps.get(0) instanceof SelectOneStep<?, ?> selectOneStep) {
-//                                        return true;
+                                    } else if (!untilTraversalSteps.isEmpty() && untilTraversalSteps.get(0) instanceof SelectOneStep<?, ?> selectOneStep) {
+                                        return true;
                                     }
                                 }
                             }

@@ -1101,22 +1101,31 @@ public class SchemaTableTree {
                             constructRecursiveIncludeEdgeBothQuery(startSql, distinctQueryStack, optionalUntilWhereClause);
                 };
             } else {
-                throw new IllegalStateException("Implement me");
+                sql = switch (this.recursiveRepeatStepConfig.direction()) {
+                    case OUT ->
+                            constructRecursiveIncludeEdgeOutQueryWithoutNotStep(startSql, distinctQueryStack, optionalUntilWhereClause);
+                    case IN ->
+                            constructRecursiveIncludeEdgeInQueryWithoutNotStep(startSql, distinctQueryStack, optionalUntilWhereClause);
+                    case BOTH ->
+                            constructRecursiveIncludeEdgeBothQueryWithoutNotStep(startSql, distinctQueryStack, optionalUntilWhereClause);
+                };
             }
         } else {
             if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                    case OUT -> constructRecursiveOutQuery(startSql, optionalUntilWhereClause);
-                    case IN -> constructRecursiveInQuery(startSql, optionalUntilWhereClause);
-                    case BOTH -> constructRecursiveBothQuery(startSql, optionalUntilWhereClause);
+                    case OUT -> constructRecursiveOutQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case IN -> constructRecursiveInQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case BOTH -> constructRecursiveBothQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                 };
             } else {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                    case OUT -> constructRecursiveOutQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
-                    case IN -> constructRecursiveInQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
-                    default -> constructRecursiveBothQueryWithoutNotStepForPathTraversal(startSql, optionalUntilWhereClause);
+                    case OUT ->
+                            constructRecursiveOutQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case IN ->
+                            constructRecursiveInQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    default ->
+                            constructRecursiveBothQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                 };
-
             }
         }
         //merge the main distinctQueryStack and until distinctQueryStack
@@ -3412,12 +3421,164 @@ public class SchemaTableTree {
         EDGE_VERTEX_STEP
     }
 
+    private String constructRecursiveIncludeEdgeBothQueryWithoutNotStep(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        SchemaTableTree vertexSchemaTableTree = distinctQueryStack.get(0);
+        SchemaTableTree edgeSchemaTableTree = distinctQueryStack.get(1);
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "e"
+        );
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "previous_e"
+        );
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(0, vertexSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+            columns = columnList.getFor(1, edgeSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID() && !column.isForeignKey()) {
+                    edgeColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String edgeColumnsToAdd = edgeColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullVertexColumnsToAdd = vertexColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullEdgeColumnsToAdd = edgeColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        return """
+                WITH start AS (
+                    %s
+                ), a AS (
+                    WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, epath, direction) AS (
+                		WITH start_out as (
+                			SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                				ARRAY[e.{outForeignKey}],
+                				ARRAY[e.{outForeignKey}, e.{inForeignKey}],
+                				ARRAY[e."ID"],
+                				'OUT'
+                			FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
+                		), start_in as (
+                			SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
+                				ARRAY[e.{inForeignKey}],
+                				ARRAY[e.{inForeignKey}, e.{outForeignKey}],
+                				ARRAY[e."ID"],
+                				'IN'
+                			FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
+                		)
+                		SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+                		UNION ALL
+                		SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1,
+                			CASE
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN e.{outForeignKey} = ANY(path)
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN e.{inForeignKey} = ANY(path)
+                			END,
+                			CASE
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path
+                			END,
+                			CASE
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN path || e.{outForeignKey}
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN path || e.{inForeignKey}
+                			END,
+                			epath || e."ID",
+                			CASE
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{outForeignKey} THEN 'OUT'
+                			WHEN st.direction = 'OUT' AND st.{inForeignKey} = e.{inForeignKey} THEN 'IN'
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{inForeignKey} THEN 'IN'
+                			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
+                			END
+                		FROM
+                		{edgeSchemaTable} e JOIN
+                		search_tree st ON(
+                			(st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
+                			OR
+                			(st.direction = 'IN' AND (st.{outForeignKey} = e.{inForeignKey} OR st.{outForeignKey} = e.{outForeignKey}))) JOIN
+                            {vertexSchemaTable} v ON
+                            ((st.direction = 'OUT' AND (st.{inForeignKey} = v."ID"))
+                            OR
+                            (st.direction = 'IN' AND (st.{outForeignKey} = v."ID")))
+                            JOIN
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
+                		WHERE
+                			NOT is_cycle {optionalUntilWhereClause}
+                	)
+                	SELECT *, gen_random_uuid() AS gen_random_uuid FROM search_tree
+                	WHERE NOT is_cycle
+                ), b AS (
+                    SELECT * FROM a JOIN {vertexSchemaTable} v ON
+                				((a.direction = 'OUT' AND (a.{inForeignKey} = v."ID"))
+                				OR
+                				(a.direction = 'IN' AND (a.{outForeignKey} = v."ID"))) JOIN
+                 	        {edgeSchemaTable} e ON a."ID" = e."ID"
+                    WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                	SELECT 'vertex' as "type", b.path, b.gen_random_uuid FROM b
+                	WHERE b.path NOT IN (SELECT previous from b)
+                	UNION ALL
+                	SELECT 'edge' as "type", b.epath, b.gen_random_uuid FROM b
+                	WHERE b.path NOT IN (SELECT previous from b)
+                ), d AS (
+                    SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'vertex' WHERE c."type" = 'vertex'
+                    UNION ALL
+                	SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'edge' WHERE c."type" = 'edge'
+                ), e AS (
+                    SELECT d.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {vertexSchemaTable} AS _v on d.element_id = _v."ID" WHERE d.type = 'vertex'
+                	UNION ALL
+                    SELECT d.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {edgeSchemaTable} AS _e on d.element_id = _e."ID" WHERE d.type = 'edge'
+                )
+                SELECT * from e
+                ORDER BY gen_random_uuid, ordinal, type desc
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
+                .replace("{vertexColumns}", vertexColumnsToAdd)
+                .replace("{edgeColumns}", edgeColumnsToAdd)
+                .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
+                .replace("{nullEdgeColumns}", nullEdgeColumnsToAdd)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+
+    }
+
     private String constructRecursiveIncludeEdgeBothQuery(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
         SchemaTableTree vertexSchemaTableTree = distinctQueryStack.get(0);
         SchemaTableTree edgeSchemaTableTree = distinctQueryStack.get(1);
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
 
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace(
@@ -3460,14 +3621,14 @@ public class SchemaTableTree {
                 				ARRAY[e.{outForeignKey}, e.{inForeignKey}],
                 				ARRAY[e."ID"],
                 				'OUT'
-                			FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                			FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                 		), start_in as (
                 			SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
                 				ARRAY[e.{inForeignKey}],
                 				ARRAY[e.{inForeignKey}, e.{outForeignKey}],
                 				ARRAY[e."ID"],
                 				'IN'
-                			FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                			FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                 		)
                 		SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
                 		UNION ALL
@@ -3498,7 +3659,7 @@ public class SchemaTableTree {
                 			WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
                 			END
                 		FROM
-                		"E_of" e JOIN
+                		{edgeSchemaTable} e JOIN
                 		search_tree st ON(
                 			(st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
                 			OR
@@ -3508,7 +3669,7 @@ public class SchemaTableTree {
                             OR
                             (st.direction = 'IN' AND (st.{outForeignKey} = v."ID")))
                             JOIN
-                            "E_of" previous_e ON st."ID" = previous_e."ID"
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
                 		WHERE
                 			NOT is_cycle {optionalUntilWhereClause}
                 	)
@@ -3527,7 +3688,7 @@ public class SchemaTableTree {
                 ), d AS (
                     SELECT c.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {vertexSchemaTable} AS _v on c.element_id = _v."ID" WHERE c.type = 'vertex'
                 	UNION ALL
-                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN "E_of" AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
+                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {edgeSchemaTable} AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
                 )
                 SELECT * from d
                 ORDER BY gen_random_uuid, ordinal, type desc
@@ -3536,6 +3697,7 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{vertexColumns}", vertexColumnsToAdd)
                 .replace("{edgeColumns}", edgeColumnsToAdd)
                 .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
@@ -3544,12 +3706,117 @@ public class SchemaTableTree {
 
     }
 
+    private String constructRecursiveIncludeEdgeInQueryWithoutNotStep(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        SchemaTableTree vertexSchemaTableTree = distinctQueryStack.get(0);
+        SchemaTableTree edgeSchemaTableTree = distinctQueryStack.get(1);
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "e"
+        );
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "previous_e"
+        );
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(0, vertexSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+            columns = columnList.getFor(1, edgeSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID() && !column.isForeignKey()) {
+                    edgeColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String edgeColumnsToAdd = edgeColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullVertexColumnsToAdd = vertexColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullEdgeColumnsToAdd = edgeColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+
+        return """
+                WITH start AS (
+                    %s
+                ), a AS (
+                	WITH RECURSIVE search_tree("ID", {inForeignKey}, {outForeignKey}, depth, is_cycle, previous, path, epath) AS (
+                		SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}], ARRAY[e."ID"]
+                        FROM
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
+                		UNION ALL
+                		SELECT
+                            e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}, epath || e."ID"
+                		FROM
+                            {edgeSchemaTable} e JOIN
+                            search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{outForeignKey} = v."ID" JOIN
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
+                		WHERE NOT is_cycle {optionalUntilWhereClause}
+                	)
+                	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                 	SELECT * FROM a JOIN
+                 	{vertexSchemaTable} v ON a.{outForeignKey} = v."ID" JOIN
+                 	{edgeSchemaTable} e ON a."ID" = e."ID"
+                 	WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                	SELECT 'vertex' as "type", b.path, b.gen_random_uuid FROM b
+                	WHERE b.path NOT IN (SELECT previous from b)
+                	UNION ALL
+                	SELECT 'edge' as "type", b.epath, b.gen_random_uuid FROM b 
+                	WHERE b.path NOT IN (SELECT previous from b)
+                ), d AS (
+                    SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'vertex' WHERE c."type" = 'vertex'
+                    UNION ALL
+                	SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'edge' WHERE c."type" = 'edge'
+                ), e AS (
+                    SELECT d.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {vertexSchemaTable} AS _v on d.element_id = _v."ID" WHERE d.type = 'vertex'
+                	UNION ALL
+                    SELECT d.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {edgeSchemaTable} AS _e on d.element_id = _e."ID" WHERE d.type = 'edge'
+                )
+                SELECT * from e 
+                ORDER BY gen_random_uuid, ordinal, type desc
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
+                .replace("{vertexColumns}", vertexColumnsToAdd)
+                .replace("{edgeColumns}", edgeColumnsToAdd)
+                .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
+                .replace("{nullEdgeColumns}", nullEdgeColumnsToAdd)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+    }
+
     private String constructRecursiveIncludeEdgeInQuery(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
         SchemaTableTree vertexSchemaTableTree = distinctQueryStack.get(0);
         SchemaTableTree edgeSchemaTableTree = distinctQueryStack.get(1);
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
 
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace(
@@ -3590,15 +3857,15 @@ public class SchemaTableTree {
                 		SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}], ARRAY[e."ID"]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                 		UNION ALL
                 		SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}, epath || e."ID"
                 		FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{outForeignKey} = v."ID" JOIN
-                            "E_of" previous_e ON st."ID" = previous_e."ID"
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
                 		WHERE NOT is_cycle {optionalUntilWhereClause}
                 	)
                 	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
@@ -3615,7 +3882,7 @@ public class SchemaTableTree {
                 ), d AS (
                     SELECT c.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {vertexSchemaTable} AS _v on c.element_id = _v."ID" WHERE c.type = 'vertex'
                 	UNION ALL
-                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN "E_of" AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
+                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {edgeSchemaTable} AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
                 )
                 SELECT * from d
                 ORDER BY gen_random_uuid, ordinal, type desc
@@ -3624,12 +3891,119 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{vertexColumns}", vertexColumnsToAdd)
                 .replace("{edgeColumns}", edgeColumnsToAdd)
                 .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
                 .replace("{nullEdgeColumns}", nullEdgeColumnsToAdd)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
 
+    }
+
+    private String constructRecursiveIncludeEdgeOutQueryWithoutNotStep(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
+        Preconditions.checkState(this == distinctQueryStack.get(0));
+        SchemaTableTree vertexSchemaTableTree = distinctQueryStack.get(0);
+        SchemaTableTree edgeSchemaTableTree = distinctQueryStack.get(1);
+
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
+
+        String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("v.\"depth\"", "\"depth\"");
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "e"
+        );
+
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(
+                this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
+                "previous_e"
+        );
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(0, vertexSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+            columns = columnList.getFor(1, edgeSchemaTableTree.getSchemaTable());
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID() && !column.isForeignKey()) {
+                    edgeColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String edgeColumnsToAdd = edgeColumns.stream().map(a -> sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullVertexColumnsToAdd = vertexColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String nullEdgeColumnsToAdd = edgeColumns.stream().map(a -> "null AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+
+        return """
+                WITH start AS (
+                    %s
+                ), a AS (
+                	WITH RECURSIVE search_tree("ID", {outForeignKey}, {inForeignKey}, depth, is_cycle, previous, path, epath) AS (
+                		SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}], ARRAY[e."ID"]
+                        FROM
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
+                		UNION ALL
+                		SELECT
+                            e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}, epath || e."ID"
+                		FROM
+                            {edgeSchemaTable} e JOIN
+                            search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
+                            {vertexSchemaTable} v ON st.{inForeignKey} = v."ID" JOIN
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
+                		WHERE NOT is_cycle {optionalUntilWhereClause}
+                	)
+                	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+                ), b AS (
+                 	SELECT * FROM a JOIN\s
+                 	{vertexSchemaTable} v ON a.{inForeignKey} = v."ID" JOIN
+                 	{edgeSchemaTable} e ON a."ID" = e."ID"\s
+                 	WHERE {optionalUntilWhereClauseWithoutNotStep}
+                ), c AS (
+                	SELECT 'vertex' as "type", b.path, b.gen_random_uuid FROM b
+                	WHERE b.path NOT IN (SELECT previous from b)
+                	UNION ALL
+                	SELECT 'edge' as "type", b.epath, b.gen_random_uuid FROM b
+                	WHERE b.path NOT IN (SELECT previous from b)
+                ), d AS (
+                    SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'vertex' WHERE c."type" = 'vertex'
+                    UNION ALL
+                	SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'edge' WHERE c."type" = 'edge'
+                ), e AS (
+                    SELECT d.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {vertexSchemaTable} AS _v on d.element_id = _v."ID" WHERE d.type = 'vertex'
+                	UNION ALL
+                    SELECT d.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, d.gen_random_uuid FROM d JOIN {edgeSchemaTable} AS _e on d.element_id = _e."ID" WHERE d.type = 'edge'
+                )
+                SELECT * from e
+                ORDER BY gen_random_uuid, ordinal, type desc
+                """
+                .formatted(startSql)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey)
+                .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
+                .replace("{vertexColumns}", vertexColumnsToAdd)
+                .replace("{edgeColumns}", edgeColumnsToAdd)
+                .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
+                .replace("{nullEdgeColumns}", nullEdgeColumnsToAdd)
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
     }
 
     private String constructRecursiveIncludeEdgeOutQuery(String startSql, LinkedList<SchemaTableTree> distinctQueryStack, String optionalUntilWhereClause) {
@@ -3640,6 +4014,7 @@ public class SchemaTableTree {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable());
 
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace(
@@ -3680,15 +4055,15 @@ public class SchemaTableTree {
                 		SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}], ARRAY[e."ID"]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                 		UNION ALL
                 		SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}, epath || e."ID"
                 		FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{inForeignKey} = v."ID" JOIN
-                            "E_of" previous_e ON st."ID" = previous_e."ID"
+                            {edgeSchemaTable} previous_e ON st."ID" = previous_e."ID"
                 		WHERE NOT is_cycle {optionalUntilWhereClause}
                 	)
                 	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
@@ -3705,7 +4080,7 @@ public class SchemaTableTree {
                 ), d AS (
                     SELECT c.path, type, "ID"{vertexColumns}, null as dummy{nullEdgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {vertexSchemaTable} AS _v on c.element_id = _v."ID" WHERE c.type = 'vertex'
                 	UNION ALL
-                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN "E_of" AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
+                    SELECT c.path, type, "ID"{nullVertexColumns}, null as dummy{edgeColumns}, ordinal, c.gen_random_uuid FROM c JOIN {edgeSchemaTable} AS _e on c.element_id = _e."ID" WHERE c.type = 'edge'
                 )
                 SELECT * from d
                 ORDER BY gen_random_uuid, ordinal, type desc
@@ -3714,6 +4089,7 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{vertexColumns}", vertexColumnsToAdd)
                 .replace("{edgeColumns}", edgeColumnsToAdd)
                 .replace("{nullVertexColumns}", nullVertexColumnsToAdd)
@@ -3722,10 +4098,12 @@ public class SchemaTableTree {
 
     }
 
-    private String constructRecursiveOutQuery(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveOutQuery(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edge);
+
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
@@ -3738,12 +4116,12 @@ public class SchemaTableTree {
                         SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                         UNION ALL
                         SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{inForeignKey} = v."ID"
                         WHERE NOT is_cycle {optionalUntilWhereClause}
@@ -3760,13 +4138,15 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
     }
 
-    private String constructRecursiveInQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveInQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + edge);
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
         optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
@@ -3782,12 +4162,12 @@ public class SchemaTableTree {
                         SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                         UNION ALL
                         SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{outForeignKey} = v."ID"
                         WHERE NOT is_cycle {optionalUntilWhereClause}
@@ -3807,14 +4187,16 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
                 .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
     }
 
-    private String constructRecursiveOutQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveOutQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + edge);
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
         optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
@@ -3830,12 +4212,12 @@ public class SchemaTableTree {
                         SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false, ARRAY[e.{outForeignKey}], ARRAY[e.{outForeignKey}, e.{inForeignKey}]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                         UNION ALL
                         SELECT
                             e."ID", e.{outForeignKey}, e.{inForeignKey}, st.depth + 1, e.{inForeignKey} = ANY(path), path, path || e.{inForeignKey}
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{inForeignKey} = e.{outForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{inForeignKey} = v."ID"
                         WHERE NOT is_cycle {optionalUntilWhereClause}
@@ -3855,14 +4237,16 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
                 .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
     }
 
-    private String constructRecursiveInQuery(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveInQuery(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + edge);
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
@@ -3875,12 +4259,12 @@ public class SchemaTableTree {
                         SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, 1, false, ARRAY[e.{inForeignKey}], ARRAY[e.{inForeignKey}, e.{outForeignKey}]
                         FROM
-                            "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                         UNION ALL
                         SELECT
                             e."ID", e.{inForeignKey}, e.{outForeignKey}, st.depth + 1, e.{outForeignKey} = ANY(path), path, path || e.{outForeignKey}
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON st.{outForeignKey} = e.{inForeignKey} JOIN
                             {vertexSchemaTable} v ON st.{outForeignKey} = v."ID"
                         WHERE NOT is_cycle {optionalUntilWhereClause}
@@ -3897,13 +4281,15 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
     }
 
-    private String constructRecursiveBothQueryWithoutNotStepForPathTraversal(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveBothQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + edge);
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         String optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClause.replace("WHERE", " ");
         optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("\n", "");
@@ -3921,13 +4307,13 @@ public class SchemaTableTree {
                                 ARRAY[e.{outForeignKey}],
                                 ARRAY[e.{outForeignKey}, e.{inForeignKey}],
                                 'OUT'
-                            FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                         ), start_in as (
                             SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
                                 ARRAY[e.{inForeignKey}],
                                 ARRAY[e.{inForeignKey}, e.{outForeignKey}],
                                 'IN'
-                            FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                         )
                         SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
                         UNION ALL
@@ -3957,7 +4343,7 @@ public class SchemaTableTree {
                             WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
                             END
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON
                                 ((st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
                                 OR
@@ -3988,14 +4374,16 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
                 .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
     }
 
-    private String constructRecursiveBothQuery(String startSql, String optionalUntilWhereClause) {
+    private String constructRecursiveBothQuery(String startSql, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+        String edgeSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edge);
         optionalUntilWhereClause = optionalUntilWhereClause.replace(vertexSchemaTable, "v");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT ");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
@@ -4010,13 +4398,13 @@ public class SchemaTableTree {
                                 ARRAY[e.{outForeignKey}],
                                 ARRAY[e.{outForeignKey}, e.{inForeignKey}],
                                 'OUT'
-                            FROM "E_of" e JOIN start ON start."alias1" = e.{outForeignKey}
+                            FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{outForeignKey}
                         ), start_in as (
                             SELECT e."ID", e.{outForeignKey}, e.{inForeignKey}, 1, false,
                                 ARRAY[e.{inForeignKey}],
                                 ARRAY[e.{inForeignKey}, e.{outForeignKey}],
                                 'IN'
-                            FROM "E_of" e JOIN start ON start."alias1" = e.{inForeignKey}
+                            FROM {edgeSchemaTable} e JOIN start ON start."alias1" = e.{inForeignKey}
                         )
                         SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
                         UNION ALL
@@ -4046,7 +4434,7 @@ public class SchemaTableTree {
                             WHEN st.direction = 'IN' AND st.{outForeignKey} = e.{outForeignKey} THEN 'OUT'
                             END
                         FROM
-                            "E_of" e JOIN
+                            {edgeSchemaTable} e JOIN
                             search_tree st ON
                                 ((st.direction = 'OUT' AND (st.{inForeignKey} = e.{outForeignKey} OR st.{inForeignKey} = e.{inForeignKey}))
                                 OR
@@ -4071,6 +4459,7 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
+                .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
     }
 

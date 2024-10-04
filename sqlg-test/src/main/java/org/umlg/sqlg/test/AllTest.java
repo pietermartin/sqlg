@@ -51,6 +51,8 @@ import org.umlg.sqlg.test.process.dropstep.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
 import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithNotStep;
+import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithoutNotStep;
+import org.umlg.sqlg.test.recursive.TestRepeatStepIncludeEdgeWithoutNotStep;
 import org.umlg.sqlg.test.reducing.*;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
@@ -309,7 +311,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestConcat.class,
         TestNotOutStep.class,
         TestRemoveIdentifierProperty.class,
-        TestRecursiveRepeatWithNotStep.class
+        TestRecursiveRepeatWithNotStep.class,
+        TestRecursiveRepeatWithoutNotStep.class,
+        TestRepeatStepIncludeEdgeWithoutNotStep.class
 })
 public class AllTest {
 
