@@ -369,11 +369,12 @@ public class WhereClause {
             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
             Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + hasContainer.getKey());
             keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
-        } else if (this.p.getBiPredicate() instanceof Existence) {
+        } else //noinspection StatementWithEmptyBody
+            if (this.p.getBiPredicate() instanceof Existence) {
             // no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
                 hasContainer.getValue() instanceof RecordId recordId &&
-                !((RecordId) hasContainer.getValue()).hasSequenceId()) {
+                !recordId.hasSequenceId()) {
 
             int i = 0;
             for (Object identifier : recordId.getIdentifiers()) {
