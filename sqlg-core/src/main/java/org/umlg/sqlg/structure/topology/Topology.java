@@ -1191,7 +1191,7 @@ public class Topology {
     }
 
     @SuppressWarnings("resource")
-    void loadVertexOutEdgesAndProperties(GraphTraversalSource traversalSource) {
+    private void loadVertexOutEdgesAndProperties(GraphTraversalSource traversalSource) {
         Map<String, Map<String, Partition>> partitionMap = new HashMap<>();
         List<Path> vertices = traversalSource
                 .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
