@@ -529,10 +529,6 @@ public class Topology {
 
         this.edgeForeignKeyCache.putAll(sqlgSchema.getAllEdgeForeignKeys());
 
-        if (this.distributed) {
-            ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
-        }
-
         this.sqlgGraph.tx().beforeCommit(this::beforeCommit);
         this.sqlgGraph.tx().afterCommit(this::afterCommit);
 

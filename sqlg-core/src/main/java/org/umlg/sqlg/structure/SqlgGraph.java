@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.strategy.barrier.*;
@@ -348,6 +349,13 @@ public class SqlgGraph implements Graph {
         SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSource);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
+
+        //only register the listener once SqlgGraph is fully up
+        boolean distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
+        if (distributed) {
+            ((SqlSchemaChangeDialect) sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
+        }
+
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
         return (G) sqlgGraph;
     }
