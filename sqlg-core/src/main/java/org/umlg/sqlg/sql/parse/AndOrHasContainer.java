@@ -174,7 +174,7 @@ public class AndOrHasContainer {
 
     //This is to check
     public boolean hasHasContainers() {
-        if (!this.hasContainers.isEmpty()) {
+        if (!this.hasContainers.isEmpty() || this.loopsStepIsStepContainer != null) {
             return true;
         } else {
             for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
