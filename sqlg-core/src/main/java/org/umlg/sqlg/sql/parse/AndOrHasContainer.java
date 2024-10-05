@@ -171,4 +171,18 @@ public class AndOrHasContainer {
             andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
         }
     }
+
+    //This is to check
+    public boolean hasHasContainers() {
+        if (!this.hasContainers.isEmpty()) {
+            return true;
+        } else {
+            for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
+                if (andOrHasContainer.hasHasContainers()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

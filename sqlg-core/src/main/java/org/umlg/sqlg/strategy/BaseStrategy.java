@@ -1025,7 +1025,6 @@ public abstract class BaseStrategy {
             if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class, TraversalFilterStep.class, NotStep.class, SelectOneStep.class, LoopsStep.class, IsStep.class)) {
                 return Optional.empty();
             }
-
             AndOrHasContainer andOrHasContainer = new AndOrHasContainer(AndOrHasContainer.TYPE.NONE);
             outerAndOrHasContainer.addAndOrHasContainer(andOrHasContainer);
             LoopsStep loopsStep = null;
@@ -1103,7 +1102,11 @@ public abstract class BaseStrategy {
                 }
             }
         }
-        return Optional.of(outerAndOrHasContainer);
+        if (outerAndOrHasContainer.hasHasContainers()) {
+            return Optional.of(outerAndOrHasContainer);
+        } else {
+            return Optional.empty();
+        }
     }
 
     private boolean optimizableOrderGlobalStep(OrderGlobalStep step) {

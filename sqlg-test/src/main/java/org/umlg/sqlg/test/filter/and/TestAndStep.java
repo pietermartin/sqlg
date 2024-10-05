@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.filter.and;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -15,6 +16,15 @@ import java.util.List;
  * Date: 2017/11/05
  */
 public class TestAndStep extends BaseTest {
+
+    @Test
+    public void g_V_asXaX_andXselectXaX_selectXaXX() {
+        loadModern();
+        Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(new Object[0]).as("a", new String[0]).and(new Traversal[]{__.select("a"), __.select("a")});
+        this.printTraversalForm(traversal);
+        List<Vertex> actual = traversal.toList();
+        Assert.assertEquals(6L, (long)actual.size());
+    }
 
     @Test
     public void testAndStepOptimized() {
