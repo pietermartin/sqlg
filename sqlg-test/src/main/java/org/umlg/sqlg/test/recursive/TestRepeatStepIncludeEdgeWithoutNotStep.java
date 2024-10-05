@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.Multiplicity;
@@ -21,6 +23,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
+    
+    @BeforeClass
+    public static void beforeClass() {
+        BaseTest.beforeClass();
+        Assume.assumeTrue(isPostgres());
+    }
 
     @Test
     public void testOutRepeatWithEdgeInPath0() {

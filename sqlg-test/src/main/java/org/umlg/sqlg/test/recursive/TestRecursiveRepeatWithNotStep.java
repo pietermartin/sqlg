@@ -10,8 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
@@ -31,6 +30,12 @@ import java.util.List;
 public class TestRecursiveRepeatWithNotStep extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecursiveRepeatWithNotStep.class);
+
+    @BeforeClass
+    public static void beforeClass() {
+        BaseTest.beforeClass();
+        Assume.assumeTrue(isPostgres());
+    }
 
     @Test
     public void testFriendOfFriendOutEWithAndStep() {

@@ -2,9 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithNotStep;
-import org.umlg.sqlg.test.recursive.TestRecursiveRepeatWithoutNotStep;
-import org.umlg.sqlg.test.recursive.TestRepeatStepIncludeEdgeWithoutNotStep;
+import org.umlg.sqlg.test.filter.or.TestOrStep;
 
 /**
  * Date: 2014/07/16
@@ -13,9 +11,12 @@ import org.umlg.sqlg.test.recursive.TestRepeatStepIncludeEdgeWithoutNotStep;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestMultiThread.class
-        TestRecursiveRepeatWithNotStep.class,
-        TestRecursiveRepeatWithoutNotStep.class,
-        TestRepeatStepIncludeEdgeWithoutNotStep.class
+//        TestRecursiveRepeatWithNotStep.class,
+//        TestRecursiveRepeatWithoutNotStep.class,
+//        TestRepeatStepIncludeEdgeWithoutNotStep.class
+//        TestAndStep.class,
+        TestOrStep.class
+//        TestRepeatStepGraphOut.class
 //        TestUnoptimizedRepeatStep.class
 //        TestGremlinOptional.class,
 //        TestHasLabelAndId.class,
