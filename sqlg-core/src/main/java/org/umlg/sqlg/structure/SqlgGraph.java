@@ -349,13 +349,12 @@ public class SqlgGraph implements Graph {
         SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSource);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
-
         //only register the listener once SqlgGraph is fully up
         boolean distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         if (distributed) {
+            sqlgGraph.getTopology().markAsDistributed();
             ((SqlSchemaChangeDialect) sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
         }
-
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
         return (G) sqlgGraph;
     }

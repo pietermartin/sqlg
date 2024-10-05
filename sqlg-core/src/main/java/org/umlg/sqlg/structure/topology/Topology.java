@@ -57,7 +57,7 @@ public class Topology {
     public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
     private final SqlgGraph sqlgGraph;
-    private final boolean distributed;
+    private boolean distributed = false;
 
     private final Map<String, Map<String, PropertyDefinition>> allTableCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, PropertyDefinition>> sqlgSchemaTableCache = new ConcurrentHashMap<>();
@@ -373,7 +373,6 @@ public class Topology {
      */
     public Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
-        this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         boolean canUserCreateSchemas = sqlgGraph.getSqlDialect().canUserCreateSchemas(sqlgGraph);
 
         //Pre-create the meta topology.
@@ -2191,5 +2190,9 @@ public class Topology {
         public String toString() {
             return String.format("%s does not exist", error.getName());
         }
+    }
+
+    public void markAsDistributed() {
+        this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
     }
 }
