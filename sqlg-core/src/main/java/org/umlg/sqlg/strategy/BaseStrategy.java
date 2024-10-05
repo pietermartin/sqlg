@@ -435,8 +435,8 @@ public abstract class BaseStrategy {
         boolean includeEdge = repeatTraversalSteps.size() == 4;
 
         VertexStep repeatVertexStep = (VertexStep) repeatTraversalSteps.get(0);
-        EdgeVertexStep repeatEdgeVertexStep = null;
-        EdgeOtherVertexStep repeatEdgeOtherVertexStep = null;
+        EdgeVertexStep repeatEdgeVertexStep;
+        EdgeOtherVertexStep repeatEdgeOtherVertexStep;
         PathFilterStep repeatPathFilterStep;
         RepeatStep.RepeatEndStep repeatEndStep;
         String vertexStepLabel = "e";
@@ -487,7 +487,6 @@ public abstract class BaseStrategy {
                 for (NotStep notStep : notSteps) {
                     connectiveTraversal.removeStep(notStep);
                     notStepTraversal = connectiveTraversal;
-
                 }
                 if (TraversalHelper.getStepsOfAssignableClass(SelectOneStep.class, connectiveTraversal).isEmpty()) {
                     connectiveTraversal.asAdmin().addStep(0, new SelectOneStep<>(connectiveTraversal, Pop.last, "v"));
@@ -1609,9 +1608,9 @@ public abstract class BaseStrategy {
                                     Traversal.Admin<?, ?> untilTraversal = repeatStep.getUntilTraversal();
                                     List<Step> untilTraversalSteps = untilTraversal.getSteps();
                                     if (untilTraversalSteps.size() == 1 && untilTraversalSteps.get(0) instanceof NotStep<?> notStep) {
-                                        List<? extends Traversal.Admin<?, ?>> notStepTraverals = notStep.getLocalChildren();
-                                        if (notStepTraverals.size() == 1) {
-                                            Traversal.Admin notStepTraversal = notStepTraverals.get(0);
+                                        List<? extends Traversal.Admin<?, ?>> notStepTraversals = notStep.getLocalChildren();
+                                        if (notStepTraversals.size() == 1) {
+                                            Traversal.Admin notStepTraversal = notStepTraversals.get(0);
                                             List<Step> notSteps = notStepTraversal.getSteps();
                                             if (notSteps.size() == 2 &&
                                                     notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
