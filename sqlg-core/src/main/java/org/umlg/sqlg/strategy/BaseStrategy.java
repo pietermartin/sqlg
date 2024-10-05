@@ -518,6 +518,7 @@ public abstract class BaseStrategy {
         );
         //edgeVertexStepLabel defaults to 'v'
         untilReplacedStep.getLabels().add(edgeVertexStepLabel);
+        untilReplacedStep.getLabelHasContainers().addAll(this.currentReplacedStep.getLabelHasContainers());
         ReplacedStepTree untilReplacedStepTree = new ReplacedStepTree<>(untilReplacedStep);
         this.currentReplacedStep.setRecursiveRepeatStepConfig(
                 new RecursiveRepeatStepConfig(
