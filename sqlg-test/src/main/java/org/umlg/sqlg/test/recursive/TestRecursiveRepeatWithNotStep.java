@@ -38,6 +38,55 @@ public class TestRecursiveRepeatWithNotStep extends BaseTest {
     }
 
     @Test
+    public void testFriendOfFriendWithWithin() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+        a.addEdge("of", b);
+        b.addEdge("of", c);
+        c.addEdge("of", d);
+        d.addEdge("of", e);
+        e.addEdge("of", f);
+
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+                .repeat(__.out("of").simplePath())
+                .until(
+                        __.or(
+                                __.not(__.out("of").simplePath()),
+                                __.has("name", P.within("b", "c", "d", "e"))
+                        )
+                ).path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+        
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(b)));
+
+    }
+
+    @Test
     public void testFriendOfFriendOutEWithAndStep() {
         VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
             put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
