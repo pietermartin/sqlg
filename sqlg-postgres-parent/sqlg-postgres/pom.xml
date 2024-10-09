@@ -27,6 +27,32 @@
                     </argLine>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>sqlg-c3pO-postgresql-uber</finalName>
+<!--                            <artifactSet>-->
+<!--                                <excludes>-->
+<!--                                    <exclude>classworlds:classworlds</exclude>-->
+<!--                                    <exclude>junit:junit</exclude>-->
+<!--                                    <exclude>jmock:*</exclude>-->
+<!--                                    <exclude>*:xml-apis</exclude>-->
+<!--                                    <exclude>org.apache.maven:lib:tests</exclude>-->
+<!--                                    <exclude>log4j:log4j:jar:</exclude>-->
+<!--                                </excludes>-->
+<!--                            </artifactSet>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
