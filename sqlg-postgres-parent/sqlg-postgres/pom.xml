@@ -27,6 +27,7 @@
                     </argLine>
                 </configuration>
             </plugin>
+            <!-- this uber jar is in the wrong place, as it need c3pO to be included to work -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -39,6 +40,7 @@
                         </goals>
                         <configuration>
                             <finalName>sqlg-c3pO-postgresql-uber</finalName>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
 <!--                            <artifactSet>-->
 <!--                                <excludes>-->
 <!--                                    <exclude>classworlds:classworlds</exclude>-->
