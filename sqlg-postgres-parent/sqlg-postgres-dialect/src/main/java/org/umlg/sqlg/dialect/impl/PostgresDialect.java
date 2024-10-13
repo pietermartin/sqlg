@@ -2712,31 +2712,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "graph\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_GRAPH + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"updatedOn\" TIMESTAMP, " +
                 "\"version\" TEXT, " +
                 "\"dbVersion\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, \"schemaVertex\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT," +
                 "\"shardCount\" INTEGER);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT, " +
                 "\"shardCount\" INTEGER);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_PARTITION + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"schemaName\" TEXT NOT NULL, " +
@@ -2750,7 +2750,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"partitionType\" TEXT NOT NULL, " +
                 "\"partitionExpression\" TEXT);");
         result.add("CREATE UNIQUE INDEX IF NOT EXISTS \"V_schema_abstractLabel_name_idx\" ON \"sqlg_schema\".\"V_partition\" (\"schemaName\", \"abstractLabelName\", \"name\");");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP NOT NULL, " +
                 "\"name\" TEXT NOT NULL, " +
@@ -2760,13 +2760,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"defaultLiteral\" TEXT," +
                 "\"checkConstraint\" TEXT" +
                 ");");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + VERTEX_PREFIX + SQLG_SCHEMA_INDEX + "\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"index_type\" TEXT);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "schema_vertex\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.vertex__I\" BIGINT, " +
                 "\"sqlg_schema.schema__O\" BIGINT, " +
@@ -2775,7 +2775,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_vertex__I_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.vertex__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_schema__O_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.schema__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "in_edges\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT NOT NULL, " +
                 "\"upperMultiplicity\" BIGINT NOT NULL, " +
@@ -2788,7 +2788,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_edge__I_ix\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.edge__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "out_edges\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT NOT NULL, " +
                 "\"upperMultiplicity\" BIGINT NOT NULL, " +
@@ -2801,7 +2801,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_edge__I_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.edge__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_property\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.property__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
@@ -2810,7 +2810,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_property\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.property__I\" BIGINT, " +
                 "\"sqlg_schema.edge__O\" BIGINT, " +
@@ -2819,7 +2819,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_property__I_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_identifier\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.property__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
@@ -2829,7 +2829,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_identifier\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.property__I\" BIGINT, " +
                 "\"sqlg_schema.edge__O\" BIGINT, " +
@@ -2839,7 +2839,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_identifier_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_partition\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.partition__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
@@ -2848,7 +2848,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_partition\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_EDGE_PARTITION_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.partition__I\" BIGINT, " +
                 "\"sqlg_schema.edge__O\" BIGINT, " +
@@ -2857,7 +2857,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.partition__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "partition_partition\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_PARTITION_PARTITION_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.partition__I\" BIGINT, " +
                 "\"sqlg_schema.partition__O\" BIGINT, " +
@@ -2902,7 +2902,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.vertex__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_index\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"sqlg_schema.index__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
@@ -2923,7 +2923,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_property__I_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_index__O_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.index__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "log\"(" +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + SQLG_SCHEMA_LOG + "\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"timestamp\" TIMESTAMP, " +
                 "\"pid\" INTEGER, " +
@@ -3096,7 +3096,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
         switch (propertyType.ordinal()) {
-            case BOOLEAN_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL -> {
+            case BOOLEAN_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL,
+                 FLOAT_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL -> {
                 return array.getArray();
             }
             case boolean_ARRAY_ORDINAL -> {
@@ -3627,10 +3628,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case boolean_ARRAY_ORDINAL:
                 StringBuilder sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case BOOLEAN_ARRAY_ORDINAL, double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, short_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, float_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL:
+            case BOOLEAN_ARRAY_ORDINAL, double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, short_ARRAY_ORDINAL,
+                 SHORT_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL,
+                 float_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, LOCALDATE_ARRAY_ORDINAL,
+                 LOCALDATETIME_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL, LOCALDATE_ORDINAL, JSON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, POLYGON_ORDINAL, LINESTRING_ORDINAL, POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL:
+            case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL, LOCALDATE_ORDINAL, JSON_ORDINAL,
+                 GEOGRAPHY_POLYGON_ORDINAL, POLYGON_ORDINAL, LINESTRING_ORDINAL, POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL:
                 return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALDATETIME_ORDINAL:
                 return toRDBSStringLiteral(LOCALDATETIME, value) + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
@@ -3706,15 +3711,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public boolean supportsType(PropertyType propertyType) {
         return switch (propertyType.ordinal()) {
             case BOOLEAN_ORDINAL, SHORT_ORDINAL, INTEGER_ORDINAL, LONG_ORDINAL, FLOAT_ORDINAL, JSON_ARRAY_ORDINAL,
-                    PERIOD_ARRAY_ORDINAL, DURATION_ARRAY_ORDINAL, ZONEDDATETIME_ARRAY_ORDINAL, LOCALTIME_ARRAY_ORDINAL,
-                    LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL,
-                    double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, float_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL,
-                    long_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, int_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL,
-                    short_ARRAY_ORDINAL, BYTE_ARRAY_ORDINAL, byte_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL,
-                    boolean_ARRAY_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, GEOGRAPHY_POINT_ORDINAL, POLYGON_ORDINAL,
-                    LINESTRING_ORDINAL, POINT_ORDINAL, JSON_ORDINAL, DURATION_ORDINAL, PERIOD_ORDINAL,
-                    ZONEDDATETIME_ORDINAL, LOCALTIME_ORDINAL, LOCALDATETIME_ORDINAL, LOCALDATE_ORDINAL,
-                    LTREE_ORDINAL, VARCHAR_ORDINAL, STRING_ORDINAL, DOUBLE_ORDINAL -> true;
+                 PERIOD_ARRAY_ORDINAL, DURATION_ARRAY_ORDINAL, ZONEDDATETIME_ARRAY_ORDINAL, LOCALTIME_ARRAY_ORDINAL,
+                 LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL,
+                 double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, float_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL,
+                 long_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, int_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL,
+                 short_ARRAY_ORDINAL, BYTE_ARRAY_ORDINAL, byte_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL,
+                 boolean_ARRAY_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, GEOGRAPHY_POINT_ORDINAL, POLYGON_ORDINAL,
+                 LINESTRING_ORDINAL, POINT_ORDINAL, JSON_ORDINAL, DURATION_ORDINAL, PERIOD_ORDINAL,
+                 ZONEDDATETIME_ORDINAL, LOCALTIME_ORDINAL, LOCALDATETIME_ORDINAL, LOCALDATE_ORDINAL,
+                 LTREE_ORDINAL, VARCHAR_ORDINAL, STRING_ORDINAL, DOUBLE_ORDINAL -> true;
             default -> false;
         };
     }
