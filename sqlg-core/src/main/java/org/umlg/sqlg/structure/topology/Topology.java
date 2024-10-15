@@ -9,6 +9,7 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -23,9 +24,7 @@ import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalMap;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1109,6 +1108,7 @@ public class Topology {
     }
 
     public void cacheTopology() {
+        LOGGER.info("start cacheTopology");
         StopWatch stopWatch = StopWatch.createStarted();
         this.startSchemaChange(
                 "Topology cacheTopology"
@@ -1136,26 +1136,26 @@ public class Topology {
         StopWatch stopWatch1 = StopWatch.createStarted();
         loadVertexOutEdgesAndProperties(traversalSource);
         stopWatch1.stop();
-        LOGGER.debug("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.info("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadVertexIndices(traversalSource);
         stopWatch1.stop();
-        LOGGER.debug("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.info("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadEdgeIndices(traversalSource);
         stopWatch1.stop();
-        LOGGER.debug("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.info("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         //Now load the in edges
         stopWatch1.reset();
         stopWatch1.start();
         loadInEdgeLabels(traversalSource);
         stopWatch1.stop();
-        LOGGER.debug("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.info("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
@@ -1182,87 +1182,346 @@ public class Topology {
         //populate the edgeForeignKey cache
         this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
         stopWatch.stop();
-        LOGGER.info("cacheTopology took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch);
+        LOGGER.info("end cacheTopology time: {} {}", sqlgGraph.getJdbcUrl(), stopWatch);
     }
 
     @SuppressWarnings("resource")
     private void loadVertexOutEdgesAndProperties(GraphTraversalSource traversalSource) {
-        Map<String, Map<String, Partition>> partitionMap = new HashMap<>();
-        List<Path> vertices = traversalSource
-                .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
-                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
-                //a vertex does not necessarily have properties so use optional.
-                .optional(
-                        __.outE(
-                                        SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
-                                        SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE,
-                                        SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
-                                        SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE,
-                                        SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE
-                                ).as("edgeToProperty").otherV().as("property_partition")
-                                .optional(
-                                        __.repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)).emit().as("subPartition")
-                                )
-                )
-                .path()
-                .toList();
-        for (Path vertexPath : vertices) {
-            Vertex schemaVertex = null;
-            Vertex vertexVertex = null;
-            Vertex vertexPropertyPartitionVertex = null;
-            Vertex partitionParentVertex = null;
-            Element partitionParentParentElement = null;
-            Vertex subPartition = null;
-            Edge edgeToIdentifierOrColocate = null;
-            List<Set<String>> labelsList = vertexPath.labels();
-            for (Set<String> labels : labelsList) {
-                for (String label : labels) {
-                    switch (label) {
-                        case "schema":
-                            schemaVertex = vertexPath.get("schema");
-                            break;
-                        case "vertex":
-                            vertexVertex = vertexPath.get("vertex");
-                            break;
-                        case "property_partition":
-                            vertexPropertyPartitionVertex = vertexPath.get("property_partition");
-                            break;
-                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
-                            break;
-                        case "subPartition":
-                            Preconditions.checkState(vertexPropertyPartitionVertex != null);
-                            subPartition = vertexPath.get("subPartition");
-                            partitionParentVertex = vertexPath.get(vertexPath.size() - 2);
-                            partitionParentParentElement = vertexPath.get(vertexPath.size() - 3);
-                            break;
-                        case "edgeToProperty":
-                            edgeToIdentifierOrColocate = vertexPath.get("edgeToProperty");
-                            break;
-                        case Schema.MARKER:
-                            break;
-                        case "sqlgPathTempFakeLabel":
-                            break;
-                        default:
-                            throw new IllegalStateException(String.format("BUG: Only \"schema\", \"vertex\", \"property\" and \"partition\" are expected as a label. Found %s", label));
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        if (true) {
+            String vertexSql = """
+                    SELECT
+                        %s, %s, %s, %s, %s
+                    FROM
+                        sqlg_schema."V_schema" as "schema"	LEFT JOIN
+                        sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                        sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID";
+                    """.formatted(
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT)
+
+            );
+            Connection conn = sqlgGraph.tx().getConnection();
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery(vertexSql);
+                while (rs.next()) {
+                    String schemaName = rs.getString("schemaName");
+                    Schema schema = this.schemas.get(schemaName);
+                    Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                    String tableName = rs.getString(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+                    Preconditions.checkNotNull(tableName, SQLG_SCHEMA_VERTEX_LABEL_NAME + " may never be null. BUG!");
+                    PartitionType partitionType = PartitionType.valueOf(rs.getString(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE));
+                    Preconditions.checkNotNull(tableName, SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE + " may never be null. BUG!");
+                    String partitionExpression = rs.getString(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION);
+                    if (rs.wasNull()) {
+                        partitionExpression = null;
+                    }
+                    Integer shardCount = rs.getInt(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT);
+                    if (rs.wasNull()) {
+                        shardCount = null;
+                    }
+                    schema.cacheTopologyAddToVertexLabels(tableName, partitionType, partitionExpression, shardCount);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            stopWatch.stop();
+            LOGGER.info("load vertexLabels, time: {}", stopWatch);
+
+            stopWatch.reset();
+            stopWatch.start();
+
+            String propertySql = """
+                    SELECT
+                        %s, %s, %s, %s, %s, %s, %s, %s
+                    FROM
+                        sqlg_schema."V_schema" as "schema"	LEFT JOIN
+                    	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                    	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                    	sqlg_schema."E_vertex_property" as "vertex_property" ON "vertex"."ID" = "vertex_property"."sqlg_schema.vertex__O" JOIN
+                    	sqlg_schema."V_property" as "property" ON "vertex_property"."sqlg_schema.property__I" = "property"."ID";
+                    """.formatted(
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_NAME),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_TYPE),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER)
+
+            );
+            conn = sqlgGraph.tx().getConnection();
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery(propertySql);
+                while (rs.next()) {
+                    String schemaName = rs.getString("schemaName");
+                    Schema schema = this.schemas.get(schemaName);
+                    Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                    String vertexLabelName = rs.getString("vertexLabelName");
+                    Preconditions.checkNotNull(vertexLabelName, SQLG_SCHEMA_VERTEX_LABEL_NAME + " may never be null. BUG!");
+                    VertexLabel vertexLabel = schema.getVertexLabel(vertexLabelName).orElseThrow();
+
+                    String propertyName = rs.getString(SQLG_SCHEMA_PROPERTY_NAME);
+                    String propertyType = rs.getString(SQLG_SCHEMA_PROPERTY_TYPE);
+                    String defaultLiteral = rs.getString(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL);
+                    String checkConstraint = rs.getString(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT);
+                    int lower = rs.getInt(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER);
+                    int upper = rs.getInt(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER);
+                    PropertyColumn property = new PropertyColumn(
+                            vertexLabel,
+                            propertyName,
+                            PropertyDefinition.of(
+                                    PropertyType.valueOf(propertyType),
+                                    Multiplicity.of(
+                                            lower,
+                                            upper
+                                    ),
+                                    defaultLiteral,
+                                    checkConstraint
+                            )
+                    );
+                    vertexLabel.addToPropertyColumns(property);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            stopWatch.stop();
+            LOGGER.info("load propertyColumns, time: {}", stopWatch);
+            stopWatch.reset();
+            stopWatch.start();
+
+            String identifierSql = """
+                    SELECT
+                    	%s, %s, %s, %s
+                    FROM
+                    	sqlg_schema."V_schema" as "schema"	LEFT JOIN
+                    	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                    	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                    	sqlg_schema."E_vertex_identifier" as "vertex_identifier" ON "vertex"."ID" = "vertex_identifier"."sqlg_schema.vertex__O" JOIN
+                    	sqlg_schema."V_property" as "property" ON "vertex_identifier"."sqlg_schema.property__I" = "property"."ID";
+                    """.formatted(
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex_identifier") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE),
+                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_NAME)
+            );
+            conn = sqlgGraph.tx().getConnection();
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery(identifierSql);
+                while (rs.next()) {
+                    String schemaName = rs.getString("schemaName");
+                    Schema schema = this.schemas.get(schemaName);
+                    Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                    String vertexLabelName = rs.getString("vertexLabelName");
+                    Preconditions.checkNotNull(vertexLabelName, SQLG_SCHEMA_VERTEX_LABEL_NAME + " may never be null. BUG!");
+                    VertexLabel vertexLabel = schema.getVertexLabel(vertexLabelName).orElseThrow();
+                    Preconditions.checkNotNull(vertexLabel, "VertexLabel %s not found!", vertexLabelName);
+                    int identifierIndex = rs.getInt(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE);
+                    String propertyName = rs.getString(SQLG_SCHEMA_PROPERTY_NAME);
+                    vertexLabel.addIdentifier(
+                            propertyName,
+                            identifierIndex
+                    );
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            stopWatch.stop();
+            LOGGER.info("load identifiers, time: {}", stopWatch);
+            stopWatch.reset();
+            stopWatch.start();
+
+            int count = 1;
+            for (Schema schema : getSchemas()) {
+                for (String vertexLabel : schema.getVertexLabels().keySet()) {
+                    count++;
+                }
+            }
+            LOGGER.info("number of vertexLabel {}", count);
+
+            List<RecordId> partitionIds = new ArrayList<>();
+            List<Vertex> partitions = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
+                    .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
+                    .toList();
+            LOGGER.info("number of partitions {}", partitions.size());
+            for (Vertex partition : partitions) {
+                String schemaName = partition.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
+                String abstractLabelName = partition.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
+                Schema schema = this.schemas.get(schemaName);
+                Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                Preconditions.checkNotNull(abstractLabelName, SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME + " may never be null. BUG!");
+                VertexLabel vertexLabel = schema.getVertexLabel(abstractLabelName).orElseThrow(() -> new IllegalStateException(String.format("vertexLabel %s not found in schema %s", abstractLabelName, schemaName)));
+                vertexLabel.addPartition(partition);
+                partitionIds.add((RecordId) partition.id());
+            }
+
+            List<Path> subPartitions = traversalSource.V().hasId(P.within(partitionIds))
+                    .repeat(
+                            __.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE).simplePath()
+                    )
+                    .until(
+                            __.not(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE).simplePath())
+                    )
+                    .path()
+                    .toList();
+            LOGGER.info("number of subPartitions {}", subPartitions.size());
+            for (Path subPartition : subPartitions) {
+                Partition partition = null;
+                //start the index at 1, we are not interested in the 'vertex' vertex here!
+                for (int i = 0; i < subPartition.size(); i++) {
+                    Vertex subPartitionVertex = subPartition.get(i);
+                    String schemaName = subPartitionVertex.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
+                    String abstractLabelName = subPartitionVertex.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
+                    Schema schema = this.schemas.get(schemaName);
+                    Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                    Preconditions.checkNotNull(abstractLabelName, SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME + " may never be null. BUG!");
+                    VertexLabel vertexLabel = schema.getVertexLabel(abstractLabelName).orElseThrow();
+                    Preconditions.checkNotNull(vertexLabel, "VertexLabel %s not found!", abstractLabelName);
+                    String partitionName = subPartitionVertex.value(Topology.SQLG_SCHEMA_PARTITION_NAME);
+                    if (i == 0) {
+                        partition = vertexLabel.getPartition(partitionName).orElseThrow();
+                    } else {
+                        Optional<Partition> partitionOpt = partition.getPartition(partitionName);
+                        if (partitionOpt.isPresent()) {
+                            partition = partitionOpt.get();
+                        } else {
+                            partition = partition.addPartition(subPartitionVertex);
+                        }
                     }
                 }
             }
-            Preconditions.checkState(schemaVertex != null, "BUG: Topology schema not found.");
-            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
-            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
-            Optional<Schema> schemaOptional = this.getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent());
-            Schema schema = schemaOptional.get();
 
-            schema.loadVertexAndProperties(
-                    vertexVertex,
-                    vertexPropertyPartitionVertex,
-                    edgeToIdentifierOrColocate,
-                    partitionParentParentElement,
-                    subPartition,
-                    partitionParentVertex,
-                    partitionMap);
+//            String edgeidentifierSql = """
+//                    SELECT
+//                    	%s, %s, %s, %s
+//                    FROM
+//                    	sqlg_schema."V_schema" as "schema"	LEFT JOIN
+//                    	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+//                    	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+//                    	sqlg_schema."E_vertex_identifier" as "vertex_identifier" ON "vertex"."ID" = "vertex_identifier"."sqlg_schema.vertex__O" JOIN
+//                    	sqlg_schema."V_property" as "property" ON "vertex_identifier"."sqlg_schema.property__I" = "property"."ID";
+//                    """.formatted(
+//                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
+//                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
+//                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex_identifier") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE),
+//                    sqlgGraph.getSqlDialect().maybeWrapInQoutes("property") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_PROPERTY_NAME)
+//            );
+//            conn = sqlgGraph.tx().getConnection();
+//            try (Statement statement = conn.createStatement()) {
+//                ResultSet rs = statement.executeQuery(identifierSql);
+//                while (rs.next()) {
+//                    String schemaName = rs.getString("schemaName");
+//                    Schema schema = this.schemas.get(schemaName);
+//                    Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+//                    String vertexLabelName = rs.getString("vertexLabelName");
+//                    Preconditions.checkNotNull(vertexLabelName, SQLG_SCHEMA_VERTEX_LABEL_NAME + " may never be null. BUG!");
+//                    VertexLabel vertexLabel = schema.getVertexLabel(vertexLabelName).orElseThrow();
+//                    Preconditions.checkNotNull(vertexLabel, "VertexLabel %s not found!", vertexLabelName);
+//                    int identifierIndex = rs.getInt(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE);
+//                    String propertyName = rs.getString(SQLG_SCHEMA_PROPERTY_NAME);
+//                    vertexLabel.addIdentifier(
+//                            propertyName,
+//                            identifierIndex
+//                    );
+//                }
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//            stopWatch.stop();
+//            LOGGER.info("load identifiers, time: {}", stopWatch);
+//            stopWatch.reset();
+//            stopWatch.start();
         }
+
+
+        Map<String, Map<String, Partition>> partitionMap = new HashMap<>();
+//        List<Path> vertices = traversalSource
+//                .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
+//                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+//                //a vertex does not necessarily have properties so use optional.
+//                .optional(
+//                        __.outE(
+//                                        SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
+//                                        SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE,
+//                                        SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
+//                                        SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE,
+//                                        SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE
+//                                ).as("edgeToProperty").otherV().as("property_partition")
+//                                .optional(
+//                                        __.repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)).emit().as("subPartition")
+//                                )
+//                )
+//                .path()
+//                .toList();
+//
+//        stopWatch.stop();
+//        LOGGER.info("query 1, time: {}", stopWatch);
+//        stopWatch.reset();
+//        stopWatch.start();
+//
+//
+//        for (Path vertexPath : vertices) {
+//            Vertex schemaVertex = null;
+//            Vertex vertexVertex = null;
+//            Vertex vertexPropertyPartitionVertex = null;
+//            Vertex partitionParentVertex = null;
+//            Element partitionParentParentElement = null;
+//            Vertex subPartition = null;
+//            Edge edgeToIdentifierOrColocate = null;
+//            List<Set<String>> labelsList = vertexPath.labels();
+//            for (Set<String> labels : labelsList) {
+//                for (String label : labels) {
+//                    switch (label) {
+//                        case "schema":
+//                            schemaVertex = vertexPath.get("schema");
+//                            break;
+//                        case "vertex":
+//                            vertexVertex = vertexPath.get("vertex");
+//                            break;
+//                        case "property_partition":
+//                            vertexPropertyPartitionVertex = vertexPath.get("property_partition");
+//                            break;
+//                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
+//                            break;
+//                        case "subPartition":
+//                            Preconditions.checkState(vertexPropertyPartitionVertex != null);
+//                            subPartition = vertexPath.get("subPartition");
+//                            partitionParentVertex = vertexPath.get(vertexPath.size() - 2);
+//                            partitionParentParentElement = vertexPath.get(vertexPath.size() - 3);
+//                            break;
+//                        case "edgeToProperty":
+//                            edgeToIdentifierOrColocate = vertexPath.get("edgeToProperty");
+//                            break;
+//                        case Schema.MARKER:
+//                            break;
+//                        case "sqlgPathTempFakeLabel":
+//                            break;
+//                        default:
+//                            throw new IllegalStateException(String.format("BUG: Only \"schema\", \"vertex\", \"property\" and \"partition\" are expected as a label. Found %s", label));
+//                    }
+//                }
+//            }
+//            Preconditions.checkState(schemaVertex != null, "BUG: Topology schema not found.");
+//            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
+//            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
+//            Optional<Schema> schemaOptional = this.getSchema(schemaName);
+//            Preconditions.checkState(schemaOptional.isPresent());
+//            Schema schema = schemaOptional.get();
+//
+//            schema.loadVertexAndProperties(
+//                    vertexVertex,
+//                    vertexPropertyPartitionVertex,
+//                    edgeToIdentifierOrColocate,
+//                    partitionParentParentElement,
+//                    subPartition,
+//                    partitionParentVertex,
+//                    partitionMap);
+//        }
 
         partitionMap.clear();
         //Load the out edges. This will load all edges as all edges have a out vertex.
@@ -1287,6 +1546,10 @@ public class Topology {
                 )
                 .path()
                 .toList();
+
+        stopWatch.stop();
+        LOGGER.info("query 2, time: {}", stopWatch);
+
         for (Path outEdgePath : outEdges) {
             List<Set<String>> labelsList = outEdgePath.labels();
             Vertex schemaVertex = null;

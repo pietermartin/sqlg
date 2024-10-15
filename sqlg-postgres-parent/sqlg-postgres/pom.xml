@@ -28,33 +28,33 @@
                 </configuration>
             </plugin>
             <!-- this uber jar is in the wrong place, as it need c3pO to be included to work -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>sqlg-c3pO-postgresql-uber</finalName>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-<!--                            <artifactSet>-->
-<!--                                <excludes>-->
-<!--                                    <exclude>classworlds:classworlds</exclude>-->
-<!--                                    <exclude>junit:junit</exclude>-->
-<!--                                    <exclude>jmock:*</exclude>-->
-<!--                                    <exclude>*:xml-apis</exclude>-->
-<!--                                    <exclude>org.apache.maven:lib:tests</exclude>-->
-<!--                                    <exclude>log4j:log4j:jar:</exclude>-->
-<!--                                </excludes>-->
-<!--                            </artifactSet>-->
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-shade-plugin</artifactId>-->
+<!--                <version>3.6.0</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>shade</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <finalName>sqlg-c3pO-postgresql-uber</finalName>-->
+<!--                            <createDependencyReducedPom>false</createDependencyReducedPom>-->
+<!--&lt;!&ndash;                            <artifactSet>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <excludes>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>classworlds:classworlds</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>junit:junit</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>jmock:*</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>*:xml-apis</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>org.apache.maven:lib:tests</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <exclude>log4j:log4j:jar:</exclude>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </excludes>&ndash;&gt;-->
+<!--&lt;!&ndash;                            </artifactSet>&ndash;&gt;-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 

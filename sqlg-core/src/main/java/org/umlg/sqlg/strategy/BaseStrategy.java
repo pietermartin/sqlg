@@ -432,7 +432,21 @@ public abstract class BaseStrategy {
     private void handleRecursiveRepeatStep(RepeatStep repeatStep, MutableInt pathCount, ListIterator<Step<?, ?>> stepIterator) {
         Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
         List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
-        boolean includeEdge = repeatTraversalSteps.size() == 4;
+
+        //if the traversal is a topology() traversal, then remove the additional HasContainer
+        List<Step> isForSqlgSchemaHasSteps = repeatTraversalSteps.stream()
+                .filter(
+                        s -> s instanceof HasStep<?> hasStep &&
+                                hasStep.getHasContainers().get(0).getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA))
+                .toList();
+        boolean isForSqlgSchema = !isForSqlgSchemaHasSteps.isEmpty();
+        if (isForSqlgSchema) {
+            for (Step isForSqlgSchemaHasStep : isForSqlgSchemaHasSteps) {
+                repeatTraversal.removeStep(isForSqlgSchemaHasStep);
+            }
+
+        }
+        boolean includeEdge = repeatTraversalSteps.stream().anyMatch(s -> s instanceof EdgeVertexStep || s instanceof EdgeOtherVertexStep);
 
         VertexStep repeatVertexStep = (VertexStep) repeatTraversalSteps.get(0);
         EdgeVertexStep repeatEdgeVertexStep;
@@ -468,6 +482,16 @@ public abstract class BaseStrategy {
         //This means that later when constructing the where clause the AndOrHasContainer knows how to find the
         // correct labeled SchemaTableTree to place the HasContainer on.
         List<Step<?, ?>> untilTraversalSteps = new ArrayList<>(untilTraversal.getSteps());
+        if (!isForSqlgSchema) {
+            List<Step<?, ?>> untilIsForSqlgSchemaHasSteps = untilTraversalSteps.stream()
+                    .filter(
+                            s -> s instanceof HasStep<?> hasStep &&
+                                    hasStep.getHasContainers().get(0).getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA))
+                    .toList();
+            for (Step<?, ?> isForSqlgSchemaHasStep : untilIsForSqlgSchemaHasSteps) {
+                untilTraversal.removeStep(isForSqlgSchemaHasStep);
+            }
+        }
         List<Step<?, ?>> _untilTraversalSteps;
         Traversal.Admin _untilTraversal;
         boolean hasNotStep = false;
@@ -483,7 +507,7 @@ public abstract class BaseStrategy {
                 hasNotStep = hasNotStep || !notSteps.isEmpty();
                 hasLoopAndIsStep = hasLoopAndIsStep ||
                         (!TraversalHelper.getStepsOfAssignableClass(LoopsStep.class, untilTraversal).isEmpty() &&
-                        !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty());
+                                !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty());
                 for (NotStep notStep : notSteps) {
                     connectiveTraversal.removeStep(notStep);
                     notStepTraversal = connectiveTraversal;
@@ -503,7 +527,7 @@ public abstract class BaseStrategy {
                     !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty();
             _untilTraversal = new DefaultGraphTraversal<>();
             _untilTraversal.asAdmin().addStep(new AndStep<Vertex>(_untilTraversal, untilTraversal));
-            if (!(untilTraversal.getSteps().get(0) instanceof SelectOneStep<?,?>)) {
+            if (!(untilTraversal.getSteps().get(0) instanceof SelectOneStep<?, ?>)) {
                 untilTraversal.asAdmin().addStep(0, new SelectOneStep<>(_untilTraversal, Pop.last, "v"));
             }
             _untilTraversalSteps = new ArrayList<>(_untilTraversal.getSteps());
@@ -516,6 +540,9 @@ public abstract class BaseStrategy {
                 (AbstractStep<Vertex, Vertex>) this.currentReplacedStep.getStep(),
                 pathCount.getValue()
         );
+        if (isForSqlgSchema) {
+            untilReplacedStep.markForSqlgSchema();
+        }
         //edgeVertexStepLabel defaults to 'v'
         untilReplacedStep.getLabels().add(edgeVertexStepLabel);
         untilReplacedStep.getLabelHasContainers().addAll(this.currentReplacedStep.getLabelHasContainers());
@@ -537,6 +564,9 @@ public abstract class BaseStrategy {
                     repeatVertexStep.getDirection() == Direction.BOTH ? new VertexStep(repeatVertexStep.getTraversal(), repeatVertexStep.getReturnClass(), Direction.OUT) : repeatVertexStep,
                     pathCount.getValue()
             );
+            if (isForSqlgSchema) {
+                this.currentReplacedStep.markForSqlgSchema();
+            }
             //Important to add the replacedStep before collecting the additional steps.
             //In particular the orderGlobalStep needs to have the currentStepDepth set.
             this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
@@ -547,6 +577,9 @@ public abstract class BaseStrategy {
                     repeatVertexStep.getDirection() == Direction.BOTH ? new VertexStep(repeatVertexStep.getTraversal(), repeatVertexStep.getReturnClass(), Direction.OUT) : repeatVertexStep,
                     pathCount.getValue()
             );
+            if (isForSqlgSchema) {
+                edgeUntilReplacedStep.markForSqlgSchema();
+            }
             //clear the standard Sqlg label strategy
             edgeUntilReplacedStep.getLabels().clear();
             //label defaults to 'e'
@@ -1573,6 +1606,14 @@ public abstract class BaseStrategy {
                                             repeatTraversalSteps.get(2) instanceof PathFilterStep<?> _pathFilterStep && _pathFilterStep.isSimple() &&
                                             repeatTraversalSteps.get(3) instanceof RepeatStep.RepeatEndStep<?>
                             )
+                            ||
+                            (
+                                    repeatTraversalSteps.size() == 4 &&
+                                            repeatTraversalSteps.get(0) instanceof VertexStep<?> &&
+                                            (repeatTraversalSteps.get(1) instanceof HasStep<?> hasStep) && hasStep.getHasContainers().get(0).getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) &&
+                                            repeatTraversalSteps.get(2) instanceof PathFilterStep<?> __pathFilterStep && __pathFilterStep.isSimple() &&
+                                            repeatTraversalSteps.get(3) instanceof RepeatStep.RepeatEndStep<?>
+                            )
             ) {
 
                 VertexStep<?> vertexStep = (VertexStep<?>) repeatTraversalSteps.get(0);
@@ -1616,6 +1657,15 @@ public abstract class BaseStrategy {
                                             if (notSteps.size() == 2 &&
                                                     notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
                                                     notSteps.get(1) instanceof PathFilterStep<?> notPathFilterStep) {
+
+                                                String[] notEdgeLabels = notVertexStep.getEdgeLabels();
+                                                if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {
+                                                    return true;
+                                                }
+                                            } else if (notSteps.size() == 3 &&
+                                                    notSteps.get(0) instanceof VertexStep<?> notVertexStep &&
+                                                    notSteps.get(1) instanceof HasStep<?> hasStep && hasStep.getHasContainers().get(0).getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) &&
+                                                    notSteps.get(2) instanceof PathFilterStep<?> notPathFilterStep) {
 
                                                 String[] notEdgeLabels = notVertexStep.getEdgeLabels();
                                                 if (notEdgeLabels.length == 1 && notEdgeLabels[0].equals(_edgeLabel)) {

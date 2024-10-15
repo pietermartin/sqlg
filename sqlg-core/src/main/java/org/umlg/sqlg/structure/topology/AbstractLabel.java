@@ -762,6 +762,10 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
+    void addToPropertyColumns(PropertyColumn propertyColumn) {
+        this.properties.put(propertyColumn.getName(), propertyColumn);
+    }
+
     void addPropertyColumn(Vertex propertyVertex) {
         Preconditions.checkState(getTopology().isSchemaChanged());
         VertexProperty<String> defaultLiteralProperty = propertyVertex.property(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL);

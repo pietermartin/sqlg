@@ -1200,6 +1200,19 @@ public class Schema implements TopologyInf {
         }
     }
 
+    void cacheTopologyAddToVertexLabels(String tableName, PartitionType partitionType, String partitionExpression, Integer shardCount) {
+        VertexLabel vertexLabel;
+        if (!partitionType.isNone()) {
+            vertexLabel = new VertexLabel(this, tableName, partitionType, partitionExpression);
+        } else {
+            vertexLabel = new VertexLabel(this, tableName);
+        }
+        if (shardCount != null) {
+            vertexLabel.setShardCount(shardCount);
+        }
+        this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + tableName, vertexLabel);
+    }
+
     void loadVertexAndProperties(
             Vertex vertexVertex,
             Vertex vertexPropertyPartitionVertex,

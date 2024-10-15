@@ -1059,7 +1059,8 @@ public class SchemaTableTree {
         LinkedList<SchemaTableTree> untilDistinctQueryStack = untilDistinctQueryStacks.get(0);
         Preconditions.checkState(untilDistinctQueryStack.size() <= 2);
         SchemaTableTree untilSchemaTableTree;
-        if (untilDistinctQueryStack.size() == 1) {
+        boolean includeEdge = untilDistinctQueryStack.size() > 1;
+        if (!includeEdge) {
             untilSchemaTableTree = untilDistinctQueryStack.get(0);
         } else {
             //includeEdge
@@ -1078,18 +1079,27 @@ public class SchemaTableTree {
                 Collections.emptySet(),
                 false
         );
+
+        ColumnList columnList = this.getAliasMapHolder().getColumnListStack().get(0);
+
+        String select = columnList.toSelectString(false);
+
         resetColumnAliasMaps();
 
         //we need to do this to create the ColumnList
+        //if includeEdge = true, then the columnList thinks there are 2 additional columns for the foreignKeys,
+        //This maps in a bad way to the 2 additional columns for the 'path' and 'type'
         constructSinglePathSql(
                 false,
                 distinctQueryStack,
                 null,
                 null,
                 Collections.emptySet(),
-                false
+                false,
+               includeEdge ? 1 : 2
         );
         String sql;
+        //includes the edge
         if (distinctQueryStack.size() == 2) {
             if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
@@ -1113,18 +1123,18 @@ public class SchemaTableTree {
         } else {
             if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                    case OUT -> constructRecursiveOutQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
-                    case IN -> constructRecursiveInQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
-                    case BOTH -> constructRecursiveBothQuery(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case OUT -> constructRecursiveOutQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case IN -> constructRecursiveInQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case BOTH -> constructRecursiveBothQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                 };
             } else {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
                     case OUT ->
-                            constructRecursiveOutQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                            constructRecursiveOutQueryWithoutNotStep(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                     case IN ->
-                            constructRecursiveInQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                            constructRecursiveInQueryWithoutNotStep(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                     default ->
-                            constructRecursiveBothQueryWithoutNotStep(startSql, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                            constructRecursiveBothQueryWithoutNotStep(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                 };
             }
         }
@@ -1135,6 +1145,26 @@ public class SchemaTableTree {
             schemaTableTree.getAndOrHasContainers().addAll(untilSchemaTableTree.getAndOrHasContainers());
         }
         return sql;
+    }
+
+    private String constructSinglePathSql(
+            boolean partOfDuplicateQuery,
+            LinkedList<SchemaTableTree> distinctQueryStack,
+            SchemaTableTree lastOfPrevious,
+            SchemaTableTree firstOfNextStack,
+            Set<SchemaTableTree> leftJoinOn,
+            boolean dropStep) {
+
+        return constructSinglePathSql(
+                partOfDuplicateQuery,
+                distinctQueryStack,
+                lastOfPrevious,
+                firstOfNextStack,
+                leftJoinOn,
+                dropStep,
+                1
+        );
+
     }
 
     /**
@@ -1153,7 +1183,8 @@ public class SchemaTableTree {
             SchemaTableTree lastOfPrevious,
             SchemaTableTree firstOfNextStack,
             Set<SchemaTableTree> leftJoinOn,
-            boolean dropStep) {
+            boolean dropStep,
+            int _startIndexColumns) {
 
         Preconditions.checkState(this.parent == null, "constructSelectSinglePathSql may only be called on the root SchemaTableTree");
         distinctQueryStack.forEach(SchemaTableTree::clearTempFakeLabels);
@@ -1171,7 +1202,7 @@ public class SchemaTableTree {
         Preconditions.checkState(getRoot() == this);
         this.getAliasMapHolder().getColumnListStack().add(currentColumnList);
 
-        int startIndexColumns = 1;
+        int startIndexColumns = _startIndexColumns;
 
         StringBuilder singlePathSql = new StringBuilder("SELECT\n\t");
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
@@ -2251,7 +2282,7 @@ public class SchemaTableTree {
         }
     }
 
-    private void printLabeledFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
+    private static void printLabeledFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         //printing only a fake column now for count
         //if its part of a duplicate it will not be printed, but needs to be in the list for the outer select construction
         if (lastSchemaTableTree.hasAggregateFunction() &&
@@ -2274,7 +2305,7 @@ public class SchemaTableTree {
         }
     }
 
-    private void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyDefinition> propertyDefinitionMap, String col) {
+    private static void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyDefinition> propertyDefinitionMap, String col) {
         String alias = cols.getAlias(lastSchemaTableTree, col);
         if (alias == null) {
             alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(col);
@@ -4098,7 +4129,7 @@ public class SchemaTableTree {
 
     }
 
-    private String constructRecursiveOutQuery(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveOutQuery(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4131,7 +4162,7 @@ public class SchemaTableTree {
                     SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
                     WHERE a.path NOT IN (SELECT previous from a)
                 )
-                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID"
+                SELECT b.path, {select} from b JOIN {vertexSchemaTable} ON b.vertex_id = {vertexSchemaTable}."ID"
                 ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
                 """
                 .formatted(startSql)
@@ -4139,10 +4170,11 @@ public class SchemaTableTree {
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
-                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{select}", select);
     }
 
-    private String constructRecursiveInQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveInQueryWithoutNotStep(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4180,7 +4212,7 @@ public class SchemaTableTree {
                     SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
                     WHERE b.path NOT IN (SELECT previous from b)
                 )
-                SELECT c.path, output.* from c JOIN {vertexSchemaTable} output ON c.vertex_id = output."ID"
+                SELECT c.path, {select} from c JOIN {vertexSchemaTable} ON c.vertex_id = {vertexSchemaTable}."ID"
                 ORDER BY c.gen_random_uuid, c.path, c.path, c.ordinal;
                 """
                 .formatted(startSql)
@@ -4189,10 +4221,11 @@ public class SchemaTableTree {
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
-                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep)
+                .replace("{select}", select);
     }
 
-    private String constructRecursiveOutQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveOutQueryWithoutNotStep(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4224,13 +4257,13 @@ public class SchemaTableTree {
                     )
                     SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
                 ), b AS (
-                    SELECT * FROM a JOIN "public"."V_Friend" v ON a."public.Friend__I" = v."ID"
+                    SELECT * FROM a JOIN {vertexSchemaTable} v ON a."public.Friend__I" = v."ID"
                     WHERE {optionalUntilWhereClauseWithoutNotStep}
                 ), c AS (
                     SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
                     WHERE b.path NOT IN (SELECT previous from b)
                 )
-                SELECT c.path, output.* from c JOIN "public"."V_Friend" output ON c.vertex_id = output."ID"
+                SELECT c.path, {select} from c JOIN {vertexSchemaTable} ON c.vertex_id = {vertexSchemaTable}."ID"
                 ORDER BY c.gen_random_uuid, c.path, c.path, c.ordinal;
                 """
                 .formatted(startSql)
@@ -4239,10 +4272,11 @@ public class SchemaTableTree {
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
-                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep)
+                .replace("{select}", select);
     }
 
-    private String constructRecursiveInQuery(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveInQuery(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4274,7 +4308,7 @@ public class SchemaTableTree {
                     SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
                     WHERE a.path NOT IN (SELECT previous from a)
                 )
-                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID"
+                SELECT b.path, {select} from b JOIN {vertexSchemaTable} ON b.vertex_id = {vertexSchemaTable}."ID"
                 ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
                 """
                 .formatted(startSql)
@@ -4282,10 +4316,11 @@ public class SchemaTableTree {
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
-                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{select}", select);
     }
 
-    private String constructRecursiveBothQueryWithoutNotStep(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveBothQueryWithoutNotStep(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4367,7 +4402,7 @@ public class SchemaTableTree {
                     SELECT b.gen_random_uuid, b.path, cc.vertex_id, cc.ordinal FROM b LEFT JOIN UNNEST(b.path) WITH ORDINALITY AS cc(vertex_id, ordinal) ON true
                     WHERE b.path NOT IN (SELECT previous from b)
                 )
-                SELECT c.path, output.* from c JOIN {vertexSchemaTable} output ON c.vertex_id = output."ID"
+                SELECT c.path, {select} from c JOIN {vertexSchemaTable} ON c.vertex_id = {vertexSchemaTable}."ID"
                 ORDER BY c.gen_random_uuid, c.path, c.ordinal
                 """
                 .formatted(startSql)
@@ -4376,10 +4411,11 @@ public class SchemaTableTree {
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
                 .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
-                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep);
+                .replace("{optionalUntilWhereClauseWithoutNotStep}", optionalUntilWhereClauseWithoutNotStep)
+                .replace("{select}", select);
     }
 
-    private String constructRecursiveBothQuery(String startSql, String edge, String optionalUntilWhereClause) {
+    private String constructRecursiveBothQuery(String startSql, String select, String edge, String optionalUntilWhereClause) {
         String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
         String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + getSchemaTable().withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
         String vertexSchemaTable = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
@@ -4453,14 +4489,15 @@ public class SchemaTableTree {
                     WHERE a.path NOT IN (SELECT previous from a)
                     ORDER BY a.gen_random_uuid, a.path, ordinal
                 )
-                SELECT b.path, output.* from b JOIN {vertexSchemaTable} output ON b.vertex_id = output."ID";
+                SELECT b.path, {select} from b JOIN {vertexSchemaTable} ON b.vertex_id = {vertexSchemaTable}."ID";
                 """
                 .formatted(startSql)
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey)
                 .replace("{vertexSchemaTable}", vertexSchemaTable)
                 .replace("{edgeSchemaTable}", edgeSchemaTable)
-                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause);
+                .replace("{optionalUntilWhereClause}", optionalUntilWhereClause)
+                .replace("{select}", select);
     }
 
     public SchemaTableTree schemaTableTreeForLabel(String label) {

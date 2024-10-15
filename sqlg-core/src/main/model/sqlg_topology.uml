@@ -60,8 +60,7 @@ There will be 2 entries in 'EdgeLabel'</body>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_lGaLELPwEeazjo2NLx3SIA" value="*"/>
             </ownedAttribute>
             <ownedAttribute xmi:type="uml:Property" xmi:id="_bzHLIWRXEe24kdzlKPy8Xw" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_bzF9AGRXEe24kdzlKPy8Xw">
-              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_bzHLImRXEe24kdzlKPy8Xw"/>
-              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_bzHyMGRXEe24kdzlKPy8Xw" value="1"/>
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_UGQi0IeoEe-fTbZYVPUEWQ"/>
             </ownedAttribute>
             <ownedAttribute xmi:type="uml:Property" xmi:id="_lSEY4WRXEe24kdzlKPy8Xw" name="edgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_lSB8oGRXEe24kdzlKPy8Xw">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_lSFnAGRXEe24kdzlKPy8Xw"/>
@@ -83,6 +82,13 @@ There will be 2 entries in 'EdgeLabel'</body>
             <ownedAttribute xmi:type="uml:Property" xmi:id="_yz-d8GilEe2Tyoj5vzSZUQ" name="checkConstraint" visibility="public">
               <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_9Can4GilEe2Tyoj5vzSZUQ"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_OKGYUoemEe-fTbZYVPUEWQ" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" association="_OKFxQIemEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Uzv68IeoEe-fTbZYVPUEWQ"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_eEweMIemEe-fTbZYVPUEWQ" name="edgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_eEupAIemEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_eEweMYemEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_eExFQIemEe-fTbZYVPUEWQ" value="1"/>
             </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Association" xmi:id="_n6oqgMzjEeW174sSW5_77g" name="schema_vertex" memberEnd="_n6rGwMzjEeW174sSW5_77g _n6rt0MzjEeW174sSW5_77g" navigableOwnedEnd="_n6rt0MzjEeW174sSW5_77g">
@@ -343,6 +349,97 @@ There will be 2 entries in 'EdgeLabel'</body>
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_V0i-kGjDEe2Tyoj5vzSZUQ"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_V0q6YGjDEe2Tyoj5vzSZUQ" value="*"/>
             </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_2avj4IehEe-fTbZYVPUEWQ" name="Graph">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_1zTegIejEe-fTbZYVPUEWQ" name="version" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_5aOh4IejEe-fTbZYVPUEWQ" name="dbVersion" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_IRKEcIelEe-fTbZYVPUEWQ" name="Partition">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_YwDf0YelEe-fTbZYVPUEWQ" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" association="_YwC4wIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_YwDf0oelEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_YwDf04elEe-fTbZYVPUEWQ" value="1"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_rYpyoYelEe-fTbZYVPUEWQ" name="edgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_rYn9cIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_rYpyooelEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_rYqZsIelEe-fTbZYVPUEWQ" value="1"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_7j5SMoelEe-fTbZYVPUEWQ" name="partition" type="_IRKEcIelEe-fTbZYVPUEWQ" association="_7j4rIIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_7j55QIelEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_7j55QYelEe-fTbZYVPUEWQ" value="1"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_YwC4wIelEe-fTbZYVPUEWQ" name="vertex_partition" memberEnd="_YwDf0YelEe-fTbZYVPUEWQ _YwDf1IelEe-fTbZYVPUEWQ" navigableOwnedEnd="_YwDf1IelEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_YwC4wYelEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_YwDf0IelEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_YwDf1IelEe-fTbZYVPUEWQ" name="partition" type="_IRKEcIelEe-fTbZYVPUEWQ" aggregation="composite" association="_YwC4wIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_kD7AwIelEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_kD818IelEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_rYn9cIelEe-fTbZYVPUEWQ" name="edge_partition" memberEnd="_rYpyoYelEe-fTbZYVPUEWQ _rYqZsYelEe-fTbZYVPUEWQ" navigableOwnedEnd="_rYqZsYelEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_rYpLkIelEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_rYpyoIelEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_rYqZsYelEe-fTbZYVPUEWQ" name="partition" type="_IRKEcIelEe-fTbZYVPUEWQ" association="_rYn9cIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_yzU0cIelEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_yzbiIIelEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_7j4rIIelEe-fTbZYVPUEWQ" name="partition_partition" memberEnd="_7j5SMoelEe-fTbZYVPUEWQ _7j55QoelEe-fTbZYVPUEWQ" navigableOwnedEnd="_7j55QoelEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_7j5SMIelEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_7j5SMYelEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_7j55QoelEe-fTbZYVPUEWQ" name="partition" type="_IRKEcIelEe-fTbZYVPUEWQ" association="_7j4rIIelEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_HKCO4IemEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_HKHHYIemEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_OKFxQIemEe-fTbZYVPUEWQ" name="vertex_identifier" memberEnd="_OKGYUoemEe-fTbZYVPUEWQ _OKGYVYemEe-fTbZYVPUEWQ" navigableOwnedEnd="_OKGYVYemEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_OKGYUIemEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_OKGYUYemEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_OKGYVYemEe-fTbZYVPUEWQ" name="identifier" type="_4-gikMzgEeW174sSW5_77g" association="_OKFxQIemEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_SR-zsIemEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_SSDsMIemEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_eEupAIemEe-fTbZYVPUEWQ" name="edge_identifier" memberEnd="_eEweMIemEe-fTbZYVPUEWQ _eExFQYemEe-fTbZYVPUEWQ" navigableOwnedEnd="_eExFQYemEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_eEv3IIemEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_eEv3IYemEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_eExFQYemEe-fTbZYVPUEWQ" name="identifier" type="_4-gikMzgEeW174sSW5_77g" association="_eEupAIemEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_le-0EIemEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_lfHW8IemEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_s3_B8IemEe-fTbZYVPUEWQ" name="Index">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_OeznkoenEe-fTbZYVPUEWQ" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" association="_OezAgIenEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_WYpcMIeoEe-fTbZYVPUEWQ"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_fOiUQoenEe-fTbZYVPUEWQ" name="edgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_fOhGIIenEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_fOiUQ4enEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_fOiURIenEe-fTbZYVPUEWQ" value="1"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_OezAgIenEe-fTbZYVPUEWQ" name="vertex_index" memberEnd="_OeznkoenEe-fTbZYVPUEWQ _Oe01sYenEe-fTbZYVPUEWQ" navigableOwnedEnd="_Oe01sYenEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_OeznkIenEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_OeznkYenEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_Oe01sYenEe-fTbZYVPUEWQ" name="index" type="_s3_B8IemEe-fTbZYVPUEWQ" association="_OezAgIenEe-fTbZYVPUEWQ">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_PvIxkIeoEe-fTbZYVPUEWQ"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_PvUXwIeoEe-fTbZYVPUEWQ" value="*"/>
+            </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_fOhGIIenEe-fTbZYVPUEWQ" name="edge_index" memberEnd="_fOiUQoenEe-fTbZYVPUEWQ _fOiURYenEe-fTbZYVPUEWQ" navigableOwnedEnd="_fOiURYenEe-fTbZYVPUEWQ">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_fOiUQIenEe-fTbZYVPUEWQ" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_fOiUQYenEe-fTbZYVPUEWQ" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_fOiURYenEe-fTbZYVPUEWQ" name="index" type="_s3_B8IemEe-fTbZYVPUEWQ" association="_fOhGIIenEe-fTbZYVPUEWQ"/>
           </packagedElement>
         </packagedElement>
       </packagedElement>

@@ -36,6 +36,85 @@ public class TestRecursiveRepeatAll extends BaseTest {
     }
 
     @Test
+    public void testStartWithOut() {
+        VertexLabel houseVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("House", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+
+        houseVertexLabel.ensureEdgeLabelExist(
+                "livesAt",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+        
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex house = sqlgGraph.addVertex(T.label, "House", "name", "mansion");
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+        house.addEdge("livesAt", a);
+        house.addEdge("livesAt", b);
+        house.addEdge("livesAt", c);
+        house.addEdge("livesAt", d);
+        house.addEdge("livesAt", e);
+        house.addEdge("livesAt", f);
+
+        a.addEdge("of", b);
+        b.addEdge("of", c);
+        c.addEdge("of", d);
+        c.addEdge("of", e);
+        a.addEdge("of", f);
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        LOGGER.info("insert time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        List<Object> friendIds = this.sqlgGraph.traversal().V().hasLabel("House")
+                .out("livesAt")
+                .id()
+                .toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasId(P.within(friendIds))
+                .repeat(__.both("of").simplePath())
+                .until(__.not(__.both("of").simplePath()))
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());
+        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());
+        stopWatch.stop();
+        LOGGER.info("repeat query time: {}", stopWatch);
+        Assert.assertEquals(15, paths.size());
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a) && p.get(1).equals(b) && p.get(2).equals(c) && p.get(3).equals(d)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a) && p.get(1).equals(b) && p.get(2).equals(c) && p.get(3).equals(e)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(f)));
+
+    }
+
+//    @Test
     public void testWithManyVertexAndEdgeLabels() {
         loadModern();
 
