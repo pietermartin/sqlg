@@ -1193,9 +1193,9 @@ public class Topology {
                 SELECT
                     %s, %s, %s, %s, %s
                 FROM
-                    sqlg_schema."V_schema" as "schema"	LEFT JOIN
-                    sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                    sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID";
+                    "sqlg_schema"."V_schema" as "schema"	LEFT JOIN
+                    "sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                    "sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME),
@@ -1239,11 +1239,11 @@ public class Topology {
                 SELECT
                     %s, %s, %s, %s, %s, %s, %s, %s
                 FROM
-                    sqlg_schema."V_schema" as "schema"	LEFT JOIN
-                	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
-                	sqlg_schema."E_vertex_property" as "vertex_property" ON "vertex"."ID" = "vertex_property"."sqlg_schema.vertex__O" JOIN
-                	sqlg_schema."V_property" as "property" ON "vertex_property"."sqlg_schema.property__I" = "property"."ID";
+                    "sqlg_schema"."V_schema" as "schema"	LEFT JOIN
+                	"sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                	"sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                	"sqlg_schema"."E_vertex_property" as "vertex_property" ON "vertex"."ID" = "vertex_property"."sqlg_schema.vertex__O" JOIN
+                	"sqlg_schema"."V_property" as "property" ON "vertex_property"."sqlg_schema.property__I" = "property"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
@@ -1299,11 +1299,11 @@ public class Topology {
                 SELECT
                 	%s, %s, %s, %s
                 FROM
-                	sqlg_schema."V_schema" as "schema"	LEFT JOIN
-                	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
-                	sqlg_schema."E_vertex_identifier" as "vertex_identifier" ON "vertex"."ID" = "vertex_identifier"."sqlg_schema.vertex__O" JOIN
-                	sqlg_schema."V_property" as "property" ON "vertex_identifier"."sqlg_schema.property__I" = "property"."ID";
+                	"sqlg_schema"."V_schema" as "schema"	LEFT JOIN
+                	"sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                	"sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                	"sqlg_schema"."E_vertex_identifier" as "vertex_identifier" ON "vertex"."ID" = "vertex_identifier"."sqlg_schema.vertex__O" JOIN
+                	"sqlg_schema"."V_property" as "property" ON "vertex_identifier"."sqlg_schema.property__I" = "property"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
@@ -1394,11 +1394,11 @@ public class Topology {
                 SELECT
                 	%s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 FROM
-                	sqlg_schema."V_schema" as "schema"	JOIN
-                	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
-                	sqlg_schema."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
-                	sqlg_schema."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID";
+                	"sqlg_schema"."V_schema" as "schema"	JOIN
+                	"sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                	"sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                	"sqlg_schema"."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
+                	"sqlg_schema"."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
@@ -1474,13 +1474,13 @@ public class Topology {
                 SELECT
                 	%s, %s, %s, %s, %s, %s, %s, %s, %s
                 FROM
-                	sqlg_schema."V_schema" as "schema"	JOIN
-                	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
-                	sqlg_schema."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
-                	sqlg_schema."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID" JOIN
-                	sqlg_schema."E_edge_property" as "edge_property" ON "edge"."ID" = "edge_property"."sqlg_schema.edge__O" JOIN
-                	sqlg_schema."V_property" as "property" ON "edge_property"."sqlg_schema.property__I" = "property"."ID";
+                	"sqlg_schema"."V_schema" as "schema"	JOIN
+                	"sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                	"sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                	"sqlg_schema"."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
+                	"sqlg_schema"."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID" JOIN
+                	"sqlg_schema"."E_edge_property" as "edge_property" ON "edge"."ID" = "edge_property"."sqlg_schema.edge__O" JOIN
+                	"sqlg_schema"."V_property" as "property" ON "edge_property"."sqlg_schema.property__I" = "property"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertex") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_VERTEX_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("vertexLabelName"),
@@ -1542,13 +1542,13 @@ public class Topology {
                 SELECT
                 	%s, %s, %s, %s
                 FROM
-                	sqlg_schema."V_schema" as "schema"	JOIN
-                	sqlg_schema."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
-                	sqlg_schema."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
-                	sqlg_schema."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
-                	sqlg_schema."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID" JOIN
-                	sqlg_schema."E_edge_identifier" as "edge_identifier" ON "edge"."ID" = "edge_identifier"."sqlg_schema.edge__O" JOIN
-                	sqlg_schema."V_property" as "property" ON "edge_identifier"."sqlg_schema.property__I" = "property"."ID";
+                	"sqlg_schema"."V_schema" as "schema"	JOIN
+                	"sqlg_schema"."E_schema_vertex" as "schema_edge" ON "schema"."ID" = "schema_edge"."sqlg_schema.schema__O" JOIN
+                	"sqlg_schema"."V_vertex" as "vertex" ON "schema_edge"."sqlg_schema.vertex__I" = "vertex"."ID" LEFT JOIN
+                	"sqlg_schema"."E_out_edges" as "out_edges" ON "vertex"."ID" = "out_edges"."sqlg_schema.vertex__O" JOIN
+                	"sqlg_schema"."V_edge" as "edge" ON "out_edges"."sqlg_schema.edge__I" = "edge"."ID" JOIN
+                	"sqlg_schema"."E_edge_identifier" as "edge_identifier" ON "edge"."ID" = "edge_identifier"."sqlg_schema.edge__O" JOIN
+                	"sqlg_schema"."V_property" as "property" ON "edge_identifier"."sqlg_schema.property__I" = "property"."ID";
                 """.formatted(
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_SCHEMA_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("schemaName"),
                 sqlgGraph.getSqlDialect().maybeWrapInQoutes("edge") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SQLG_SCHEMA_EDGE_LABEL_NAME) + " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("edgeLabelName"),
@@ -1634,103 +1634,6 @@ public class Topology {
 
         stopWatch.stop();
         LOGGER.info("load edge partitions, time: {}", stopWatch);
-
-//        Map<String, Map<String, Partition>> partitionMap = new HashMap<>();
-//        //Load the out edges. This will load all edges as all edges have a out vertex.
-//        List<Path> outEdges = traversalSource
-//                .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
-//                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
-//                //a vertex does not necessarily have properties so use optional.
-//                .optional(
-//                        __.outE(SQLG_SCHEMA_OUT_EDGES_EDGE).as("out_edge").otherV().as("outEdgeVertex")
-//                                .optional(
-//                                        __.outE(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
-//                                                        SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE,
-//                                                        SQLG_SCHEMA_EDGE_PARTITION_EDGE,
-//                                                        SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE,
-//                                                        SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT,
-//                                                        SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE
-//                                                ).as("edge_identifier").otherV().as("property_partition")
-//                                                .optional(
-//                                                        __.repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)).emit().as("subPartition")
-//                                                )
-//                                )
-//                )
-//                .path()
-//                .toList();
-//
-//        stopWatch.stop();
-//        LOGGER.info("query 2, time: {}", stopWatch);
-//
-//        for (Path outEdgePath : outEdges) {
-//            List<Set<String>> labelsList = outEdgePath.labels();
-//            Vertex schemaVertex = null;
-//            Vertex vertexVertex = null;
-//            Edge outEdge = null;
-//            Vertex outEdgeVertex = null;
-//            Vertex edgePropertyPartitionVertex = null;
-//            Vertex partitionParentVertex = null;
-//            Element partitionParentParentElement = null;
-//            Vertex subPartition = null;
-//            Edge edgeIdentifierEdge = null;
-//            for (Set<String> labels : labelsList) {
-//                for (String label : labels) {
-//                    switch (label) {
-//                        case "schema":
-//                            schemaVertex = outEdgePath.get("schema");
-//                            break;
-//                        case "vertex":
-//                            vertexVertex = outEdgePath.get("vertex");
-//                            break;
-//                        case "out_edge":
-//                            outEdge = outEdgePath.get("out_edge");
-//                            break;
-//                        case "outEdgeVertex":
-//                            outEdgeVertex = outEdgePath.get("outEdgeVertex");
-//                            break;
-//                        case "property_partition":
-//                            edgePropertyPartitionVertex = outEdgePath.get("property_partition");
-//                            break;
-//                        case "subPartition":
-//                            Preconditions.checkState(edgePropertyPartitionVertex != null);
-//                            subPartition = outEdgePath.get("subPartition");
-//                            partitionParentVertex = outEdgePath.get(outEdgePath.size() - 2);
-//                            partitionParentParentElement = outEdgePath.get(outEdgePath.size() - 3);
-//                            break;
-//                        case "edge_identifier":
-//                            edgeIdentifierEdge = outEdgePath.get("edge_identifier");
-//                            break;
-//                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
-//                        case Schema.MARKER:
-//                        case "sqlgPathTempFakeLabel":
-//                            break;
-//                        default:
-//                            throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"outEdgeVertex\" and \"property\" is expected as a label. Found \"%s\"", label));
-//                    }
-//                }
-//            }
-//
-//            Preconditions.checkState(schemaVertex != null, "BUG: Topology schema not found.");
-//            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
-//            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
-//            Optional<Schema> schemaOptional = this.getSchema(schemaName);
-//            Preconditions.checkState(schemaOptional.isPresent());
-//            Schema schema = schemaOptional.get();
-//            String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
-//
-//            schema.loadOutEdgeAndProperties(
-//                    tableName,
-//                    outEdgeVertex,
-//                    outEdge,
-//                    edgePropertyPartitionVertex,
-//                    edgeIdentifierEdge,
-//                    partitionParentParentElement,
-//                    partitionParentVertex,
-//                    subPartition,
-//                    partitionMap
-//            );
-//        }
-
     }
 
     void loadVertexIndices(GraphTraversalSource traversalSource) {
