@@ -32,7 +32,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.*;
 import java.time.*;
-import java.util.UUID;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
@@ -1306,6 +1306,7 @@ public class SqlgUtil {
             case STRING_ORDINAL, VARCHAR_ORDINAL -> value;
             case LONG_ORDINAL -> Long.valueOf(value);
             case INTEGER_ORDINAL -> Integer.valueOf(value);
+            case LOCALDATE_ORDINAL -> LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
             default -> throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
         };
     }

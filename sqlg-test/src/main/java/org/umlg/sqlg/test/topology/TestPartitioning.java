@@ -18,6 +18,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -37,6 +41,140 @@ public class TestPartitioning extends BaseTest {
         TEST1,
         TEST2,
         TEST3
+    }
+
+    @Test
+    public void testPartitionOnLocalDate() {
+        final String label = "log4j2";
+        final String fullName = "log.log4j2";
+        final String MILLIS = "millis";
+        final String NANO = "nano";
+        final String LEVEL = "level";
+        final String MARKER = "marker";
+        final String THREAD_NAME = "threadName";
+        final String LOGGER_NAME = "loggerName";
+        final String DATE = "date";
+        final String SERVER = "server";
+        final String DATE_TIME = "dateTime";
+        final String INDEX = "index";
+        final String MESSAGE = "message";
+        final String STACK_TRACE = "stackTrace";
+        SqlgGraph logSqlgGraph = this.sqlgGraph;
+
+        LocalDate now = LocalDate.now();
+        LocalDate past = now.minusMonths(3);
+
+        VertexLabel partitionedLogVertexLabel = logSqlgGraph.getTopology()
+                .ensureSchemaExist("log")
+                .ensurePartitionedVertexLabelExist(
+                        "log4j2",
+                        new LinkedHashMap<>() {{
+                            put(SERVER, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                            put(DATE, PropertyDefinition.of(PropertyType.LOCALDATE, Multiplicity.of(1, 1)));
+                            put(MILLIS, PropertyDefinition.of(PropertyType.LONG, Multiplicity.of(1, 1)));
+                            put(NANO, PropertyDefinition.of(PropertyType.LONG, Multiplicity.of(1, 1)));
+                            put(LEVEL, PropertyDefinition.of(PropertyType.INTEGER, Multiplicity.of(1, 1)));
+                            put(MARKER, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                            put(THREAD_NAME, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                            put(LOGGER_NAME, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                            put(INDEX, PropertyDefinition.of(PropertyType.INTEGER, Multiplicity.of(1, 1)));
+                            put(DATE_TIME, PropertyDefinition.of(PropertyType.LOCALDATETIME, Multiplicity.of(1, 1)));
+                            put(MESSAGE, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                            put(STACK_TRACE, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));
+                        }},
+                        ListOrderedSet.listOrderedSet(List.of(SERVER, DATE, MILLIS, NANO, LEVEL, MARKER, INDEX)),
+                        PartitionType.RANGE,
+                        "date"
+                );
+        LocalDate start = now.withDayOfMonth(1);
+        LocalDate end = start.plusMonths(1);
+        String partitionName = start.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        if (partitionedLogVertexLabel.getPartition(partitionName).isEmpty()) {
+            Partition monthPartition = partitionedLogVertexLabel.ensureRangePartitionWithSubPartitionExists(
+                    partitionName,
+                    logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start),
+                    logSqlgGraph.getSqlDialect().toRDBSStringLiteral(end),
+                    PartitionType.RANGE,
+                    "date"
+            );
+            YearMonth yearMonth = YearMonth.of(start.getYear(), start.getMonth());
+            for (int i = 1; i <= yearMonth.lengthOfMonth(); i++) {
+                String dayPartitionName = start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                if (monthPartition.getPartition(dayPartitionName).isEmpty()) {
+                    monthPartition.ensureRangePartitionExists(
+                            dayPartitionName,
+                            logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start.atStartOfDay()),
+                            logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start.plusDays(1).atStartOfDay())
+                    );
+                }
+                start = start.plusDays(1);
+            }
+        }
+        for (int i = 0; i < 2; i++) {
+            start = end;
+            end = end.plusMonths(1);
+            partitionName = start.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            if (partitionedLogVertexLabel.getPartition(partitionName).isEmpty()) {
+
+                Partition monthPartition = partitionedLogVertexLabel.ensureRangePartitionWithSubPartitionExists(
+                        partitionName,
+                        logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start),
+                        logSqlgGraph.getSqlDialect().toRDBSStringLiteral(end),
+                        PartitionType.RANGE,
+                        "date"
+                );
+                YearMonth yearMonth = YearMonth.of(start.getYear(), start.getMonth());
+                for (int j = 1; j <= yearMonth.lengthOfMonth(); j++) {
+                    String dayPartitionName = start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    if (monthPartition.getPartition(dayPartitionName).isEmpty()) {
+                        monthPartition.ensureRangePartitionExists(
+                                dayPartitionName,
+                                logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start.atStartOfDay()),
+                                logSqlgGraph.getSqlDialect().toRDBSStringLiteral(start.plusDays(1).atStartOfDay())
+                        );
+                    }
+                    start = start.plusDays(1);
+                }
+
+            }
+        }
+
+        logSqlgGraph.tx().commit();
+        logSqlgGraph.tx().streamingBatchModeOn();
+        LocalDateTime dateTime = LocalDateTime.now();
+        for (int i = 0; i < 1000; i++) {
+            LocalDate date = dateTime.toLocalDate();
+            logSqlgGraph.streamVertex(
+                    T.label, fullName,
+                    SERVER, "-",
+                    DATE, date,
+                    MILLIS, dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    NANO, i,
+                    LEVEL, 0,
+                    MARKER, "MARKER",
+                    THREAD_NAME, "thread",
+                    LOGGER_NAME, "logger",
+                    DATE_TIME, dateTime,
+                    MESSAGE, "message",
+                    STACK_TRACE, null,
+                    INDEX, i
+            );
+        }
+
+        logSqlgGraph.tx().commit();
+
+        List<Vertex> vertices = logSqlgGraph.traversal().V().hasLabel("log.log4j2").toList();
+        Assert.assertEquals(1000, vertices.size());
+
+        Vertex v = vertices.get(100);
+        RecordId recordId = (RecordId) v.id();
+
+        System.out.println(recordId.toString());
+        RecordId recordId1 = RecordId.from(logSqlgGraph, recordId.toString());
+
+        Optional<Vertex> vertexOptional = logSqlgGraph.traversal().V().hasId(recordId1).tryNext();
+        Assert.assertTrue(vertexOptional.isPresent());
+
     }
 
     @Test
