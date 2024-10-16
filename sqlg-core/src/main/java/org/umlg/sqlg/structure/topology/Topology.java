@@ -8,19 +8,18 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.ThreadLocalMap;
 
 import java.sql.*;
@@ -1113,19 +1112,22 @@ public class Topology {
                 "Topology cacheTopology"
         );
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
-        //load the last log
-        //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
-        //loaded as the notification might not have been received yet.
-        List<Vertex> logs = traversalSource.V()
-                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                .order().by(SQLG_SCHEMA_LOG_TIMESTAMP, Order.desc)
-                .limit(1)
-                .toList();
-        Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in cacheTopology");
 
-        List<Vertex> schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
-        for (Vertex schemaVertex : schemaVertices) {
-            String schemaName = schemaVertex.value("name");
+//        //load the last log
+//        //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
+//        //loaded as the notification might not have been received yet.
+//        List<Object> logs = traversalSource.V()
+//                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+//                .order().by(SQLG_SCHEMA_LOG_TIMESTAMP, Order.desc)
+//                .id()
+//                .limit(1)
+//                .toList();
+//        Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in cacheTopology");
+
+        List<String> schemaNames = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                .<String>values(Topology.SQLG_SCHEMA_SCHEMA_NAME)
+                .toList();
+        for (String schemaName : schemaNames) {
             if (!sqlgGraph.getSqlDialect().getPublicSchema().equals(schemaName)) {
                 Preconditions.checkState(!this.schemas.containsKey(schemaName));
                 this.schemas.put(schemaName, Schema.loadUserSchema(this, schemaName));
@@ -1156,8 +1158,7 @@ public class Topology {
         stopWatch1.stop();
         LOGGER.info("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
-        for (Vertex schemaVertex : schemaVertices) {
-            String schemaName = schemaVertex.value("name");
+        for (String schemaName : schemaNames) {
             Optional<Schema> schemaOptional = getSchema(schemaName);
             Preconditions.checkState(schemaOptional.isPresent());
             Schema schema = schemaOptional.get();
