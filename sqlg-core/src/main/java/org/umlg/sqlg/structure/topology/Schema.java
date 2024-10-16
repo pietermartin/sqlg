@@ -1200,6 +1200,10 @@ public class Schema implements TopologyInf {
         }
     }
 
+    public void addToOutEdgeLabels(String schemaName, String edgeLabelName, EdgeLabel edgeLabel) {
+        this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
+    }
+
     void cacheTopologyAddToVertexLabels(String tableName, PartitionType partitionType, String partitionExpression, Integer shardCount) {
         VertexLabel vertexLabel;
         if (!partitionType.isNone()) {
@@ -1334,6 +1338,37 @@ public class Schema implements TopologyInf {
                 }
             }
         }
+    }
+
+    void loadInEdgeLabels(
+            String vertexLabelName,
+            String outEdgeLabelName,
+            String inVertexLabelName,
+            String inSchemaVertexLabelName,
+            long lowerMultiplicityProperty,
+            long upperMultiplicityProperty,
+            boolean uniqueMultiplicityProperty) {
+
+        String schemaName = getName();
+        VertexLabel vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + vertexLabelName);
+        Preconditions.checkState(vertexLabel != null, "vertexLabel must be present when loading inEdges. Not found for %s", schemaName + "." + VERTEX_PREFIX + vertexLabelName);
+        if (outEdgeLabelName != null) {
+            //inVertex and inSchema must be present.
+            Preconditions.checkState(inVertexLabelName != null, "BUG: In vertex not found edge for \"%s\"", outEdgeLabelName);
+            Preconditions.checkState(inSchemaVertexLabelName != null, "BUG: In schema vertex not found for edge \"%s\"", outEdgeLabelName);
+
+            Optional<EdgeLabel> outEdgeLabelOptional = this.topology.getEdgeLabel(getName(), outEdgeLabelName);
+            Preconditions.checkState(outEdgeLabelOptional.isPresent(), "BUG: EdgeLabel for \"%s\" should already be loaded", getName() + "." + outEdgeLabelName);
+            EdgeLabel outEdgeLabel = outEdgeLabelOptional.get();
+
+            Optional<VertexLabel> vertexLabelOptional = this.topology.getVertexLabel(inSchemaVertexLabelName, inVertexLabelName);
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: VertexLabel not found for schema %s and label %s", inSchemaVertexLabelName, inVertexLabelName);
+            VertexLabel inVertexLabel = vertexLabelOptional.get();
+
+            Multiplicity multiplicity = Multiplicity.of(lowerMultiplicityProperty, upperMultiplicityProperty, uniqueMultiplicityProperty);
+            inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, multiplicity));
+        }
+
     }
 
     void loadInEdgeLabels(Vertex vertexVertex, Vertex outEdgeVertex, Vertex inVertex, Vertex inSchemaVertex, Edge inEdge) {
