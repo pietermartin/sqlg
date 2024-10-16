@@ -1350,6 +1350,10 @@ public class Topology {
             vertexLabel.addPartition(partition);
             vertexPartitionIds.add((RecordId) partition.id());
         }
+        stopWatch.stop();
+        LOGGER.info("load vertex root partitions, time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
 
         List<Path> vertexSubPartitions = traversalSource.V().hasId(P.within(vertexPartitionIds))
                 .repeat(
@@ -1386,7 +1390,7 @@ public class Topology {
             }
         }
         stopWatch.stop();
-        LOGGER.info("load vertex partitions, time: {}", stopWatch);
+        LOGGER.info("load vertex sub partitions, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1596,6 +1600,10 @@ public class Topology {
             edgeLabel.addPartition(partition);
             edgePartitionIds.add((RecordId) partition.id());
         }
+        stopWatch.stop();
+        LOGGER.info("load edge root partitions, time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
 
         List<Path> edgeSubPartitions = traversalSource.V().hasId(P.within(edgePartitionIds))
                 .repeat(
@@ -1633,7 +1641,7 @@ public class Topology {
         }
 
         stopWatch.stop();
-        LOGGER.info("load edge partitions, time: {}", stopWatch);
+        LOGGER.info("load edge sub partitions, time: {}", stopWatch);
     }
 
     void loadVertexIndices(GraphTraversalSource traversalSource) {
