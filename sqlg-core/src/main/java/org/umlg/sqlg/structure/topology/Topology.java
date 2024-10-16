@@ -1340,7 +1340,6 @@ public class Topology {
         List<Vertex> vertexPartitions = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
                 .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
                 .toList();
-        LOGGER.info("number of vertex partitions {}", vertexPartitions.size());
         for (Vertex partition : vertexPartitions) {
             String schemaName = partition.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
             String abstractLabelName = partition.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
@@ -1361,7 +1360,6 @@ public class Topology {
                 )
                 .path()
                 .toList();
-        LOGGER.info("number of vertex subPartitions {}", vertexSubPartitions.size());
         for (Path subPartition : vertexSubPartitions) {
             Partition partition = null;
             //start the index at 1, we are not interested in the 'vertex' vertex here!
@@ -1588,7 +1586,6 @@ public class Topology {
         List<Vertex> edgePartitions = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
                 .out(SQLG_SCHEMA_EDGE_PARTITION_EDGE)
                 .toList();
-        LOGGER.info("number of edge partitions {}", edgePartitions.size());
         for (Vertex partition : edgePartitions) {
             String schemaName = partition.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
             String abstractLabelName = partition.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
@@ -1609,7 +1606,6 @@ public class Topology {
                 )
                 .path()
                 .toList();
-        LOGGER.info("number of edge subPartitions {}", edgeSubPartitions.size());
         for (Path subPartition : edgeSubPartitions) {
             Partition partition = null;
             //start the index at 1, we are not interested in the 'vertex' vertex here!
