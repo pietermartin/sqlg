@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,12 @@ import java.util.List;
 public class TestTopologyRecursiveRepeat extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTopologyRecursiveRepeat.class);
+
+    @BeforeClass
+    public static void beforeClass() {
+        BaseTest.beforeClass();
+        Assume.assumeTrue(isPostgres());
+    }
 
     @Test
     public void testTopologyPartitionRecursiveRepeat() {
