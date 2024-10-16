@@ -1337,23 +1337,98 @@ public class Topology {
         stopWatch.start();
 
         List<RecordId> vertexPartitionIds = new ArrayList<>();
-        List<Vertex> vertexPartitions = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
-                .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
-                .toList();
-        for (Vertex partition : vertexPartitions) {
-            String schemaName = partition.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
-            String abstractLabelName = partition.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
-            Schema schema = this.schemas.get(schemaName);
-            Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
-            Preconditions.checkNotNull(abstractLabelName, SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME + " may never be null. BUG!");
-            VertexLabel vertexLabel = schema.getVertexLabel(abstractLabelName).orElseThrow(() -> new IllegalStateException(String.format("vertexLabel %s not found in schema %s", abstractLabelName, schemaName)));
-            vertexLabel.addPartition(partition);
-            vertexPartitionIds.add((RecordId) partition.id());
+        String rootPartitionSql = """
+                SELECT
+                	"sqlg_schema"."V_partition"."ID" AS "ID",
+                	"sqlg_schema"."V_partition"."partitionExpression" AS "partitionExpression",
+                	"sqlg_schema"."V_partition"."in" AS "in",
+                	"sqlg_schema"."V_partition"."abstractLabelName" AS "abstractLabelName",
+                	"sqlg_schema"."V_partition"."name" AS "name",
+                	"sqlg_schema"."V_partition"."from" AS "from",
+                	"sqlg_schema"."V_partition"."to" AS "to",
+                	"sqlg_schema"."V_partition"."schemaName" AS "schemaName",
+                	"sqlg_schema"."V_partition"."remainder" AS "remainder",
+                	"sqlg_schema"."V_partition"."partitionType" AS "partitionType",
+                	"sqlg_schema"."V_partition"."modulus" AS "modulus"
+                FROM
+                	"sqlg_schema"."V_vertex" INNER JOIN
+                	"sqlg_schema"."E_vertex_partition" ON "sqlg_schema"."V_vertex"."ID" = "sqlg_schema"."E_vertex_partition"."sqlg_schema.vertex__O" INNER JOIN
+                	"sqlg_schema"."V_partition" ON "sqlg_schema"."E_vertex_partition"."sqlg_schema.partition__I" = "sqlg_schema"."V_partition"."ID"
+                """;
+        conn = sqlgGraph.tx().getConnection();
+        SchemaTable schemaTable = SchemaTable.of("sqlg_schema", "partition");
+        try (Statement statement = conn.createStatement()) {
+            ResultSet rs = statement.executeQuery(rootPartitionSql);
+            while (rs.next()) {
+                String schemaName = rs.getString("schemaName");
+                String abstractLabelName = rs.getString("abstractLabelName");
+                Schema schema = this.schemas.get(schemaName);
+                Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+                Preconditions.checkNotNull(abstractLabelName, SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME + " may never be null. BUG!");
+                VertexLabel vertexLabel = schema.getVertexLabel(abstractLabelName).orElseThrow(() -> new IllegalStateException(String.format("vertexLabel %s not found in schema %s", abstractLabelName, schemaName)));
+                String from = rs.getString("from");
+                if (rs.wasNull()) {
+                    from = null;
+                }
+                String to = rs.getString("to");
+                if (rs.wasNull()) {
+                    to = null;
+                }
+                String in = rs.getString("in");
+                if (rs.wasNull()) {
+                    in = null;
+                }
+                Integer modulus = rs.getInt("modulus");
+                if (rs.wasNull()) {
+                    modulus = null;
+                }
+                Integer remainder = rs.getInt("remainder");
+                if (rs.wasNull()) {
+                    remainder = null;
+                }
+                String partitionType = rs.getString("partitionType");
+                if (rs.wasNull()) {
+                    partitionType = null;
+                }
+                String partitionExpression = rs.getString("partitionExpression");
+                if (rs.wasNull()) {
+                    partitionExpression = null;
+                }
+                String name = rs.getString("name");
+                if (rs.wasNull()) {
+                    name = null;
+                }
+                long id = rs.getLong("ID");
+                vertexLabel.addPartition(
+                        from, to, in, modulus, remainder, partitionType, partitionExpression, name
+                );
+                vertexPartitionIds.add(RecordId.from(schemaTable, id));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
         stopWatch.stop();
         LOGGER.info("load vertex root partitions, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
+
+//        List<Vertex> vertexPartitions = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
+//                .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
+//                .toList();
+//        for (Vertex partition : vertexPartitions) {
+//            String schemaName = partition.value(Topology.SQLG_SCHEMA_PARTITION_SCHEMA_NAME);
+//            String abstractLabelName = partition.value(Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME);
+//            Schema schema = this.schemas.get(schemaName);
+//            Preconditions.checkNotNull(schema, "Schema %s not found!", schemaName);
+//            Preconditions.checkNotNull(abstractLabelName, SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME + " may never be null. BUG!");
+//            VertexLabel vertexLabel = schema.getVertexLabel(abstractLabelName).orElseThrow(() -> new IllegalStateException(String.format("vertexLabel %s not found in schema %s", abstractLabelName, schemaName)));
+//            vertexLabel.addPartition(partition);
+//            vertexPartitionIds.add((RecordId) partition.id());
+//        }
+//        stopWatch.stop();
+//        LOGGER.info("load vertex root partitions, time: {}", stopWatch);
+//        stopWatch.reset();
+//        stopWatch.start();
 
         List<Path> vertexSubPartitions = traversalSource.V().hasId(P.within(vertexPartitionIds))
                 .repeat(

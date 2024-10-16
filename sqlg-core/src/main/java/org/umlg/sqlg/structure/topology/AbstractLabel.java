@@ -813,6 +813,59 @@ public abstract class AbstractLabel implements TopologyInf {
         );
     }
 
+    Partition addPartition(
+            String from,
+            String to,
+            String in,
+            Integer modulus,
+            Integer remainder,
+            String partitionType,
+            String partitionExpression,
+            String name) {
+
+        Preconditions.checkState(this.getTopology().isSchemaChanged());
+        Partition partition;
+        if (from != null) {
+            Preconditions.checkState(to != null);
+            Preconditions.checkState(in == null);
+            Preconditions.checkState(modulus == null);
+            Preconditions.checkState(remainder == null);
+            partition = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    name,
+                    from,
+                    to,
+                    PartitionType.from(partitionType),
+                    partitionExpression);
+        } else if (in != null) {
+            Preconditions.checkState(to == null);
+            Preconditions.checkState(modulus == null);
+            Preconditions.checkState(remainder == null);
+            partition = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    name,
+                    in,
+                    PartitionType.from(partitionType),
+                    partitionExpression);
+        } else {
+            Preconditions.checkState(modulus != null);
+            Preconditions.checkState(remainder != null);
+            partition = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    name,
+                    modulus,
+                    remainder,
+                    PartitionType.from(partitionType),
+                    partitionExpression);
+        }
+        this.partitions.put(name, partition);
+        return partition;
+
+    }
+
     Partition addPartition(Vertex partitionVertex) {
         Preconditions.checkState(this.getTopology().isSchemaChanged());
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
