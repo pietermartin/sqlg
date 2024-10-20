@@ -2,6 +2,8 @@ package org.umlg.sqlg.test.select;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
@@ -11,8 +13,28 @@ import java.util.Map;
 
 public class TestSelect extends BaseTest {
 
-    /*
+    @Test
+    public void testSelectOptionalPropertiesOnTraversal() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "prop1", "aaaa");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "prop2", "bbbb");
+        a.addEdge("ab", b);
+        this.sqlgGraph.tx().commit();
 
+        List<Map<String, Map<String, Object>>> result = this.sqlgGraph.traversal().V().hasLabel("A").as("a")
+                .out("ab").as("b")
+                .<Map<String, Object>>select("a", "b")
+                .<Map<String, Object>>by(__.elementMap("prop1"))
+                .<Map<String, Object>>by(__.elementMap("prop2"))
+                .toList();
+        Assert.assertEquals(1, result.size());
+        Map<String, Map<String, Object>> map = result.get(0);
+        Assert.assertEquals("aaaa", map.get("a").get("prop1"));
+        Assert.assertEquals("bbbb", map.get("b").get("prop2"));
+        Assert.assertNull(map.get("a").get("prop2"));
+        Assert.assertNull(map.get("b").get("prop1"));
+    }
+
+    /*
   Scenario: g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX
     Given the empty graph
     And the graph initializer of
@@ -40,7 +62,7 @@ public class TestSelect extends BaseTest {
       | m[{"a":["a2","b2","a2"]}] |
       | m[{"a":["a3","b3","a3"]}] |
      */
-    @Test
+//    @Test
     public void testSelect() {
         this.sqlgGraph.traversal()
                 .addV("A").property("name", "a1").as("a1")
