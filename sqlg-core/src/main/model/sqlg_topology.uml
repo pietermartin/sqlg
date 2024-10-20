@@ -62,7 +62,7 @@ There will be 2 entries in 'EdgeLabel'</body>
             <ownedAttribute xmi:type="uml:Property" xmi:id="_bzHLIWRXEe24kdzlKPy8Xw" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_bzF9AGRXEe24kdzlKPy8Xw">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_UGQi0IeoEe-fTbZYVPUEWQ"/>
             </ownedAttribute>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="_lSEY4WRXEe24kdzlKPy8Xw" name="edgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_lSB8oGRXEe24kdzlKPy8Xw">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_lSEY4WRXEe24kdzlKPy8Xw" name="edge" type="_3NWG8MzgEeW174sSW5_77g" association="_lSB8oGRXEe24kdzlKPy8Xw">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_lSFnAGRXEe24kdzlKPy8Xw"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_lSFnAWRXEe24kdzlKPy8Xw" value="1"/>
             </ownedAttribute>
@@ -193,7 +193,7 @@ There will be 2 entries in 'EdgeLabel'</body>
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_lSDx0GRXEe24kdzlKPy8Xw" source="org.eclipse.papyrus">
               <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_lSEY4GRXEe24kdzlKPy8Xw" key="nature" value="UML_Nature"/>
             </eAnnotations>
-            <ownedEnd xmi:type="uml:Property" xmi:id="_lSGOEGRXEe24kdzlKPy8Xw" name="propertyColumn" type="_4-gikMzgEeW174sSW5_77g" aggregation="composite" association="_lSB8oGRXEe24kdzlKPy8Xw">
+            <ownedEnd xmi:type="uml:Property" xmi:id="_lSGOEGRXEe24kdzlKPy8Xw" name="property" type="_4-gikMzgEeW174sSW5_77g" aggregation="composite" association="_lSB8oGRXEe24kdzlKPy8Xw">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_nLCssGRXEe24kdzlKPy8Xw"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_nLQIEGRXEe24kdzlKPy8Xw" value="*"/>
             </ownedEnd>
@@ -441,8 +441,31 @@ There will be 2 entries in 'EdgeLabel'</body>
             </eAnnotations>
             <ownedEnd xmi:type="uml:Property" xmi:id="_fOiURYenEe-fTbZYVPUEWQ" name="index" type="_s3_B8IemEe-fTbZYVPUEWQ" association="_fOhGIIenEe-fTbZYVPUEWQ"/>
           </packagedElement>
+          <packagedElement xmi:type="uml:AssociationClass" xmi:id="_LdEWsIxOEe-jdMaUO88AlA" name="index_property" memberEnd="_LdFk0IxOEe-jdMaUO88AlA _LdFk0YxOEe-jdMaUO88AlA" navigableOwnedEnd="_LdFk0IxOEe-jdMaUO88AlA _LdFk0YxOEe-jdMaUO88AlA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_LdE9wIxOEe-jdMaUO88AlA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_LdE9wYxOEe-jdMaUO88AlA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_hh0nUIxOEe-jdMaUO88AlA" name="sequence" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_kwQSMIxOEe-jdMaUO88AlA" value="1"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_kwaqQIxOEe-jdMaUO88AlA" value="1"/>
+            </ownedAttribute>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_LdFk0IxOEe-jdMaUO88AlA" name="index" type="_s3_B8IemEe-fTbZYVPUEWQ" association="_LdEWsIxOEe-jdMaUO88AlA">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_TwoIUIxOEe-jdMaUO88AlA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_TwpWcIxOEe-jdMaUO88AlA" value="*"/>
+            </ownedEnd>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_LdFk0YxOEe-jdMaUO88AlA" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_LdEWsIxOEe-jdMaUO88AlA">
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_TC_mQIxOEe-jdMaUO88AlA" value="*"/>
+            </ownedEnd>
+          </packagedElement>
         </packagedElement>
       </packagedElement>
     </packagedElement>
   </packagedElement>
+  <profileApplication xmi:type="uml:ProfileApplication" xmi:id="_amdXsIxOEe-jdMaUO88AlA">
+    <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_amfz8IxOEe-jdMaUO88AlA" source="http://www.eclipse.org/uml2/2.0.0/UML">
+      <references xmi:type="ecore:EPackage" href="pathmap://PAPYRUS_ACTIONLANGUAGE_PROFILE/ActionLanguage-Profile.profile.uml#_Kv8EIKFXEeS_KNX0nfvIVQ"/>
+    </eAnnotations>
+    <appliedProfile xmi:type="uml:Profile" href="pathmap://PAPYRUS_ACTIONLANGUAGE_PROFILE/ActionLanguage-Profile.profile.uml#ActionLanguage"/>
+  </profileApplication>
 </uml:Model>
