@@ -216,6 +216,42 @@ public abstract class BaseStrategy {
                             return false;
                         }
                     }
+                } else {
+                    SelectStep<?,?> selectStep = (SelectStep<?,?>) step;
+                    List<? extends Traversal.Admin<Object, ?>> children = selectStep.getLocalChildren();
+                    if (children.size() == selectStep.getSelectKeys().size()) {
+                        Optional<? extends Traversal.Admin<Object, ?>> traversalOpt = children.stream().filter(c -> c.getSteps().isEmpty() || !(c.getSteps().get(0) instanceof ElementMapStep)).findAny();
+                        if (traversalOpt.isEmpty()) {
+//                            TestElementMap.testElementMapSelectBy
+//
+//                            optimizes
+//                            .select("a", "b")
+//                            .by(__.elementMap("prop1"))
+//                            .by(__.elementMap("prop2"));
+                            int count = 0;
+                            for (String selectKey: selectStep.getSelectKeys()) {
+                                Traversal.Admin<Object, ?> traversal = children.get(count++);
+                                ElementMapStep elementMapStep = (ElementMapStep) traversal.getSteps().get(0);
+
+                                Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
+                                        r -> {
+                                            //Take the first
+                                            if (r.hasLabels()) {
+                                                String label = r.getLabels().iterator().next();
+                                                String stepLabel = SqlgUtil.originalLabel(label);
+                                                return stepLabel.equals(selectKey);
+                                            } else {
+                                                return false;
+                                            }
+                                        }
+                                ).findAny();
+                                Preconditions.checkState(labeledReplacedStep.isPresent());
+                                ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
+                                handleElementMapStep(replacedStep, elementMapStep, traversal);
+                            }
+                        }
+                    }
+
                 }
             } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
