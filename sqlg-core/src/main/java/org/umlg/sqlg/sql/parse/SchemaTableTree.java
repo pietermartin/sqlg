@@ -3188,6 +3188,8 @@ public class SchemaTableTree {
                     //Check if the query returned anything at all, if not default the aggregate result
                     if (!settedProperty && column.getAggregateFunction() != null) {
                         sqlgElement.internalSetProperty(propertyName, Double.NaN);
+                    } else if (!settedProperty) {
+                        sqlgElement.internalSetProperty(propertyName, null);
                     }
                 }
             }
