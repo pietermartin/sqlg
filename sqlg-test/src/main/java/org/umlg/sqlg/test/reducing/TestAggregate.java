@@ -22,6 +22,18 @@ import java.util.Map;
 public class TestAggregate extends BaseTest {
 
     @Test
+    public void testMean() {
+        loadModern();
+        Number mean = this.sqlgGraph.traversal().V().values("age").mean().next();
+        if (isHsqldb()) {
+            //hsqldb returns an int
+            Assert.assertEquals(30, mean);
+        } else {
+            Assert.assertEquals(30.75, mean);
+        }
+    }
+
+    @Test
     public void testAggregate() throws InterruptedException {
         loadModern(this.sqlgGraph);
         testAggregate_assert(this.sqlgGraph);
