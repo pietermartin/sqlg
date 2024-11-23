@@ -26,8 +26,7 @@ public class TestAggregate extends BaseTest {
         loadModern();
         Number mean = this.sqlgGraph.traversal().V().values("age").mean().next();
         if (isHsqldb()) {
-            //hsqldb returns an int
-            Assert.assertEquals(30, mean);
+            Assert.assertEquals(30.0, mean);
         } else {
             Assert.assertEquals(30.75, mean);
         }
