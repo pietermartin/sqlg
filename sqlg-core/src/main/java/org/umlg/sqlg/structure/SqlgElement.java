@@ -38,7 +38,7 @@ public abstract class SqlgElement implements Element {
     RecordId recordId;
     final SqlgGraph sqlgGraph;
     //Multiple threads can access the same element but should not modify it
-    final Map<String, Object> properties = new HashMap<>();
+    final Map<String, Object> properties;
     private final SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
     //Used in the SqlgBranchStepBarrier to sort the results by the start elements.
@@ -49,9 +49,7 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-//        if (!this.graph.tx().isInStreamingBatchMode() && !this.graph.tx().isInStreamingWithLockBatchMode()) {
-//            graph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-//        }
+        this.properties = new HashMap<>();
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -63,9 +61,20 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-//        if (!this.graph.tx().isInStreamingBatchMode() && !this.graph.tx().isInStreamingWithLockBatchMode()) {
-//            graph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-//        }
+        this.properties = new HashMap<>();
+    }
+
+    public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table, int columnCount) {
+        if (table.startsWith(VERTEX_PREFIX) || table.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("SqlgElement.table may not be prefixed with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
+        }
+        this.sqlgGraph = sqlgGraph;
+        this.schema = schema;
+        this.table = table;
+        this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
+        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+        int capacity = (int) ((columnCount / 0.75) + 1);
+        this.properties = new HashMap<>(capacity);
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
@@ -77,9 +86,20 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-//        if (!this.graph.tx().isInStreamingBatchMode() && !this.graph.tx().isInStreamingWithLockBatchMode()) {
-//            graph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-//        }
+        this.properties = new HashMap<>();
+    }
+
+    public SqlgElement(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table, int columnCount) {
+        if (table.startsWith(VERTEX_PREFIX) || table.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("SqlgElement.table may not be prefixed with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
+        }
+        this.sqlgGraph = sqlgGraph;
+        this.schema = schema;
+        this.table = table;
+        this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
+        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+        int capacity = (int) ((columnCount / 0.75) + 1);
+        this.properties = new HashMap<>(capacity);
     }
 
     @Override

@@ -59,6 +59,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
+    public static SqlgEdge of(SqlgGraph sqlgGraph, Long id, String schema, String table, int numberOfColumns) {
+        return new SqlgEdge(sqlgGraph, id, schema, table, numberOfColumns);
+    }
+
     public static SqlgEdge of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         return new SqlgEdge(sqlgGraph, id, schema, table);
     }
@@ -71,8 +75,24 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param schema    The schema the edge is in.
      * @param table     The table the edge is in. This translates to its label.
      */
+    private SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, int numberOfColumns) {
+        super(sqlgGraph, id, schema, table, numberOfColumns);
+    }
+
+    /**
+     * This is the primary constructor for loading edges from the db via gremlin.
+     *
+     * @param sqlgGraph The graph.
+     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
+     * @param schema    The schema the edge is in.
+     * @param table     The table the edge is in. This translates to its label.
+     */
     private SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
+    }
+
+    public SqlgEdge(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table, int numberOfColumns) {
+        super(sqlgGraph, identifiers, schema, table, numberOfColumns);
     }
 
     public SqlgEdge(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {

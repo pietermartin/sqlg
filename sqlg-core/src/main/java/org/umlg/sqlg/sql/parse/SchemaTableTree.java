@@ -2979,9 +2979,9 @@ public class SchemaTableTree {
         } else {
             if (this.parent != null) {
                 if (this.direction == null) {
-                    return (this.schemaTable.toString() + this.parent.toString()).hashCode();
+                    return (this.schemaTable.toString() + this.parent).hashCode();
                 } else {
-                    return (this.schemaTable.toString() + this.direction.name() + this.parent.toString()).hashCode();
+                    return (this.schemaTable.toString() + this.direction.name() + this.parent).hashCode();
                 }
             } else {
                 if (this.direction == null) {
@@ -3124,8 +3124,17 @@ public class SchemaTableTree {
     }
 
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
-        for (ColumnList columnList : this.getRootColumnListStack()) {
-            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(this.stepDepth, this.schemaTable);
+        List<ColumnList> rootColumnListStack = getRootColumnListStack();
+        List<LinkedHashMap<ColumnList.Column, String>> _columns = new ArrayList<>();
+        for (ColumnList columnList : rootColumnListStack) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(getStepDepth(), getSchemaTable());
+            _columns.add(columns);
+        }
+        loadProperty(resultSet, sqlgElement, _columns);
+    }
+
+    public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement, List<LinkedHashMap<ColumnList.Column, String>> columnsStack) throws SQLException {
+        for (LinkedHashMap<ColumnList.Column, String> columns : columnsStack) {
             for (ColumnList.Column column : columns.keySet()) {
                 if (!column.getColumn().equals("index") && !column.isID() && !column.isForeignKey()) {
                     String propertyName = column.getColumn();
@@ -3193,6 +3202,7 @@ public class SchemaTableTree {
                     }
                 }
             }
+
         }
     }
 
@@ -3279,7 +3289,7 @@ public class SchemaTableTree {
         return this.identifiers;
     }
 
-    private List<ColumnList> getRootColumnListStack() {
+    public List<ColumnList> getRootColumnListStack() {
         return this.getAliasMapHolder().getColumnListStack();
     }
 

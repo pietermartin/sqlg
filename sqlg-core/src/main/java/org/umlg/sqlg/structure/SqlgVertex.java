@@ -85,12 +85,32 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
     }
 
+    public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table, int columnCount) {
+        return new SqlgVertex(sqlgGraph, id, schema, table, columnCount);
+    }
+
     public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         return new SqlgVertex(sqlgGraph, id, schema, table);
     }
 
+    public static SqlgVertex of(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table, int columnCount) {
+        return new SqlgVertex(sqlgGraph, identifiers, schema, table, columnCount);
+    }
+
     public static SqlgVertex of(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         return new SqlgVertex(sqlgGraph, identifiers, schema, table);
+    }
+
+    /**
+     * This is the primary constructor to createVertexLabel a vertex that already exist
+     *
+     * @param sqlgGraph The graph.
+     * @param id        The vertex's id.
+     * @param schema    The schema the vertex is in.
+     * @param table     The vertex's table/label.
+     */
+    SqlgVertex(SqlgGraph sqlgGraph, Long id, String schema, String table, int columnCount) {
+        super(sqlgGraph, id, schema, table, columnCount);
     }
 
     /**
@@ -107,6 +127,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     SqlgVertex(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         super(sqlgGraph, identifiers, schema, table);
+    }
+
+    SqlgVertex(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table, int columnCount) {
+        super(sqlgGraph, identifiers, schema, table, columnCount);
     }
 
     @Override

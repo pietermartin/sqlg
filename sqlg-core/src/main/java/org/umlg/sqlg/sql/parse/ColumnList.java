@@ -293,7 +293,7 @@ public class ColumnList {
         return result;
     }
 
-    LinkedHashMap<Column, String> getFor(int stepDepth, SchemaTable schemaTable) {
+    public LinkedHashMap<Column, String> getFor(int stepDepth, SchemaTable schemaTable) {
         LinkedHashMap<Column, String> result = new LinkedHashMap<>(this.columns.size());
         for (Map.Entry<Column, String> columnStringEntry : this.columns.entrySet()) {
             Column column = columnStringEntry.getKey();

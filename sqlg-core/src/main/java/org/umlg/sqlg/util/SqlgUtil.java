@@ -185,6 +185,7 @@ public class SqlgUtil {
             if (first) {
                 Preconditions.checkState(idColumnCountMap.isEmpty());
                 idColumnCountMap.putAll(populateIdCountMap(resultSetMetaData, rootSchemaTableTree));
+                rootSchemaTableTree.getAliasMapHolder().calculateColumns(subQueryStacks);
             }
             int subQueryDepth = 1;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
@@ -286,6 +287,13 @@ public class SqlgUtil {
                 E sqlgElement = null;
                 boolean resultSetWasNull = false;
                 long id = -1L;
+
+                List<LinkedHashMap<ColumnList.Column, String>> _columns = schemaTableTree.getAliasMapHolder().getColumns(schemaTableTree);
+                int propertySize = 0;
+                for (LinkedHashMap<ColumnList.Column, String> column : _columns) {
+                    propertySize += column.size();
+                }
+
                 if (schemaTableTree.isHasIDPrimaryKey()) {
                     //aggregate queries have no ID
                     if (!schemaTableTree.hasAggregateFunction()) {
@@ -297,12 +305,12 @@ public class SqlgUtil {
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
-                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel, propertySize);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement, _columns);
                         } else {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
-                            sqlgElement = (E) SqlgEdge.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            sqlgElement = (E) SqlgEdge.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel, propertySize);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement, _columns);
                             schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
                         }
                     }
@@ -317,12 +325,12 @@ public class SqlgUtil {
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
-                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel, propertySize);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement, _columns);
                         } else {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
-                            sqlgElement = (E) new SqlgEdge(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            sqlgElement = (E) new SqlgEdge(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel, propertySize);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement, _columns);
                             schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
                         }
                     }
