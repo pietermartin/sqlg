@@ -597,6 +597,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
+    public SchemaTable getSchemaTable() {
+        return SchemaTable.of(this.getSchema(), this.getTable());
+    }
+
+    @Override
     AbstractLabel getAbstractLabel(Schema schema) {
         return schema.getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found.", this.table)));
     }

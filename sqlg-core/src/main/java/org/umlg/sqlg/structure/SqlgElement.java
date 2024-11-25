@@ -129,6 +129,7 @@ public abstract class SqlgElement implements Element {
     }
 
     public abstract SchemaTable getSchemaTablePrefixed();
+    public abstract SchemaTable getSchemaTable();
 
     @Override
     public Object id() {
