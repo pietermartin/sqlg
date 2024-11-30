@@ -1,3 +1,11 @@
+##3.1.1
+
+* Optimize certian select gremlin patterns 
+* Upgrade to TinkerPop 3.7.3
+* Optimize sqlg startup
+* Optimize postgresql notify listeners, to bypass the startup process
+* Optimize recursive repeat step
+
 ##3.0.4
 
 * build and release with java 17 not 21
