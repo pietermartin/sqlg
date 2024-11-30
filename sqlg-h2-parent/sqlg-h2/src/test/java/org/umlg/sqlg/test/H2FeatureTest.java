@@ -101,6 +101,7 @@ public class H2FeatureTest {
             Map.entry("g_VX1X_formatXstrX_byXconstantXhelloXX_byXvaluesXnameXX", "id can not be an int"),
 
             Map.entry("g_withSideEffectXc_created_YX_withSideEffectXm_matchedX_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_selectXcXX_optionXonMatch_sideEffectXpropertiesXweightX_dropX_selectXmXX_exists", "int should be double"),
+            Map.entry("g_withSideEffectXa_xx1_assignX_V_order_byXageX_aggregateXlocal_aX_byXageX_capXaX", "no idea"),
 
             Map.entry("g_unionXinjectX1X_injectX2X", "inject")
     );
