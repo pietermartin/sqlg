@@ -1,1 +1,1 @@
-moduleSearchIndex = [{"l":"sqlg.postgres.dialect"}];updateSearchResults();
+moduleSearchIndex = [];updateSearchResults();

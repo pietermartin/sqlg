@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"sqlg.postgres.dialect","l":"org.umlg.sqlg.dialect.impl"},{"m":"sqlg.postgres.dialect","l":"org.umlg.sqlg.gis"},{"m":"sqlg.postgres.dialect","l":"org.umlg.sqlg.plugin"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"org.umlg.sqlg.dialect.impl"},{"l":"org.umlg.sqlg.gis"},{"l":"org.umlg.sqlg.plugin"}];updateSearchResults();

@@ -1,4 +1,3 @@
-module:sqlg.postgres.dialect
 org.umlg.sqlg.dialect.impl
 org.umlg.sqlg.gis
 org.umlg.sqlg.plugin

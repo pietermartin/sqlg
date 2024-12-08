@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.umlg.sqlg.dialect.impl","l":"H2Dialect"},{"p":"org.umlg.sqlg.plugin","l":"H2Plugin"}];updateSearchResults();
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.umlg.sqlg.sql.dialect.impl","l":"HsqldbDialect"},{"p":"org.umlg.sqlg.plugin","l":"HsqldbPlugin"}];updateSearchResults();
