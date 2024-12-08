@@ -114,7 +114,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
 
     }
 
-//    @Test
+    @Test
     public void testWithManyVertexAndEdgeLabels() {
         loadModern();
 
