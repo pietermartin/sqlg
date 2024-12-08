@@ -1105,7 +1105,7 @@ public class Topology {
     }
 
     public void cacheTopology() {
-        LOGGER.info("start cacheTopology");
+        LOGGER.debug("start cacheTopology");
         StopWatch stopWatch = StopWatch.createStarted();
         this.startSchemaChange(
                 "Topology cacheTopology"
@@ -1115,26 +1115,26 @@ public class Topology {
         StopWatch stopWatch1 = StopWatch.createStarted();
         loadVertexOutEdgesAndProperties(traversalSource);
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadVertexIndices();
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadEdgeIndices();
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         //Now load the in edges
         stopWatch1.reset();
         stopWatch1.start();
         loadInEdgeLabels();
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         for (String schemaName : this.schemas.keySet()) {
             Optional<Schema> schemaOptional = getSchema(schemaName);
@@ -1160,7 +1160,7 @@ public class Topology {
         //populate the edgeForeignKey cache
         this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
         stopWatch.stop();
-        LOGGER.info("end cacheTopology time: {} {}", sqlgGraph.getJdbcUrl(), stopWatch);
+        LOGGER.debug("end cacheTopology time: {} {}", sqlgGraph.getJdbcUrl(), stopWatch);
     }
 
     @SuppressWarnings("resource")
@@ -1255,7 +1255,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load propertyColumns, time: {}", stopWatch);
+        LOGGER.debug("load propertyColumns, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1297,7 +1297,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load identifiers, time: {}", stopWatch);
+        LOGGER.debug("load identifiers, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1376,7 +1376,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load vertex root partitions, time: {}", stopWatch);
+        LOGGER.debug("load vertex root partitions, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1415,7 +1415,7 @@ public class Topology {
             }
         }
         stopWatch.stop();
-        LOGGER.info("load vertex sub partitions, time: {}", stopWatch);
+        LOGGER.debug("load vertex sub partitions, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1534,7 +1534,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load edges, time: {}", stopWatch);
+        LOGGER.debug("load edges, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1579,7 +1579,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load edges identifiers, time: {}", stopWatch);
+        LOGGER.debug("load edges identifiers, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1656,7 +1656,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load edge root partitions, time: {}", stopWatch);
+        LOGGER.debug("load edge root partitions, time: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -1696,7 +1696,7 @@ public class Topology {
         }
 
         stopWatch.stop();
-        LOGGER.info("load edge sub partitions, time: {}", stopWatch);
+        LOGGER.debug("load edge sub partitions, time: {}", stopWatch);
     }
 
     void loadVertexIndices() {
@@ -1756,7 +1756,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load index , time: {}", stopWatch);
+        LOGGER.debug("load index , time: {}", stopWatch);
     }
 
     void loadEdgeIndices() {
@@ -1819,7 +1819,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load edge index , time: {}", stopWatch);
+        LOGGER.debug("load edge index , time: {}", stopWatch);
 
 //        List<Path> indices = traversalSource
 //                .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
@@ -1944,7 +1944,7 @@ public class Topology {
             throw new RuntimeException(e);
         }
         stopWatch.stop();
-        LOGGER.info("load loadInEdgeLabels, time: {}", stopWatch);
+        LOGGER.debug("load loadInEdgeLabels, time: {}", stopWatch);
     }
 
     public void validateTopology() {
