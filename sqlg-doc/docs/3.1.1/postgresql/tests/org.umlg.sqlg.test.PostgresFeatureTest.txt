@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: org.umlg.sqlg.test.PostgresFeatureTest
+-------------------------------------------------------------------------------
+Tests run: 1357, Failures: 0, Errors: 0, Skipped: 118, Time elapsed: 50.27 s -- in org.umlg.sqlg.test.PostgresFeatureTest

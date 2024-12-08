@@ -1,0 +1,258 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchNormalPrimitiveArrays</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchNormalPrimitiveArrays (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchNormalPrimitiveArrays</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    85.9%
+  </span>
+  <span class="absValue">
+    (55/64)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    93.6%
+  </span>
+  <span class="absValue">
+    (73/78)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.junit.runner.RunWith;
+&nbsp;import org.junit.runners.Parameterized;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.Collection;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertArrayEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/22
+&nbsp; * Time: 9:09 AM
+&nbsp; */
+&nbsp;@RunWith(Parameterized.class)
+<b class="fc">&nbsp;public class TestBatchNormalPrimitiveArrays extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Parameterized.Parameter
+&nbsp;    public Object value;
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Parameterized.Parameters(name = &quot;{index}: value:{0}&quot;)
+&nbsp;    public static Collection&lt;Object[]&gt; data() {
+<b class="fc">&nbsp;        return Arrays.asList(new Object[][]{</b>
+&nbsp;                {new String[]{&quot;asdasd&quot;, &quot;asdasd&quot;}},
+&nbsp;                {new boolean[]{false, true}}, {new Boolean[]{Boolean.TRUE, Boolean.FALSE}}, {new byte[]{(byte) 1, (byte) 2}},
+<b class="fc">&nbsp;                {new short[]{(short) 1, (short) 2}}, {new Short[]{(short) 1, (short) 2}}, {new int[]{1, 1}}, {new Integer[]{1, 1}},</b>
+<b class="fc">&nbsp;                {new long[]{1L, 2L}}, {new Long[]{1L, 2L}}, {new double[]{2D, 1D}}, {new Double[]{2D, 3D}}</b>
+&nbsp;        });
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+<b class="fc">&nbsp;        if (this.value instanceof String[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (this.value instanceof byte[] || this.value instanceof Byte[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof boolean[] || this.value instanceof Boolean[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof short[] || this.value instanceof Short[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof int[] || this.value instanceof Integer[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof long[] || this.value instanceof Long[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (this.value instanceof float[] || this.value instanceof Float[]) {</b>
+<b class="nc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (this.value instanceof double[] || this.value instanceof Double[]) {</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPrimitiveArray() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;array&quot;, this.value);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Edge e = a.addEdge(&quot;ab&quot;, b, &quot;array&quot;, this.value);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        a = this.sqlgGraph.traversal().V(a.id()).next();</b>
+<b class="fc">&nbsp;        Object array = a.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Class&lt;?&gt; clazz = array.getClass().getComponentType();</b>
+<b class="fc">&nbsp;        test(array, clazz);</b>
+&nbsp;
+<b class="fc">&nbsp;        e = this.sqlgGraph.traversal().E(e.id()).next();</b>
+<b class="fc">&nbsp;        array = e.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        clazz = array.getClass().getComponentType();</b>
+<b class="fc">&nbsp;        test(array, clazz);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+&nbsp;
+<b class="fc">&nbsp;            a = this.sqlgGraph1.traversal().V(a.id()).next();</b>
+<b class="fc">&nbsp;            array = a.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;            clazz = array.getClass().getComponentType();</b>
+<b class="fc">&nbsp;            test(array, clazz);</b>
+&nbsp;
+<b class="fc">&nbsp;            e = this.sqlgGraph1.traversal().E(e.id()).next();</b>
+<b class="fc">&nbsp;            array = e.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;            clazz = array.getClass().getComponentType();</b>
+<b class="fc">&nbsp;            test(array, clazz);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void test(Object array, Class&lt;?&gt; clazz) {
+<b class="fc">&nbsp;        if (clazz.equals(String.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((String[]) this.value, (String[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(boolean.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((boolean[]) this.value, (boolean[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(Boolean.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((Boolean[]) this.value, (Boolean[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(byte.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((byte[]) this.value, (byte[]) array);</b>
+<b class="pc">&nbsp;        } else if (clazz.equals(Byte.class)) {</b>
+<b class="nc">&nbsp;            assertArrayEquals((Byte[]) this.value, (Byte[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(short.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((short[]) this.value, (short[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(Short.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((Short[]) this.value, (Short[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(int.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((int[]) this.value, (int[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(Integer.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((Integer[]) this.value, (Integer[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(long.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((long[]) this.value, (long[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(Long.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((Long[]) this.value, (Long[]) array);</b>
+<b class="pc">&nbsp;        } else if (clazz.equals(float.class)) {</b>
+<b class="nc">&nbsp;            assertArrayEquals((float[]) this.value, (float[]) array, 0);</b>
+<b class="pc">&nbsp;        } else if (clazz.equals(Float.class)) {</b>
+<b class="nc">&nbsp;            assertArrayEquals((Float[]) this.value, (Float[]) array);</b>
+<b class="fc">&nbsp;        } else if (clazz.equals(double.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((double[]) this.value, (double[]) array, 0);</b>
+<b class="pc">&nbsp;        } else if (clazz.equals(Double.class)) {</b>
+<b class="fc">&nbsp;            assertArrayEquals((Double[]) this.value, (Double[]) array);</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            Assert.fail(&quot;Unknown type&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

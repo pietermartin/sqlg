@@ -1,0 +1,604 @@
+==== Repeat Step
+
+link:{tinkerpop-docs}#repeat-step[`Repeat Step`]
+
+Sqlg can optimize `RepeatStep`s,
+
+- with *no* `until` modulator. i.e. `times(x)` must be present.
+- recursive gremlin. i.e. the repeat step must loop over the same `VertexLabel`
+
+===== Repeat Step with `times(x)`
+
+====== Repeat Step with emit first
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeatStepEmitFirst() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .emit()
+            .times(2)
+            .repeat(
+                    __.out()
+            )
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1]
+[a2]
+[a1, b1]
+[a1, b2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
+
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A" <2>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <3>
+----
+<1> Get the 'A's to emit.
+<2> Get the 'B's to emit.
+<3> Get the 'C's to emit.
+
+====== Repeat Step with emit last
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeatStepEmitLast() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .repeat(
+                    __.out()
+            )
+            .emit()
+            .times(2)
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1, b1]
+[a1, b2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7",
+	"public"."E_bc"."ID" AS "alias8"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <2>
+----
+<1> Get the 'C's to emit.
+<2> Get the 'B's to emit.
+
+===== Recursive Repeat Step
+
+Sqlg is able to optimize recursive repeat steps by utilizing postgres's https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE[recursive query] support.
+
+Recursive queries can be broken into 2 main groups,
+
+- return leaf nodes
+- do not return leaf nodes
+
+Some examples,
+
+[source,java,options="nowrap"]
+----
+@Test
+public void friendOfFriendsTillTheLeafNodes() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List<Path> paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.out("of").simplePath())
+            .until(
+                    __.not(__.out("of").simplePath()) <1>
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+}
+----
+<1> Repeat traversing `of` till the leaf nodes.
+
+.output
+----
+path[a, c, e, f]
+path[a, b]
+path[a, c, d]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path) AS (
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        UNION ALL
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I"
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID"
+        WHERE NOT is_cycle
+    )
+    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID"
+ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void friendOfFriendsTillTheLeafNodesOr() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List<Path> paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.out("of").simplePath())
+            .until(
+                    __.or(
+                            __.not(__.out("of").simplePath()), <1>
+                            __.has("name", P.within("e")) <2>
+                    )
+
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+
+}
+----
+<1> Repeat traversing `of` till the leaf nodes.
+<2> Repeat till friend 'e'
+
+.output
+----
+path[a, c, e]
+path[a, b]
+path[a, c, d]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+ WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path) AS (
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        UNION ALL
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I"
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID"
+        WHERE NOT is_cycle AND NOT 	((v."name" = ?))
+    )
+    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID"
+ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void friendOfFriendsBoth() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List<Path> paths = this.sqlgGraph.traversal().V(c)
+            .repeat(__.both("of").simplePath())
+            .until(
+                    __.not(__.out("of").simplePath())
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+
+}
+----
+
+.output
+----
+path[c, e, f]
+path[c, a, b]
+path[c, d]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+WITH start as (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path, direction) AS (
+        WITH start_out as (
+            SELECT e."ID", e."public.Friend__O", e."public.Friend__I", 1, false,
+                ARRAY[e."public.Friend__O"],
+                ARRAY[e."public.Friend__O", e."public.Friend__I"],
+                'OUT'
+            FROM "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        ), start_in as (
+            SELECT e."ID", e."public.Friend__O", e."public.Friend__I", 1, false,
+                ARRAY[e."public.Friend__I"],
+                ARRAY[e."public.Friend__I", e."public.Friend__O"],
+                'IN'
+            FROM "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__I"
+        )
+        SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+        UNION ALL
+        SELECT e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN e."public.Friend__I" = ANY(path)
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN e."public.Friend__O" = ANY(path)
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN e."public.Friend__O" = ANY(path)
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN e."public.Friend__I" = ANY(path)
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN path
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN path
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN path
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN path
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN path || e."public.Friend__I"
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN path || e."public.Friend__O"
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN path || e."public.Friend__O"
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN path || e."public.Friend__I"
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN 'OUT'
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN 'IN'
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN 'IN'
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN 'OUT'
+            END
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON
+                ((st.direction = 'OUT' AND (st."public.Friend__I" = e."public.Friend__O" OR st."public.Friend__I" = e."public.Friend__I"))
+                OR
+                 (st.direction = 'IN' AND (st."public.Friend__O" = e."public.Friend__I" OR st."public.Friend__O" = e."public.Friend__O"))) JOIN
+            "public"."V_Friend" v ON
+                ((st.direction = 'OUT' AND (st."public.Friend__I" = v."ID"))
+                OR
+                (st.direction = 'IN' AND (st."public.Friend__O" = v."ID")))
+        WHERE
+            NOT is_cycle
+    )
+    SELECT *, gen_random_uuid() FROM search_tree
+    WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+    ORDER BY a.gen_random_uuid, a.path, ordinal
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID";
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOutRepeatWithEdgeInPathDoc() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            ),
+            new LinkedHashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b, "name", "ab");
+    a.addEdge("of", c, "name", "ac");
+    c.addEdge("of", d, "name", "cd");
+    c.addEdge("of", e, "name", "ce");
+    e.addEdge("of", f, "name", "ef");
+
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.outE("of").as("e").inV().as("v").simplePath())
+            .until(
+                    __.select("e").has("name", "ce")
+            )
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.debug(path.toString());
+    }
+}
+----
+
+.output
+----
+path[a, ac, c, ce, e]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+	WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path, epath) AS (
+		SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"], ARRAY[e."ID"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+		UNION ALL
+		SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I", epath || e."ID"
+		FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID" JOIN
+            "public"."E_of" previous_e ON st."ID" = previous_e."ID"
+		WHERE NOT is_cycle AND NOT	((previous_e."name" = ?))
+	)
+	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+ 	SELECT * FROM a JOIN
+ 	"public"."V_Friend" v ON a."public.Friend__I" = v."ID" JOIN
+ 	"public"."E_of" e ON a."ID" = e."ID"
+ 	WHERE  	((e."name" = ?))
+), c AS (
+	SELECT 'vertex' as "type", b.path, b.gen_random_uuid FROM b
+	WHERE b.path NOT IN (SELECT previous from b)
+	UNION ALL
+	SELECT 'edge' as "type", b.epath, b.gen_random_uuid FROM b
+	WHERE b.path NOT IN (SELECT previous from b)
+), d AS (
+    SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'vertex' WHERE c."type" = 'vertex'
+    UNION ALL
+	SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'edge' WHERE c."type" = 'edge'
+), e AS (
+    SELECT d.path, type, "ID", "name", null as dummy, null AS "name", ordinal, d.gen_random_uuid FROM d JOIN "public"."V_Friend" AS _v on d.element_id = _v."ID" WHERE d.type = 'vertex'
+	UNION ALL
+    SELECT d.path, type, "ID", null AS "name", null as dummy, "name", ordinal, d.gen_random_uuid FROM d JOIN "public"."E_of" AS _e on d.element_id = _e."ID" WHERE d.type = 'edge'
+)
+SELECT * from e
+ORDER BY gen_random_uuid, ordinal, type desc
+----

@@ -2,6 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.recursive.TestRepeatStepIncludeEdgeWithoutNotStep;
 
 /**
  * Date: 2014/07/16
@@ -9,7 +10,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTest.class,
+        TestRepeatStepIncludeEdgeWithoutNotStep.class
+//        TestTest.class,
 //        TestPartitioning.class,
 //        TestPartitionMultipleGraphs.class,
 //        TestSubSubPartition.class,

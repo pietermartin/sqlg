@@ -1,0 +1,1118 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchNormalUpdatePrimitiveArrays</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchNormalUpdatePrimitiveArrays (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchNormalUpdatePrimitiveArrays</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (63/63)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (31/62)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (666/666)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import static java.lang.Thread.sleep;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/22
+&nbsp; * Time: 9:16 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStringArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        String[] stringArray = new String[]{&quot;a&quot;, &quot;b&quot;};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;stringArray1&quot;, stringArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;stringArray2&quot;, stringArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;stringArray3&quot;, stringArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        String[] localDateTimeAgain = new String[]{&quot;c&quot;, &quot;d&quot;};</b>
+<b class="fc">&nbsp;        a1.property(&quot;stringArray1&quot;, localDateTimeAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;stringArray2&quot;, localDateTimeAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;stringArray3&quot;, localDateTimeAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testStringArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, localDateTimeAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStringArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, localDateTimeAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStringArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, String[] localDateTimeAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeAgain, a1.value(&quot;stringArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;stringArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;stringArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;stringArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeAgain, a2.value(&quot;stringArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;stringArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;stringArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;stringArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(localDateTimeAgain, a3.value(&quot;stringArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testshortArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        short[] shortArray = new short[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray1&quot;, shortArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray2&quot;, shortArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray3&quot;, shortArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        short[] shortArrayAgain = new short[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;shortArray1&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;shortArray2&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;shortArray3&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testshortArrayUpdateNull_Assert(this.sqlgGraph, a1, a2, a3, shortArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testshortArrayUpdateNull_Assert(this.sqlgGraph1, a1, a2, a3, shortArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testshortArrayUpdateNull_Assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, short[] shortArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a1.value(&quot;shortArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;shortArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;shortArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;shortArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a2.value(&quot;shortArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;shortArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;shortArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;shortArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a3.value(&quot;shortArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testShortArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+<b class="fc">&nbsp;        Short[] shortArray = new Short[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray1&quot;, shortArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray2&quot;, shortArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;shortArray3&quot;, shortArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Short[] shortArrayAgain = new Short[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;shortArray1&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;shortArray2&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;shortArray3&quot;, shortArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testShortArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, shortArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testShortArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, shortArrayAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testShortArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Short[] shortArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a1.value(&quot;shortArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;shortArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;shortArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;shortArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a2.value(&quot;shortArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;shortArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;shortArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;shortArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(shortArrayAgain, a3.value(&quot;shortArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testintArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int[] intArray = new int[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;intArray1&quot;, intArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;intArray2&quot;, intArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;intArray3&quot;, intArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int[] intArrayAgain = new int[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;intArray1&quot;, intArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;intArray2&quot;, intArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;intArray3&quot;, intArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testintArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, intArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testintArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, intArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testintArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, int[] intArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(intArrayAgain, a1.value(&quot;intArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;intArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;intArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;intArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(intArrayAgain, a2.value(&quot;intArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;intArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;intArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;intArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(intArrayAgain, a3.value(&quot;intArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIntegerArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Integer[] integerArray = new Integer[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;integerArray1&quot;, integerArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;integerArray2&quot;, integerArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;integerArray3&quot;, integerArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Integer[] integerArrayAgain = new Integer[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;integerArray1&quot;, integerArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;integerArray2&quot;, integerArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;integerArray3&quot;, integerArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testIntegerArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, integerArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testIntegerArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, integerArrayAgain);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testIntegerArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Integer[] integerArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(integerArrayAgain, a1.value(&quot;integerArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;integerArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;integerArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;integerArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(integerArrayAgain, a2.value(&quot;integerArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;integerArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;integerArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;integerArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(integerArrayAgain, a3.value(&quot;integerArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testbooleanArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        boolean[] booleanArray = new boolean[]{true, true};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray1&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray2&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray3&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        boolean[] booleanArrayAgain = new boolean[]{false, false};</b>
+<b class="fc">&nbsp;        a1.property(&quot;booleanArray1&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;booleanArray2&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;booleanArray3&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testbooleanArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, booleanArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testbooleanArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, booleanArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testbooleanArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, boolean[] booleanArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a1.value(&quot;booleanArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;booleanArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;booleanArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;booleanArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a2.value(&quot;booleanArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;booleanArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;booleanArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;booleanArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a3.value(&quot;booleanArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBooleanArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Boolean[] booleanArray = new Boolean[]{true, true};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray1&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray2&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;booleanArray3&quot;, booleanArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Boolean[] booleanArrayAgain = new Boolean[]{false, false};</b>
+<b class="fc">&nbsp;        a1.property(&quot;booleanArray1&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;booleanArray2&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;booleanArray3&quot;, booleanArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBooleanArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, booleanArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBooleanArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, booleanArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBooleanArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Boolean[] booleanArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a1.value(&quot;booleanArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;booleanArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;booleanArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;booleanArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a2.value(&quot;booleanArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;booleanArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;booleanArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;booleanArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(booleanArrayAgain, a3.value(&quot;booleanArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testbyteArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        byte[] byteArray = new byte[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray1&quot;, byteArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray2&quot;, byteArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray3&quot;, byteArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        byte[] byteArrayAgain = new byte[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;byteArray1&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;byteArray2&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;byteArray3&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testbyteArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, byteArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testbyteArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, byteArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testbyteArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, byte[] byteArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a1.value(&quot;byteArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;byteArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;byteArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;byteArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a2.value(&quot;byteArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;byteArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;byteArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;byteArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a3.value(&quot;byteArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testByteArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Byte[] byteArray = new Byte[]{1, 2};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray1&quot;, byteArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray2&quot;, byteArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;byteArray3&quot;, byteArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Byte[] byteArrayAgain = new Byte[]{3, 4};</b>
+<b class="fc">&nbsp;        a1.property(&quot;byteArray1&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;byteArray2&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;byteArray3&quot;, byteArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testByteArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, byteArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testByteArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, byteArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testByteArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Byte[] byteArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a1.value(&quot;byteArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;byteArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;byteArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;byteArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a2.value(&quot;byteArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;byteArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;byteArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;byteArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(byteArrayAgain, a3.value(&quot;byteArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testlongArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        long[] longArray = new long[]{1L, 2L};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray1&quot;, longArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray2&quot;, longArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray3&quot;, longArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        long[] longArrayAgain = new long[]{3L, 4L};</b>
+<b class="fc">&nbsp;        a1.property(&quot;longArray1&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;longArray2&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;longArray3&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testlongArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, longArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testlongArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, longArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testlongArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, long[] longArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a1.value(&quot;longArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;longArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;longArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;longArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a2.value(&quot;longArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;longArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;longArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;longArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a3.value(&quot;longArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLongArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Long[] longArray = new Long[]{1L, 2L};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray1&quot;, longArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray2&quot;, longArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;longArray3&quot;, longArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Long[] longArrayAgain = new Long[]{3L, 4L};</b>
+<b class="fc">&nbsp;        a1.property(&quot;longArray1&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;longArray2&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;longArray3&quot;, longArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testLongArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, longArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLongArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, longArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLongArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Long[] longArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a1.value(&quot;longArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;longArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;longArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;longArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a2.value(&quot;longArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;longArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;longArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;longArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(longArrayAgain, a3.value(&quot;longArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testfloatArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        float[] floatArray = new float[]{1F, 2F};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray1&quot;, floatArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray2&quot;, floatArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray3&quot;, floatArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        float[] floatArrayAgain = new float[]{3F, 4F};</b>
+<b class="fc">&nbsp;        a1.property(&quot;floatArray1&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;floatArray2&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;floatArray3&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testfloatArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, floatArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testfloatArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, floatArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testfloatArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, float[] floatArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a1.value(&quot;floatArray1&quot;), 0F);</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;floatArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;floatArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;floatArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a2.value(&quot;floatArray2&quot;), 0F);</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;floatArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;floatArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;floatArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a3.value(&quot;floatArray3&quot;), 0F);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testFloatArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Float[] floatArray = new Float[]{1F, 2F};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray1&quot;, floatArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray2&quot;, floatArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;floatArray3&quot;, floatArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Float[] floatArrayAgain = new Float[]{3F, 4F};</b>
+<b class="fc">&nbsp;        a1.property(&quot;floatArray1&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;floatArray2&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;floatArray3&quot;, floatArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testFloatArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, floatArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testFloatArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, floatArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testFloatArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Float[] floatArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a1.value(&quot;floatArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;floatArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;floatArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;floatArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a2.value(&quot;floatArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;floatArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;floatArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;floatArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(floatArrayAgain, a3.value(&quot;floatArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testdoubleArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        double[] doubleArray = new double[]{1D, 2D};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray1&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray2&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray3&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        double[] doubleArrayAgain = new double[]{3D, 4D};</b>
+<b class="fc">&nbsp;        a1.property(&quot;doubleArray1&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;doubleArray2&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;doubleArray3&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testdoubleArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, doubleArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testdoubleArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, doubleArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testdoubleArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, double[] doubleArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a1.value(&quot;doubleArray1&quot;), 0D);</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doubleArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doubleArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doubleArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a2.value(&quot;doubleArray2&quot;), 0D);</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doubleArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doubleArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doubleArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a3.value(&quot;doubleArray3&quot;), 0D);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDoubleArrayUpdateNull() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Double[] doubleArray = new Double[]{1D, 2D};</b>
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray1&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray2&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;doubleArray3&quot;, doubleArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Double[] doubleArrayAgain = new Double[]{3D, 4D};</b>
+<b class="fc">&nbsp;        a1.property(&quot;doubleArray1&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        a2.property(&quot;doubleArray2&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        a3.property(&quot;doubleArray3&quot;, doubleArrayAgain);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testDoubleArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, doubleArrayAgain);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDoubleArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, doubleArrayAgain);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDoubleArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Double[] doubleArrayAgain) {
+<b class="fc">&nbsp;        a1 = sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        a2 = sqlgGraph.traversal().V(a2.id()).next();</b>
+<b class="fc">&nbsp;        a3 = sqlgGraph.traversal().V(a3.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a1.value(&quot;doubleArray1&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doubleArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a1.property(&quot;doubleArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doubleArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a2.value(&quot;doubleArray2&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(a2.property(&quot;doubleArray3&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doubleArray1&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(a3.property(&quot;doubleArray2&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(doubleArrayAgain, a3.value(&quot;doubleArray3&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayString() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new String[]{&quot;a&quot;, &quot;b&quot;});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new String[]{&quot;c&quot;, &quot;d&quot;});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayString_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayString_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayString_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        String[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(array, new String[]{&quot;c&quot;, &quot;d&quot;});</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayshort() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new short[]{2, 1});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new short[]{4, 5});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayshort_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null){</b>
+<b class="fc">&nbsp;            sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayshort_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayshort_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        short[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new short[]{4, 5}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayShort() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new Short[]{2, 1});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Short[]{4, 5});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayShort_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayShort_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayShort_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Short[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Short[]{4, 5}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayInt() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new int[]{2, 1});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new int[]{1, 2});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayInt_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayInt_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayInt_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        int[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new int[]{1, 2}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayInteger() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new Integer[]{2, 1});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Integer[]{1, 2});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayInteger_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayInteger_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayInteger_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Integer[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Integer[]{1, 2}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayboolean() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new boolean[]{true, false});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new boolean[]{false, true});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayboolean_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayboolean_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayboolean_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        boolean[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new boolean[]{false, true}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayBoolean() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new Boolean[]{true, false});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Boolean[]{false, true});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayBoolean_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayBoolean_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayBoolean_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Boolean[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Boolean[]{false, true}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArraybyte() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new byte[]{1, 3});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new byte[]{5, 6});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArraybyte_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArraybyte_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArraybyte_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        byte[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new byte[]{5, 6}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayByte() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Byte[] bytes = {1, 3};</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, bytes);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Byte[]{6, 7});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayByte_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayByte_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayByte_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Byte[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Byte[]{6, 7}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArraylong() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new long[]{1L, 3L});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new long[]{5L, 6L});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArraylong_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArraylong_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArraylong_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        long[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new long[]{5L, 6L}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayLong() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Long[] longs = {1L, 3L};</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, longs);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Long[]{6L, 7L});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayLong_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayLong_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayLong_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Long[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Long[]{6L, 7L}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayfloat() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new float[]{1.1f, 3.3f});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new float[]{5.5f, 6.6f});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayfloat_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayfloat_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayfloat_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        float[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new float[]{5.5f, 6.6f}, array, 0f);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayFloat() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new Float[]{1.1f, 2.2f});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Float[]{6.6f, 7.7f});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayFloat_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayFloat_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayFloat_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Float[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Float[]{6.6f, 7.7f}, array);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArraydouble() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new double[]{1.1d, 3.3d});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new double[]{5.5d, 6.6d});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArraydouble_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArraydouble_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArraydouble_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        double[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new double[]{5.5d, 6.6d}, array, 0d);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchUpdateArrayDouble() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Vertex god = this.sqlgGraph.addVertex(T.label, &quot;GOD&quot;, &quot;array&quot;, new Double[]{1.1d, 2.2d});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        god = this.sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        god.property(&quot;array&quot;, new Double[]{6.6d, 7.7d});</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBatchUpdateArrayDouble_assert(this.sqlgGraph, god);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBatchUpdateArrayDouble_assert(this.sqlgGraph1, god);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchUpdateArrayDouble_assert(SqlgGraph sqlgGraph, Vertex god) {
+<b class="fc">&nbsp;        god = sqlgGraph.traversal().V(god.id()).next();</b>
+<b class="fc">&nbsp;        Double[] array = god.value(&quot;array&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(new Double[]{6.6d, 7.7d}, array);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

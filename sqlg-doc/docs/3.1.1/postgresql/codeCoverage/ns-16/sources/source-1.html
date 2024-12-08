@@ -1,0 +1,398 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestIdStep</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.idstep</a>
+</div>
+
+<h1>Coverage Summary for Class: TestIdStep (org.umlg.sqlg.test.idstep)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestIdStep</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    14.7%
+  </span>
+  <span class="absValue">
+    (5/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    79.7%
+  </span>
+  <span class="absValue">
+    (63/79)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestIdStep$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestIdStep$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestIdStep$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    14.7%
+  </span>
+  <span class="absValue">
+    (5/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    81.8%
+  </span>
+  <span class="absValue">
+    (72/88)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.idstep;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.RecordId;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.UUID;
+&nbsp;
+<b class="fc">&nbsp;public class TestIdStep extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testId() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;what1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;what2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;what3&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Traversal&lt;Vertex, Object&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).id();</b>
+<b class="fc">&nbsp;        String sql = getSQL(traversal);</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, sql);
+<b class="nc">&nbsp;        } else if (isMariaDb()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t`PUBLIC`.`V_A`.`ID` AS `alias1`\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`V_A`&quot;, sql);
+<b class="nc">&nbsp;        } else if (isHsqldb() || isH2()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;V_A\&quot;&quot;, sql);
+&nbsp;
+&nbsp;        }
+<b class="fc">&nbsp;        List&lt;Object&gt; recordIdList = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, recordIdList.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIdList.get(0) instanceof RecordId);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIdList.get(1) instanceof RecordId);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIdList.get(2) instanceof RecordId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIdOnEdge() {
+<b class="fc">&nbsp;        Vertex aVertex = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        Vertex bVertex = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        Edge edge = aVertex.addEdge(&quot;ab&quot;, bVertex, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Traversal&lt;Edge, Object&gt; traversal = this.sqlgGraph.traversal().E().hasId(edge.id()).id();</b>
+<b class="fc">&nbsp;        String sql = getSQL(traversal);</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.A__O\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.B__I\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;\n&quot; +
+&nbsp;                    &quot;WHERE\n&quot; +
+&nbsp;                    &quot;\t( \&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;ID\&quot; = ?)&quot;, sql);
+<b class="nc">&nbsp;        } else if (isHsqldb() || isH2()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;PUBLIC.B__I\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;PUBLIC.A__O\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;\n&quot; +
+&nbsp;                    &quot;WHERE\n&quot; +
+&nbsp;                    &quot;\t( \&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;ID\&quot; = ?)&quot;, sql);
+<b class="nc">&nbsp;        } else if (isMariaDb()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`PUBLIC.B__I` AS `alias1`,\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`PUBLIC.A__O` AS `alias2`,\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`ID` AS `alias3`\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`\n&quot; +
+&nbsp;                    &quot;WHERE\n&quot; +
+&nbsp;                    &quot;\t( `PUBLIC`.`E_ab`.`ID` = ?)&quot;, sql);
+&nbsp;        }
+<b class="fc">&nbsp;        List&lt;Object&gt; recordIdList = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, recordIdList.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIdList.get(0) instanceof RecordId);</b>
+&nbsp;
+<b class="fc">&nbsp;        Traversal&lt;Vertex, Object&gt; traversalAgain = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().id();</b>
+<b class="fc">&nbsp;        sql = getSQL(traversalAgain);</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.A__O\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.B__I\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot; INNER JOIN\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot; ON \&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.A__O\&quot;&quot;, sql);
+&nbsp;
+&nbsp;        }
+<b class="fc">&nbsp;        recordIdList = traversalAgain.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, recordIdList.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIdList.get(0) instanceof RecordId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNoProperties() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Traversal&lt;Vertex, Integer&gt; traversal = this.sqlgGraph.traversal().V().values(&quot;age&quot;).max();</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIdentifiers() {
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;A&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;uuid&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;B&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;uuid&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;ab&quot;,
+&nbsp;                bVertexLabel,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;uuid&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;uuid&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;haloA&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;haloB1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;haloB2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;haloB3&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b1, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;edge1&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;edge2&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b3, &quot;uuid&quot;, UUID.randomUUID().toString(), &quot;name&quot;, &quot;edge3&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Traversal&lt;Vertex, Object&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).id();</b>
+<b class="fc">&nbsp;        String sql = getSQL(traversal);</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;uuid\&quot; AS \&quot;alias1\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, sql);
+<b class="nc">&nbsp;        } else if (isHsqldb() || isH2()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;V_A\&quot;.\&quot;uuid\&quot; AS \&quot;alias1\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;V_A\&quot;&quot;, sql);
+<b class="nc">&nbsp;        } else if (isMariaDb()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t`PUBLIC`.`V_A`.`uuid` AS `alias1`\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`V_A`&quot;, sql);
+&nbsp;        }
+<b class="fc">&nbsp;        List&lt;Object&gt; recordIds = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, recordIds.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().id();</b>
+<b class="fc">&nbsp;        sql = getSQL(traversal);</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.A.uuid__O\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.B.uuid__I\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;uuid\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot; INNER JOIN\n&quot; +
+&nbsp;                    &quot;\t\&quot;public\&quot;.\&quot;E_ab\&quot; ON \&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;uuid\&quot; = \&quot;public\&quot;.\&quot;E_ab\&quot;.\&quot;public.A.uuid__O\&quot;&quot;, sql);
+<b class="nc">&nbsp;        } else if (isHsqldb() || isH2()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;PUBLIC.B.uuid__I\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;PUBLIC.A.uuid__O\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;uuid\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;V_A\&quot; INNER JOIN\n&quot; +
+&nbsp;                    &quot;\t\&quot;PUBLIC\&quot;.\&quot;E_ab\&quot; ON \&quot;PUBLIC\&quot;.\&quot;V_A\&quot;.\&quot;uuid\&quot; = \&quot;PUBLIC\&quot;.\&quot;E_ab\&quot;.\&quot;PUBLIC.A.uuid__O\&quot;&quot;, sql);
+<b class="nc">&nbsp;        } else if (isMariaDb()) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals( &quot;SELECT\n&quot; +</b>
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`PUBLIC.B.uuid__I` AS `alias1`,\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`PUBLIC.A.uuid__O` AS `alias2`,\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab`.`uuid` AS `alias3`\n&quot; +
+&nbsp;                    &quot;FROM\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`V_A` INNER JOIN\n&quot; +
+&nbsp;                    &quot;\t`PUBLIC`.`E_ab` ON `PUBLIC`.`V_A`.`uuid` = `PUBLIC`.`E_ab`.`PUBLIC.A.uuid__O`&quot;, sql);
+&nbsp;        }
+<b class="fc">&nbsp;        recordIds = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, recordIds.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(recordIds.stream().map(r -&gt; (RecordId)r).allMatch(r -&gt; r.getSchemaTable().getTable().equals(&quot;ab&quot;)));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

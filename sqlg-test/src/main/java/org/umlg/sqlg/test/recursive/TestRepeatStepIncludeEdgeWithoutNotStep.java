@@ -11,6 +11,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
@@ -23,11 +25,60 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestRepeatStepIncludeEdgeWithoutNotStep.class);
+
     @BeforeClass
     public static void beforeClass() {
         BaseTest.beforeClass();
         Assume.assumeTrue(isPostgres());
+    }
+
+    //used in docs
+//    @Test
+    public void testOutRepeatWithEdgeInPathDoc() {
+        VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        friendVertexLabel.ensureEdgeLabelExist(
+                "of",
+                friendVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1)
+                ),
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                }}
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+
+        Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+        Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+        Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+        Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+        a.addEdge("of", b, "name", "ab");
+        a.addEdge("of", c, "name", "ac");
+        c.addEdge("of", d, "name", "cd");
+        c.addEdge("of", e, "name", "ce");
+        e.addEdge("of", f, "name", "ef");
+
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths = this.sqlgGraph.traversal().V(a)
+                .repeat(__.outE("of").as("e").inV().as("v").simplePath())
+                .until(
+                        __.select("e").has("name", "ce")
+                )
+                .path().by("name")
+                .toList();
+        for (Path path : paths) {
+            LOGGER.debug(path.toString());
+        }
     }
 
     @Test

@@ -1,0 +1,274 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTraversalAddV</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.mod</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTraversalAddV (org.umlg.sqlg.test.mod)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTraversalAddV</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (18/18)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.mod;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2018/08/26
+&nbsp; */
+<b class="fc">&nbsp;public class TestTraversalAddV extends BaseTest {</b>
+&nbsp;
+&nbsp;//    Scenario: g_V_addVXanimalX_propertyXage_0X
+&nbsp;//    Given the empty graph
+&nbsp;//    And the graph initializer of
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//      g.addV(&quot;person&quot;).property(&quot;name&quot;, &quot;marko&quot;).property(&quot;age&quot;, 29).as(&quot;marko&quot;).
+&nbsp;//        addV(&quot;person&quot;).property(&quot;name&quot;, &quot;vadas&quot;).property(&quot;age&quot;, 27).as(&quot;vadas&quot;).
+&nbsp;//        addV(&quot;software&quot;).property(&quot;name&quot;, &quot;lop&quot;).property(&quot;lang&quot;, &quot;java&quot;).as(&quot;lop&quot;).
+&nbsp;//        addV(&quot;person&quot;).property(&quot;name&quot;,&quot;josh&quot;).property(&quot;age&quot;, 32).as(&quot;josh&quot;).
+&nbsp;//        addV(&quot;software&quot;).property(&quot;name&quot;, &quot;ripple&quot;).property(&quot;lang&quot;, &quot;java&quot;).as(&quot;ripple&quot;).
+&nbsp;//        addV(&quot;person&quot;).property(&quot;name&quot;, &quot;peter&quot;).property(&quot;age&quot;, 35).as(&#39;peter&#39;).
+&nbsp;//        addE(&quot;knows&quot;).from(&quot;marko&quot;).to(&quot;vadas&quot;).property(&quot;weight&quot;, 0.5d).
+&nbsp;//        addE(&quot;knows&quot;).from(&quot;marko&quot;).to(&quot;josh&quot;).property(&quot;weight&quot;, 1.0d).
+&nbsp;//        addE(&quot;created&quot;).from(&quot;marko&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.4d).
+&nbsp;//        addE(&quot;created&quot;).from(&quot;josh&quot;).to(&quot;ripple&quot;).property(&quot;weight&quot;, 1.0d).
+&nbsp;//        addE(&quot;created&quot;).from(&quot;josh&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.4d).
+&nbsp;//        addE(&quot;created&quot;).from(&quot;peter&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.2d)
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//    And the traversal of
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//      g.V().addV(&quot;animal&quot;).property(&quot;age&quot;, 0)
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//    When iterated to list
+&nbsp;//    Then the result should have a count of 6
+&nbsp;//    And the graph should return 6 for count of &quot;g.V().has(\&quot;animal\&quot;,\&quot;age\&quot;,0)&quot;
+&nbsp;    @Test
+&nbsp;    public void g_V_addVXanimalX_propertyXage_0X() {
+<b class="fc">&nbsp;      this.sqlgGraph.traversal().addV(&quot;person&quot;).property(&quot;name&quot;, &quot;marko&quot;).property(&quot;age&quot;, 29).as(&quot;marko&quot;).</b>
+<b class="fc">&nbsp;        addV(&quot;person&quot;).property(&quot;name&quot;, &quot;vadas&quot;).property(&quot;age&quot;, 27).as(&quot;vadas&quot;).</b>
+<b class="fc">&nbsp;        addV(&quot;software&quot;).property(&quot;name&quot;, &quot;lop&quot;).property(&quot;lang&quot;, &quot;java&quot;).as(&quot;lop&quot;).</b>
+<b class="fc">&nbsp;        addV(&quot;person&quot;).property(&quot;name&quot;,&quot;josh&quot;).property(&quot;age&quot;, 32).as(&quot;josh&quot;).</b>
+<b class="fc">&nbsp;        addV(&quot;software&quot;).property(&quot;name&quot;, &quot;ripple&quot;).property(&quot;lang&quot;, &quot;java&quot;).as(&quot;ripple&quot;).</b>
+<b class="fc">&nbsp;        addV(&quot;person&quot;).property(&quot;name&quot;, &quot;peter&quot;).property(&quot;age&quot;, 35).as(&quot;peter&quot;).</b>
+<b class="fc">&nbsp;        addE(&quot;knows&quot;).from(&quot;marko&quot;).to(&quot;vadas&quot;).property(&quot;weight&quot;, 0.5d).</b>
+<b class="fc">&nbsp;        addE(&quot;knows&quot;).from(&quot;marko&quot;).to(&quot;josh&quot;).property(&quot;weight&quot;, 1.0d).</b>
+<b class="fc">&nbsp;        addE(&quot;created&quot;).from(&quot;marko&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.4d).</b>
+<b class="fc">&nbsp;        addE(&quot;created&quot;).from(&quot;josh&quot;).to(&quot;ripple&quot;).property(&quot;weight&quot;, 1.0d).</b>
+<b class="fc">&nbsp;        addE(&quot;created&quot;).from(&quot;josh&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.4d).</b>
+<b class="fc">&nbsp;        addE(&quot;created&quot;).from(&quot;peter&quot;).to(&quot;lop&quot;).property(&quot;weight&quot;, 0.2d).iterate();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices =  this.sqlgGraph.traversal().V().addV(&quot;animal&quot;).property(&quot;age&quot;, 0).toList();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        vertices =  this.sqlgGraph.traversal().V().has(&quot;animal&quot;,&quot;age&quot;,0).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;//    @Test
+&nbsp;//    public void g_addVXV_hasXname_markoX_propertiesXnameX_keyX_label() {
+&nbsp;//        loadModern();
+&nbsp;//        final Traversal&lt;Vertex, String&gt; traversal =  this.sqlgGraph.traversal().addV(__.V().has(&quot;name&quot;, &quot;marko&quot;).properties(&quot;name&quot;).key()).label();
+&nbsp;//        printTraversalForm(traversal);
+&nbsp;//        Assert.assertEquals(&quot;name&quot;, traversal.next());
+&nbsp;//        Assert.assertFalse(traversal.hasNext());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void g_addV_asXfirstX_repeatXaddEXnextX_toXaddVX_inVX_timesX5X_addEXnextX_toXselectXfirstXX() {
+&nbsp;//        final Traversal&lt;Vertex, Edge&gt; traversal = this.sqlgGraph.traversal()
+&nbsp;//                .addV().as(&quot;first&quot;)
+&nbsp;//                .repeat(
+&nbsp;//                        __.addE(&quot;next&quot;).to(__.addV()).inV()).times(5)
+&nbsp;//                .addE(&quot;next&quot;)
+&nbsp;//                .to(__.select(&quot;first&quot;));
+&nbsp;//        printTraversalForm(traversal);
+&nbsp;//        Assert.assertEquals(&quot;next&quot;, traversal.next().label());
+&nbsp;//        Assert.assertFalse(traversal.hasNext());
+&nbsp;//        Assert.assertEquals(6L, this.sqlgGraph.traversal().V().count().next().longValue());
+&nbsp;//        Assert.assertEquals(6L, this.sqlgGraph.traversal().E().count().next().longValue());
+&nbsp;//        Assert.assertEquals(Arrays.asList(2L, 2L, 2L, 2L, 2L, 2L), this.sqlgGraph.traversal().V().map(__.bothE().count()).toList());
+&nbsp;//        Assert.assertEquals(Arrays.asList(1L, 1L, 1L, 1L, 1L, 1L), this.sqlgGraph.traversal().V().map(__.inE().count()).toList());
+&nbsp;//        Assert.assertEquals(Arrays.asList(1L, 1L, 1L, 1L, 1L, 1L), this.sqlgGraph.traversal().V().map(__.outE().count()).toList());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void shouldDetachVertexWhenAdded() {
+&nbsp;//        final AtomicBoolean triggered = new AtomicBoolean(false);
+&nbsp;//
+&nbsp;//        final MutationListener listener = new AbstractMutationListener() {
+&nbsp;//            @Override
+&nbsp;//            public void vertexAdded(final Vertex element) {
+&nbsp;//                Assert.assertThat(element, IsInstanceOf.instanceOf(DetachedVertex.class));
+&nbsp;//                Assert.assertEquals(&quot;thing&quot;, element.label());
+&nbsp;//                Assert.assertEquals(&quot;there&quot;, element.value(&quot;here&quot;));
+&nbsp;//                triggered.set(true);
+&nbsp;//            }
+&nbsp;//        };
+&nbsp;//        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener);
+&nbsp;//
+&nbsp;//        builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));
+&nbsp;//
+&nbsp;//        final EventStrategy eventStrategy = builder.create();
+&nbsp;//        final GraphTraversalSource gts = create(eventStrategy);
+&nbsp;//
+&nbsp;//        gts.addV(&quot;thing&quot;).property(&quot;here&quot;, &quot;there&quot;).iterate();
+&nbsp;//        sqlgGraph.tx().commit();
+&nbsp;//        Assert.assertThat(triggered.get(), Is.is(true));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    private GraphTraversalSource create(final EventStrategy strategy) {
+&nbsp;//        return this.sqlgGraph.traversal().withStrategies(strategy);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    static abstract class AbstractMutationListener implements MutationListener {
+&nbsp;//        @Override
+&nbsp;//        public void vertexAdded(final Vertex vertex) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void vertexRemoved(final Vertex vertex) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void vertexPropertyChanged(Vertex element, VertexProperty oldValue, Object setValue, Object... vertexPropertyKeyValues) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void vertexPropertyRemoved(final VertexProperty vertexProperty) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void edgeAdded(final Edge edge) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void edgeRemoved(final Edge edge) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void edgePropertyChanged(final Edge element, final Property oldValue, final Object setValue) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void edgePropertyRemoved(final Edge element, final Property property) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void vertexPropertyPropertyChanged(final VertexProperty element, final Property oldValue, final Object setValue) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        @Override
+&nbsp;//        public void vertexPropertyPropertyRemoved(final VertexProperty element, final Property property) {
+&nbsp;//
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

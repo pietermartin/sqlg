@@ -1,0 +1,1549 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestHasLabelAndId</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.labels</a>
+</div>
+
+<h1>Coverage Summary for Class: TestHasLabelAndId (org.umlg.sqlg.test.labels)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestHasLabelAndId</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (65/65)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (44/88)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.7%
+  </span>
+  <span class="absValue">
+    (1052/1055)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.labels;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.sql.parse.ReplacedStep;
+&nbsp;import org.umlg.sqlg.step.SqlgGraphStep;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/07/29
+&nbsp; * Time: 2:21 PM
+&nbsp; */
+&nbsp;@SuppressWarnings({&quot;rawtypes&quot;, &quot;DuplicatedCode&quot;, &quot;unused&quot;, &quot;resource&quot;})
+<b class="fc">&nbsp;public class TestHasLabelAndId extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasId() {
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;a&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Optional&lt;Vertex&gt; optionalVertex = this.sqlgGraph.traversal().V().hasId(v.id()).tryNext();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(optionalVertex.isPresent());</b>
+<b class="fc">&nbsp;        Vertex vAgain = optionalVertex.get();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, vAgain.value(&quot;a&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;a&quot;, &quot;a1&quot;, &quot;b&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        optionalVertex = this.sqlgGraph.traversal().V().hasId(v.id()).tryNext();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(optionalVertex.isPresent());</b>
+<b class="fc">&nbsp;        vAgain = optionalVertex.get();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, vAgain.value(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertNull(vAgain.value(&quot;b&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test1() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name1&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name2&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        System.out.println(this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).count().next());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNeqWithinManyIDs() {
+<b class="fc">&nbsp;        Vertex a = sqlgGraph.addVertex(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b5 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b6 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = sqlgGraph.addVertex(&quot;C&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b1);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b3);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b4);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b5);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b6);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, c);</b>
+&nbsp;
+&nbsp;        //uses tmp table to join on
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; t = sqlgGraph.traversal().V(a).out().has(T.id, P.without(b1.id(), b2.id(), b3.id(), b4.id(), b5.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = t.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(b6));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(c));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNeqWithinID() {
+<b class="fc">&nbsp;        Vertex a = sqlgGraph.addVertex(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = sqlgGraph.addVertex(&quot;C&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b1);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, c);</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; t = sqlgGraph.traversal().V(a).out().has(T.id, P.without(b1.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = t.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(b2));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(c));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNeqWithID() {
+<b class="fc">&nbsp;        Vertex a = sqlgGraph.addVertex(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = sqlgGraph.addVertex(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = sqlgGraph.addVertex(&quot;C&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b1);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;e_a&quot;, c);</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; t = sqlgGraph.traversal().V(a).out().has(T.id, P.neq(b1.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = t.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(b2));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(c));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelWithIDs() {
+<b class="fc">&nbsp;        Vertex a = sqlgGraph.addVertex(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = sqlgGraph.addVertex(&quot;B&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; t = sqlgGraph.traversal().V(a, b).hasLabel(&quot;A&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(t.hasNext());</b>
+<b class="fc">&nbsp;        Vertex v = t.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a, v);</b>
+<b class="fc">&nbsp;        boolean hasNext = t.hasNext();</b>
+<b class="pc">&nbsp;        if (hasNext) {</b>
+<b class="nc">&nbsp;            Assert.fail(t.next().toString());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveIdCollectionAfterOut() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b4&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c4&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b4);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .out()</b>
+<b class="fc">&nbsp;                .hasId(Arrays.asList(b1, c1, b2, c2, b3, c3, b4, c4))</b>
+<b class="fc">&nbsp;                .hasId(b2, c2, b3, c3).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(</b>
+<b class="pc">&nbsp;                vertices.contains(b2) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(c2) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(b3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        vertices.contains(c3)</b>
+&nbsp;        );
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCollectionIdsComplex() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V(Arrays.asList(a1, b1, c1, a2, b2, c2)).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(</b>
+<b class="pc">&nbsp;                vertices.contains(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(c1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(a2) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(b2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        vertices.contains(c2)</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCollectionIdsComplexConsecutive() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(Arrays.asList(a1, b1, c1, a2, b2, c2))</b>
+<b class="fc">&nbsp;                .hasId(Arrays.asList(a1, b1, c1, a3, b3, c3))</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(a1) &amp;&amp; vertices.contains(b1) &amp;&amp; vertices.contains(c1));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    //More than 2 parameters for an in clause goes via tmp tables
+&nbsp;    @Test
+&nbsp;    public void testCollectionIdsComplexConsecutiveUsingTmpTables() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a4&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b4&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c4&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(Arrays.asList(a1, b1, c1, a2, b2, c2, a3, b3, c3, a4, b4, c4))</b>
+<b class="fc">&nbsp;                .hasId(Arrays.asList(a1, b1, c1, a3, b3, c3, a4, b4, c4))</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(9, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(</b>
+<b class="pc">&nbsp;                vertices.contains(a1) &amp;&amp; vertices.contains(b1) &amp;&amp; vertices.contains(c1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(a3) &amp;&amp; vertices.contains(b3) &amp;&amp; vertices.contains(c3) &amp;&amp;</b>
+<b class="pc">&nbsp;                        vertices.contains(a4) &amp;&amp; vertices.contains(b4) &amp;&amp; vertices.contains(c4)</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCollectionIds() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasId(a.id()).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).hasId(b.id());</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(b.id(), c.id(), d.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(Arrays.asList(a.id(), a2.id(), b.id(), c.id(), d.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveHasId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasId(a.id()).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).hasId(b.id());</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(b.id(), c.id(), d.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqNeqHasLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).has(T.label, P.neq(&quot;A&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqNeqHasLabels2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).has(T.label, P.neq(&quot;B&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqWithinHasLabels2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).has(T.label, P.within(&quot;B&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveHasLabelWithout() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).has(T.label, P.without(&quot;B&quot;, &quot;C&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a).hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, traversal.toList().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a, b, c).hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels3() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a).hasLabel(&quot;A&quot;).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels3HasIdWithin() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;B&quot;).has(T.id, P.without(b.id(), b2.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+&nbsp;        //without merges its label hasContainer into the previous labelHasContainer
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels4() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels5() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;).hasId(b.id()).hasId(a.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasIdAndLabels6() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;).hasId(b.id()).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasWithinIdAndLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;).has(T.id, P.within(b.id(), b2.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasWithoutIdAndLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.without(b.id(), b2.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(a) &amp;&amp; vertices.contains(c) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+&nbsp;        //without&#39;s labels are merged into the previous labelHasContainers
+&nbsp;        //this is because without has &#39;or&#39; logic rather than &#39;and&#39;
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveEqHasNeqIdAndLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.neq(b.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(a) &amp;&amp; vertices.contains(b2) &amp;&amp; vertices.contains(c) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+&nbsp;        //without&#39;s labels are merged into the previous labelHasContainers
+&nbsp;        //this is because without has &#39;or&#39; logic rather than &#39;and&#39;
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabel() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabel() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabelAndHasId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabelAndHasNeqId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;).has(T.id, P.neq(b.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b2, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+&nbsp;        //neq merges its label with the previous labelHasContainers labels
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabelAndHasWithinId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.within(b.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b) &amp;&amp; vertices.contains(c));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabelAndHasWithoutId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.without(b.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b2) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+&nbsp;        //without gets merged into previous labelHasContainer
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutWithHasLabelAndHasWithoutNeqId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.neq(c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b) &amp;&amp; vertices.contains(b2) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+&nbsp;        //without gets merged into previous labelHasContainer
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasWithinId2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.within(b.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b) &amp;&amp; vertices.contains(c));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasWithoutId2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.without(b.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b2) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasNeqId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;, &quot;C&quot;, &quot;D&quot;).has(T.id, P.neq(b.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b2) &amp;&amp; vertices.contains(c) &amp;&amp; vertices.contains(d));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelAndIdOnOutEdge() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Edge ab = a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;        Edge ac = a.addEdge(&quot;ac&quot;, c);</b>
+<b class="fc">&nbsp;        Edge ad = a.addEdge(&quot;ad&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Edge&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(edges.contains(ab) &amp;&amp; edges.contains(ac));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;).hasLabel(&quot;ac&quot;);</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, edges.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).hasLabel(&quot;ac&quot;);</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).hasId(ac.id());</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.within(ab.id(), ac.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(edges.contains(ab) &amp;&amp; edges.contains(ac));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.without(ab.id(), ac.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, edges.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.neq(ab.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelAndIdOnInEdge() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Edge ab = b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ac = c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ad = d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Edge&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(edges.contains(ab) &amp;&amp; edges.contains(ac));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;).hasLabel(&quot;ac&quot;);</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, edges.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).hasLabel(&quot;ac&quot;);</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).hasId(ac.id());</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.within(ab.id(), ac.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(edges.contains(ab) &amp;&amp; edges.contains(ac));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.without(ab.id(), ac.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, edges.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).inE().hasLabel(&quot;ab&quot;, &quot;ac&quot;).has(T.id, P.neq(ab.id()));</b>
+<b class="fc">&nbsp;        edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(ac, edges.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutEWithHasLabelAndId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Edge ab = b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ab2 = b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ac = c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ac2 = c2.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ad = d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        Edge ad2 = d2.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Vertex&gt; traversal = this.sqlgGraph.traversal().E().hasLabel(&quot;ab&quot;).inV();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a, vertices.get(1));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().hasLabel(&quot;ab&quot;).inV().hasLabel(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().hasLabel(&quot;ab&quot;).inV().hasLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a, vertices.get(1));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).inV().hasLabel(&quot;A&quot;, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.stream().allMatch(v -&gt; v.equals(a)));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).outV().hasLabel(&quot;C&quot;, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b) &amp;&amp; vertices.contains(b2) &amp;&amp; vertices.contains(c) &amp;&amp; vertices.contains(c2));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).outV().hasLabel(&quot;C&quot;, &quot;B&quot;).has(T.id, P.eq(b));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b, vertices.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).outV().hasLabel(&quot;C&quot;, &quot;B&quot;).has(T.id, P.neq(b));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b2) &amp;&amp; vertices.contains(c) &amp;&amp; vertices.contains(c2));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).outV().hasLabel(&quot;C&quot;, &quot;B&quot;).has(T.id, P.within(b.id(), b2.id(), c.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(vertices.contains(b) &amp;&amp; vertices.contains(b2) &amp;&amp; vertices.contains(c));</b>
+&nbsp;
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;ab&quot;, &quot;ac&quot;, &quot;ad&quot;)).outV().hasLabel(&quot;C&quot;, &quot;B&quot;).has(T.id, P.without(b.id(), b2.id(), c.id()));</b>
+<b class="fc">&nbsp;        vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c2, vertices.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasId2() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;).hasId(b.id());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasWithinId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;).has(T.id, P.within(b.id(), b2.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInWithHasLabelAndHasWithoutId() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a);</b>
+<b class="fc">&nbsp;        c.addEdge(&quot;ac&quot;, a);</b>
+<b class="fc">&nbsp;        d.addEdge(&quot;ad&quot;, a);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).in().hasLabel(&quot;B&quot;).has(T.id, P.without(b.id(), c.id()));</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b2, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, sqlgGraphStep.getReplacedSteps().size());</b>
+<b class="fc">&nbsp;        ReplacedStep replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+<b class="fc">&nbsp;        replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, replacedStep.getLabelHasContainers().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testGraphStepHasLabelWithinCollection() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.toList().size());</b>
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(P.within(&quot;A&quot;, &quot;B&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.toList().size());</b>
+<b class="fc">&nbsp;        traversal = this.sqlgGraph.traversal().V().hasLabel(P.within(new HashSet&lt;&gt;(Arrays.asList(&quot;A&quot;, &quot;B&quot;))));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.toList().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V(a, b).hasLabel(P.within(&quot;C&quot;)).toList().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V(a, b).hasLabel(P.within(new HashSet&lt;&gt;(Arrays.asList(&quot;A&quot;, &quot;B&quot;, &quot;D&quot;)))).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testGraphStepHasLabelWithin() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnOut() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .out().hasLabel(&quot;B&quot;, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnIn() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .in().hasLabel(&quot;B&quot;, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnEdgeOut() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Edge&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .outE().hasLabel(&quot;ab&quot;, &quot;ce&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnEdgeIn() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Edge&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .inE().hasLabel(&quot;ab&quot;, &quot;ce&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnOtherVertexStepVertexStepOut() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .outE().otherV().hasLabel(&quot;B&quot;, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepWithLabelWithinOnOtherVertexStepIn() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;x&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(__.has(&quot;name&quot;, &quot;x&quot;))</b>
+<b class="fc">&nbsp;                .inE().otherV().hasLabel(&quot;B&quot;, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelWithin() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal traversal = this.sqlgGraph.traversal().V(a1).out().hasLabel(&quot;C&quot;, &quot;B&quot;).in();</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.toList().size());</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelWithWithinPredicate() {
+<b class="fc">&nbsp;        Vertex vEPerson = this.sqlgGraph.addVertex(T.label, &quot;EnterprisePerson&quot;, &quot;_uniqueId&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        Vertex vEProvider = this.sqlgGraph.addVertex(T.label, &quot;EnterpriseProvider&quot;, &quot;_uniqueId&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        Vertex vSPerson = this.sqlgGraph.addVertex(T.label, &quot;SystemPerson&quot;, &quot;_uniqueId&quot;, &quot;3&quot;);</b>
+<b class="fc">&nbsp;        Vertex vSProvider = this.sqlgGraph.addVertex(T.label, &quot;SystemProvider&quot;, &quot;_uniqueId&quot;, &quot;4&quot;);</b>
+<b class="fc">&nbsp;        Edge e1 = vSPerson.addEdge(&quot;euid&quot;, vEPerson);</b>
+<b class="fc">&nbsp;        Edge e2 = vSProvider.addEdge(&quot;euid&quot;, vEProvider);</b>
+<b class="fc">&nbsp;        Edge e3 = vSProvider.addEdge(&quot;primary&quot;, vSPerson);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;EnterprisePerson&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;_uniqueId&quot;, &quot;1&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;euid&quot;)</b>
+<b class="fc">&nbsp;                .bothE(&quot;primary&quot;)</b>
+<b class="fc">&nbsp;                .otherV()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;SystemPerson&quot;, &quot;SystemProvider&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;euid&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(vEProvider, vertices.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConsecutiveHasLabels() {
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).hasLabel(&quot;A&quot;).toList().size());</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasCompareEq() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; graphTraversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, graphTraversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = graphTraversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, graphTraversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, vertices.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasCompareBetween() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, 1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, 2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testCompareBetween_assert(this.sqlgGraph, a1);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="nc">&nbsp;            Thread.sleep(1000);</b>
+<b class="nc">&nbsp;            testCompareBetween_assert(this.sqlgGraph1, a1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testCompareBetween_assert(SqlgGraph sqlgGraph, Vertex a1) {
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; graphTraversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;name&quot;, P.between(1, 2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, graphTraversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = graphTraversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, graphTraversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, vertices.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabel() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(8, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNonExistingLabel() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, &quot;Animal&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInLabels() {
+<b class="fc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;c&quot;);</b>
+<b class="fc">&nbsp;        Vertex d = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;d&quot;);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;knows&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;created&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;knows&quot;, c);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;created&quot;, d);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Collections.singletonList(&quot;knows&quot;))).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Collections.singletonList(&quot;created&quot;))).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList(&quot;knows&quot;, &quot;created&quot;))).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_outE_hasLabel_inV() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = gt.V().outE().hasLabel(&quot;created&quot;).inV().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = gt.V().outE().hasLabel(&quot;knows&quot;).inV().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdgeHasLabel() {
+<b class="fc">&nbsp;        Vertex person1 = this.sqlgGraph.addVertex(T.label, &quot;schema1.person&quot;);</b>
+<b class="fc">&nbsp;        Vertex person2 = this.sqlgGraph.addVertex(T.label, &quot;schema1.person&quot;);</b>
+<b class="fc">&nbsp;        Vertex address1 = this.sqlgGraph.addVertex(T.label, &quot;schema2.address&quot;);</b>
+<b class="fc">&nbsp;        Vertex address2 = this.sqlgGraph.addVertex(T.label, &quot;schema2.address&quot;);</b>
+<b class="fc">&nbsp;        person1.addEdge(&quot;address&quot;, address1);</b>
+<b class="fc">&nbsp;        person2.addEdge(&quot;address&quot;, address2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().V().outE().otherV().count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().V().inE().otherV().count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdgeNotHasLabel() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = gt.V().outE().not(__.hasLabel(&quot;created&quot;).inV()).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

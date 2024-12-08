@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.umlg.sqlg.gis","l":"GeographyPoint"},{"p":"org.umlg.sqlg.gis","l":"GeographyPolygon"},{"p":"org.umlg.sqlg.gis","l":"Gis"},{"p":"org.umlg.sqlg.dialect.impl","l":"PostgresDialect"},{"p":"org.umlg.sqlg.plugin","l":"PostgresPlugin"}];updateSearchResults();

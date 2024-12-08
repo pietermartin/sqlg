@@ -1,0 +1,313 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestRepeatStepOnEdges</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestRepeatStepOnEdges (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestRepeatStepOnEdges</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (16/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    54.7%
+  </span>
+  <span class="absValue">
+    (93/170)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (120/120)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.*;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Column;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.function.Function;
+&nbsp;import java.util.function.Predicate;
+&nbsp;
+&nbsp;import static org.apache.tinkerpop.gremlin.process.traversal.Pop.last;
+&nbsp;import static org.apache.tinkerpop.gremlin.process.traversal.Scope.local;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/10/25
+&nbsp; * Time: 5:04 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestRepeatStepOnEdges extends BaseTest {</b>
+&nbsp;
+<b class="fc">&nbsp;    private final Logger logger = LoggerFactory.getLogger(TestRepeatStepOnEdges.class);</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Edge&gt; traversal = (DefaultGraphTraversal&lt;Edge, Edge&gt;) this.sqlgGraph.traversal().E().repeat(__.outV().outE()).times(2).emit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBug116() {
+<b class="fc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(&quot;code&quot;, &quot;0&quot;);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(&quot;code&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(&quot;code&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(&quot;code&quot;, &quot;3&quot;);</b>
+<b class="fc">&nbsp;        v0.addEdge(&quot;tsw&quot;, v1, &quot;speed&quot;, &quot;1&quot;, &quot;arrTime&quot;, 10L, &quot;depTime&quot;, 5L);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;tsw&quot;, v2, &quot;speed&quot;, &quot;1&quot;, &quot;arrTime&quot;, 15L, &quot;depTime&quot;, 9L); //must be ignored in longest path</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;tsw&quot;, v2, &quot;speed&quot;, &quot;1&quot;, &quot;arrTime&quot;, 20L, &quot;depTime&quot;, 17L); //must be used in longest path</b>
+<b class="fc">&nbsp;        v2.addEdge(&quot;tsw&quot;, v3, &quot;speed&quot;, &quot;1&quot;, &quot;arrTime&quot;, 30L, &quot;depTime&quot;, 25L);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal gp = (DefaultGraphTraversal) this.sqlgGraph.traversal().V().outE(&quot;tsw&quot;).as(&quot;e&quot;).inV().emit().repeat(</b>
+<b class="fc">&nbsp;                __.outE(&quot;tsw&quot;).as(&quot;e&quot;).inV().simplePath()</b>
+<b class="fc">&nbsp;        ).times(20);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, gp.getSteps().size());</b>
+&nbsp;
+&nbsp;        //noinspection unchecked
+<b class="fc">&nbsp;        Assert.assertEquals(10, IteratorUtils.list(gp).size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, gp.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        gp = query1(this.sqlgGraph.traversal());</b>
+<b class="fc">&nbsp;        checkResult(gp);</b>
+&nbsp;
+&nbsp;        //check paths
+<b class="fc">&nbsp;        gp = query1(this.sqlgGraph.traversal());</b>
+&nbsp;        //check paths
+<b class="fc">&nbsp;        @SuppressWarnings(&quot;unchecked&quot;) List&lt;List&lt;Object&gt;&gt; paths = IteratorUtils.list(gp);</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;List&lt;Object&gt;&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v0.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(5L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(10L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v1.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v0.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(5L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(10L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;depTime&quot;).equals(17L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;arrTime&quot;).equals(20L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(4).equals(v2.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v0.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(5L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(10L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;depTime&quot;).equals(17L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;arrTime&quot;).equals(20L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(4).equals(v2.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(5)).get(&quot;depTime&quot;).equals(25L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(5)).get(&quot;arrTime&quot;).equals(30L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(6).equals(v3.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(9L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(15L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v2.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(9L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(15L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v2.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;depTime&quot;).equals(25L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;arrTime&quot;).equals(30L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(4).equals(v3.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(17L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(20L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v2.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v1.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(17L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(20L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v2.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;depTime&quot;).equals(25L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(3)).get(&quot;arrTime&quot;).equals(30L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(4).equals(v3.id()),</b>
+&nbsp;
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(&quot;1&quot;) &amp;&amp; ((Path) p.get(1)).get(0).equals(v2.id())</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;depTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;depTime&quot;).equals(25L)</b>
+<b class="pc">&nbsp;                        &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).containsKey(&quot;arrTime&quot;) &amp;&amp; ((Map) ((Path) p.get(1)).get(1)).get(&quot;arrTime&quot;).equals(30L)</b>
+<b class="fc">&nbsp;                        &amp;&amp; ((Path) p.get(1)).get(2).equals(v3.id())</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;List&lt;Object&gt;&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;List&lt;Object&gt;&gt; objectList = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(objectList.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(objectList.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;
+<b class="fc">&nbsp;        gp = query2(this.sqlgGraph.traversal());</b>
+<b class="fc">&nbsp;        checkResult(gp);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;unchecked&quot;)
+&nbsp;    private DefaultGraphTraversal query1(GraphTraversalSource g) {
+<b class="fc">&nbsp;        Function timeAtWarehouse = o -&gt; {</b>
+<b class="fc">&nbsp;            Map m = (Map) o;</b>
+<b class="fc">&nbsp;            Long dt = ((Edge) (m.get(&quot;curr&quot;))).value(&quot;depTime&quot;);</b>
+<b class="fc">&nbsp;            Long at = ((Edge) (m.get(&quot;prev&quot;))).value(&quot;arrTime&quot;);</b>
+<b class="fc">&nbsp;            return (dt - at) &gt;= 0 ? (dt - at) : Long.MAX_VALUE;</b>
+&nbsp;        };
+&nbsp;
+<b class="fc">&nbsp;        Predicate checkNegativeTime = o -&gt; {</b>
+<b class="fc">&nbsp;            Map m = (Map) (((Traverser) o).get());</b>
+<b class="fc">&nbsp;            Long dt = ((Edge) (m.get(&quot;curr&quot;))).value(&quot;depTime&quot;);</b>
+<b class="fc">&nbsp;            Long at = ((Edge) (m.get(&quot;prev&quot;))).value(&quot;arrTime&quot;);</b>
+<b class="pc">&nbsp;            return (dt - at) &gt;= 0;</b>
+&nbsp;        };
+&nbsp;
+<b class="fc">&nbsp;        return (DefaultGraphTraversal)g.V().outE(&quot;tsw&quot;).as(&quot;e&quot;).inV().emit().repeat(</b>
+<b class="fc">&nbsp;                __.flatMap(</b>
+<b class="fc">&nbsp;                        __.outE(&quot;tsw&quot;).filter(__.as(&quot;edge&quot;).select(last, &quot;e&quot;).where(P.eq(&quot;edge&quot;)).by(&quot;speed&quot;)).</b>
+<b class="fc">&nbsp;                                group().by(__.inV()).by(__.project(&quot;curr&quot;, &quot;prev&quot;).by().by(__.select(last, &quot;e&quot;)).fold()).select(Column.values).unfold().</b>
+<b class="fc">&nbsp;                                order(local).by(timeAtWarehouse).</b>
+<b class="fc">&nbsp;                                limit(local, 1).</b>
+<b class="fc">&nbsp;                                filter(checkNegativeTime).</b>
+<b class="fc">&nbsp;                                select(&quot;curr&quot;)</b>
+<b class="fc">&nbsp;                ).as(&quot;e&quot;).inV().simplePath()</b>
+<b class="fc">&nbsp;        ).times(20).map(__.union(__.select(last, &quot;e&quot;).by(&quot;speed&quot;), (Traversal) __.path().by(T.id).by(__.valueMap(&quot;arrTime&quot;, &quot;depTime&quot;))).fold());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings({&quot;RedundantCast&quot;, &quot;unchecked&quot;})
+&nbsp;    private DefaultGraphTraversal query2(GraphTraversalSource g) {
+<b class="fc">&nbsp;        return (DefaultGraphTraversal)g.withSack(0).V().outE(&quot;tsw&quot;).as(&quot;e&quot;).inV().emit().repeat(</b>
+<b class="fc">&nbsp;                __.flatMap(</b>
+<b class="fc">&nbsp;                        __.outE(&quot;tsw&quot;).filter(__.as(&quot;edge&quot;).select(last, &quot;e&quot;).where(P.eq(&quot;edge&quot;)).by(&quot;speed&quot;)).</b>
+<b class="fc">&nbsp;                                group().by(__.inV()).</b>
+<b class="fc">&nbsp;                                by(__.project(&quot;curr&quot;, &quot;time&quot;).by().</b>
+<b class="fc">&nbsp;                                        by(__.sack(Operator.assign).by(&quot;depTime&quot;).select(last, &quot;e&quot;).sack(Operator.minus).by(&quot;arrTime&quot;).sack()).</b>
+<b class="fc">&nbsp;                                        filter(__.select(&quot;time&quot;).is(P.gte(0))).fold()).</b>
+<b class="fc">&nbsp;                                select(Column.values).unfold().order(local).by(__.select(&quot;time&quot;)).limit(local, 1).select(&quot;curr&quot;)</b>
+<b class="fc">&nbsp;                ).as(&quot;e&quot;).inV().simplePath()</b>
+<b class="fc">&nbsp;        ).times(20).map(__.union((Traversal) __.select(last, &quot;e&quot;).by(&quot;speed&quot;), (Traversal) __.path().by(T.id).by(__.valueMap(&quot;arrTime&quot;, &quot;depTime&quot;))).fold());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void checkResult(GraphTraversal gp) {
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        while (gp.hasNext()) {</b>
+<b class="fc">&nbsp;            logger.info(gp.next().toString());</b>
+<b class="fc">&nbsp;            count++;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(8, count);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+===== Count Step
+
+link:{tinkerpop-docs}#count-step[`Count Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testCount() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().count();
+    printTraversalForm(traversal);
+    Assert.assertEquals(4, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-count-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), CountGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([count],value), SqlgCountGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	COUNT(1)
+FROM
+	"public"."V_A"
+----

@@ -1,0 +1,137 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestVertexLabelSize</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.vertex</a>
+</div>
+
+<h1>Coverage Summary for Class: TestVertexLabelSize (org.umlg.sqlg.test.vertex)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestVertexLabelSize</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.vertex;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SqlgExceptions;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2015/03/05
+&nbsp; * Time: 3:03 PM
+&nbsp; */
+<b class="nc">&nbsp;public class TestVertexLabelSize extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidSchemaException.class)
+&nbsp;    public void testLargeSchemaNameSize() {
+<b class="nc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggggggggg.a&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidTableException.class)
+&nbsp;    public void testLargeTableNameSize() {
+<b class="nc">&nbsp;       Vertex v = this.sqlgGraph.addVertex(T.label, &quot;a.aaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggggggggg&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test(expected = SqlgExceptions.InvalidColumnException.class)
+&nbsp;    public void testLargeColumnNameSize() {
+<b class="nc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;a.aaaaaaaaabbbbbbbbbbccccccccccddddddddd&quot;,</b>
+&nbsp;                &quot;aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffggggggggggaaaa&quot;, &quot;a&quot;);
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>

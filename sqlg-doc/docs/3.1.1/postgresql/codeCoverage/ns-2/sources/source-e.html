@@ -1,0 +1,538 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchServerSideEdgeCreation</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchServerSideEdgeCreation (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchServerSideEdgeCreation</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (17/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78.9%
+  </span>
+  <span class="absValue">
+    (30/38)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (206/206)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestBatchServerSideEdgeCreation$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchServerSideEdgeCreation$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestBatchServerSideEdgeCreation$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (20/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78.9%
+  </span>
+  <span class="absValue">
+    (30/38)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (213/213)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.commons.lang3.time.StopWatch;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.*;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.RecordId;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.PartitionType;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;@SuppressWarnings(&quot;Duplicates&quot;)
+<b class="fc">&nbsp;public class TestBatchServerSideEdgeCreation extends BaseTest {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(TestBatchServerSideEdgeCreation.class);</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());</b>
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    private void testBulkEdges_assert(SqlgGraph sqlgGraph) { assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(100, sqlgGraph.traversal().V().hasLabel(&quot;B&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(100, sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).out().count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(&quot;y&quot;, sqlgGraph.traversal().E().hasLabel(&quot;AB&quot;).values(&quot;x&quot;).dedup().next());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkEdgesOnUserSuppliedIds() throws InterruptedException {
+&nbsp;
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;A&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;index&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;index&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;B&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;index&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;index&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        EdgeLabel edgeLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExist(</b>
+&nbsp;                &quot;AB&quot;,
+&nbsp;                aVertexLabel,
+&nbsp;                bVertexLabel,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;part&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;                    put(&quot;x&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of()),</b>
+&nbsp;                PartitionType.LIST,
+&nbsp;                &quot;part&quot;
+&nbsp;        );
+<b class="fc">&nbsp;        edgeLabel.ensureListPartitionExists(&quot;part1&quot;, &quot;&#39;part1&#39;&quot;);</b>
+<b class="fc">&nbsp;        edgeLabel.ensureListPartitionExists(&quot;part2&quot;, &quot;&#39;part2&#39;&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;index&quot;, i);</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 10; j++) {</b>
+<b class="fc">&nbsp;                this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;index&quot;, count);</b>
+<b class="fc">&nbsp;                uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(</b>
+&nbsp;                &quot;A&quot;,
+&nbsp;                &quot;B&quot;,
+&nbsp;                &quot;AB&quot;,
+<b class="fc">&nbsp;                Pair.of(&quot;index&quot;, &quot;index&quot;),</b>
+&nbsp;                uids,
+&nbsp;                &quot;part&quot;, &quot;part1&quot;,
+&nbsp;                &quot;x&quot;, &quot;y&quot;);
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkEdges_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkEdges_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkEdges() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;index&quot;, Integer.toString(i));</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 10; j++) {</b>
+<b class="fc">&nbsp;                this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;index&quot;, Integer.toString(count));</b>
+<b class="fc">&nbsp;                uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;A&quot;, &quot;B&quot;, &quot;AB&quot;, Pair.of(&quot;index&quot;, &quot;index&quot;), uids, &quot;x&quot;, &quot;y&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkEdges_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkEdges_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkEdgesCrossSchemas() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;, &quot;index&quot;, Integer.toString(i));</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 10; j++) {</b>
+<b class="fc">&nbsp;                this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;, &quot;index&quot;, Integer.toString(count));</b>
+<b class="fc">&nbsp;                uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;A.A&quot;, &quot;B.B&quot;, &quot;AB&quot;, Pair.of(&quot;index&quot;, &quot;index&quot;), uids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkEdgesCrossSchemas_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkEdgesCrossSchemas_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBulkEdgesCrossSchemas_assert(SqlgGraph sqlgGraph) {
+<b class="fc">&nbsp;        assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A.A&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(100, sqlgGraph.traversal().V().hasLabel(&quot;B.B&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(100, sqlgGraph.traversal().V().hasLabel(&quot;A.A&quot;).out().count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkEdges2() throws InterruptedException {
+<b class="fc">&nbsp;        StopWatch stopWatch = new StopWatch();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; properties = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        String uuid1Cache = null;</b>
+<b class="fc">&nbsp;        String uuid2Cache = null;</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1000; i++) {</b>
+<b class="fc">&nbsp;            String uuid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            String uuid2 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            if (i == 50) {</b>
+<b class="fc">&nbsp;                uuid1Cache = uuid1;</b>
+<b class="fc">&nbsp;                uuid2Cache = uuid2;</b>
+&nbsp;            }
+<b class="fc">&nbsp;            uids.add(Pair.of(uuid1, uuid2));</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid1);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid2);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().flush();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        LOGGER.debug(stopWatch.toString());</b>
+<b class="fc">&nbsp;        stopWatch.reset();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;Person&quot;, &quot;Person&quot;, &quot;friend&quot;, Pair.of(&quot;id&quot;, &quot;id&quot;), uids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        LOGGER.debug(stopWatch.toString());</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkEdges2_assert(this.sqlgGraph, uuid1Cache, uuid2Cache);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkEdges2_assert(this.sqlgGraph1, uuid1Cache, uuid2Cache);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBulkEdges2_assert(SqlgGraph sqlgGraph, String uuid1Cache, String uuid2Cache) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; has = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;id&quot;, uuid1Cache);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(has.hasNext());</b>
+<b class="fc">&nbsp;        Vertex person50 = has.next();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; has1 = sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;id&quot;, uuid2Cache);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(has1.hasNext());</b>
+<b class="fc">&nbsp;        Vertex person250 = has1.next();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(sqlgGraph.traversal().V(person50.id()).out().hasNext());</b>
+<b class="fc">&nbsp;        Vertex person250Please = sqlgGraph.traversal().V(person50.id()).out().next();</b>
+<b class="fc">&nbsp;        assertEquals(person250, person250Please);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkEdgesTempTableUnique() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        LinkedHashMap&lt;String, Object&gt; properties = new LinkedHashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1000; i++) {</b>
+<b class="fc">&nbsp;            String uuid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            String uuid2 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            uids.add(Pair.of(uuid1, uuid2));</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid1);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid2);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().flush();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;Person&quot;, &quot;Person&quot;, &quot;friend&quot;, Pair.of(&quot;id&quot;, &quot;id&quot;), uids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;        //and again
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        uids.clear();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1000; i++) {</b>
+<b class="fc">&nbsp;            String uuid1 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            String uuid2 = UUID.randomUUID().toString();</b>
+<b class="fc">&nbsp;            uids.add(Pair.of(uuid1, uuid2));</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid1);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+<b class="fc">&nbsp;            properties.put(&quot;id&quot;, uuid2);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.streamVertex(&quot;Person&quot;, properties);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().flush();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;Person&quot;, &quot;Person&quot;, &quot;friend&quot;, Pair.of(&quot;id&quot;, &quot;id&quot;), uids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkAddEdgesStringAndIntegerIds() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex realWorkspaceElement1 = this.sqlgGraph.addVertex(T.label, &quot;RealWorkspaceElement&quot;, &quot;cmUid&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex realWorkspaceElement2 = this.sqlgGraph.addVertex(T.label, &quot;RealWorkspaceElement&quot;, &quot;cmUid&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Vertex virtualGroup = this.sqlgGraph.addVertex(T.label, &quot;VirtualGroup&quot;, &quot;name&quot;, &quot;asd&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Edge e =realWorkspaceElement1.addEdge(&quot;realWorkspaceElement_virtualGroup&quot;, virtualGroup);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        e.remove();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, Integer&gt;&gt; ids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        ids.add(Pair.of(&quot;a&quot;, 1));</b>
+<b class="fc">&nbsp;        ids.add(Pair.of(&quot;b&quot;, 1));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;RealWorkspaceElement&quot;, &quot;VirtualGroup&quot;, &quot;realWorkspaceElement_virtualGroup&quot;, Pair.of(&quot;cmUid&quot;, &quot;ID&quot;), ids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkAddEdgeStringAndIntegerIds_assert(this.sqlgGraph, realWorkspaceElement1, realWorkspaceElement2, virtualGroup);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkAddEdgeStringAndIntegerIds_assert(this.sqlgGraph1, realWorkspaceElement1, realWorkspaceElement2, virtualGroup);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBulkAddEdgeStringAndIntegerIds_assert(SqlgGraph sqlgGraph, Vertex realWorkspaceElement1, Vertex realWorkspaceElement2, Vertex virtualGroup) {
+<b class="fc">&nbsp;        Assert.assertTrue(sqlgGraph.traversal().V(realWorkspaceElement1.id()).out(&quot;realWorkspaceElement_virtualGroup&quot;).hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(sqlgGraph.traversal().V(realWorkspaceElement2.id()).out(&quot;realWorkspaceElement_virtualGroup&quot;).hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(sqlgGraph.traversal().V(virtualGroup.id()).in(&quot;realWorkspaceElement_virtualGroup&quot;).hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOnIds() throws InterruptedException {
+<b class="fc">&nbsp;        StopWatch stopWatch = new StopWatch();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+<b class="fc">&nbsp;        Vertex virtualGroup = sqlgGraph.addVertex(T.label, &quot;VirtualGroup&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;Long, Long&gt;&gt; ids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().streamingWithLockBatchModeOn();</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; properties = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        properties.put(&quot;cm_uid&quot;, UUID.randomUUID().toString());</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 1_000; i++) {</b>
+<b class="fc">&nbsp;            Vertex v = sqlgGraph.addVertex(&quot;RealWorkspaceElement&quot;, properties);</b>
+<b class="fc">&nbsp;            RecordId recordId = (RecordId) v.id();</b>
+<b class="fc">&nbsp;            Pair&lt;Long, Long&gt; idPair = Pair.of(recordId.sequenceId(), ((RecordId) virtualGroup.id()).sequenceId());</b>
+<b class="fc">&nbsp;            ids.add(idPair);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        LOGGER.debug(&quot;Time to insert: &quot; + stopWatch);</b>
+<b class="fc">&nbsp;        stopWatch.reset();</b>
+<b class="fc">&nbsp;        stopWatch.start();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        sqlgGraph.bulkAddEdges(&quot;RealWorkspaceElement&quot;, &quot;VirtualGroup&quot;, &quot;realWorkspaceElement_virtualGroup&quot;, Pair.of(&quot;ID&quot;, &quot;ID&quot;), ids);</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        stopWatch.stop();</b>
+<b class="fc">&nbsp;        LOGGER.debug(&quot;Time to insert: &quot; + stopWatch);</b>
+<b class="fc">&nbsp;        assertEquals(1_000, this.sqlgGraph.traversal().V(virtualGroup).in(&quot;realWorkspaceElement_virtualGroup&quot;).count().next().intValue());</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            assertEquals(1_000, this.sqlgGraph1.traversal().V(virtualGroup).in(&quot;realWorkspaceElement_virtualGroup&quot;).count().next().intValue());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkAddEdgesINinStringOut() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;lala&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;cmuid&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;Long, String&gt;&gt; ids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        Pair&lt;Long, String&gt; idCmUidPair = Pair.of(((RecordId)v1.id()).sequenceId(), &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        ids.add(idCmUidPair);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(&quot;A&quot;, &quot;B&quot;, &quot;ab&quot;, Pair.of(&quot;ID&quot;, &quot;cmuid&quot;), ids);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testBulkAddEdgesINinStringOut_assert(this.sqlgGraph, v1, v2);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBulkAddEdgesINinStringOut_assert(this.sqlgGraph1, v1, v2);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBulkAddEdgesINinStringOut_assert(SqlgGraph sqlgGraph, Vertex v1, Vertex v2) {
+<b class="fc">&nbsp;        assertEquals(1, sqlgGraph.traversal().V(v1).out(&quot;ab&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;        assertEquals(v2.id(), sqlgGraph.traversal().V(v1).out(&quot;ab&quot;).next().id());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-27 19:01</div>
+</div>
+</body>
+</html>
