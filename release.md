@@ -4,4 +4,4 @@
 * close and release the artifacts
 * tag with pom version
 * might need to add `export GPG_TTY=$(tty)`
-* copy generated docs to `/user/share/nginx/html`
+* copy generated docs to `/var/www/html/docs/`
