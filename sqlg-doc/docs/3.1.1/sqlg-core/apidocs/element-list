@@ -1,4 +1,3 @@
-module:sqlg.core
 org.umlg.sqlg
 org.umlg.sqlg.predicate
 org.umlg.sqlg.sql.dialect

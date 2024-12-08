@@ -1,1 +1,1 @@
-moduleSearchIndex = [{"l":"sqlg.core"}];updateSearchResults();
+moduleSearchIndex = [];updateSearchResults();
