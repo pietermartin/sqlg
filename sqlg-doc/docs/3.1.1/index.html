@@ -2192,8 +2192,8 @@ p {
 <li><a href="#_not_step">10.1.6. Not Step</a></li>
 <li><a href="#_repeat_step">10.1.7. Repeat Step</a>
 <ul class="sectlevel4">
-<li><a href="#_repeat_step_with_emit_first">Repeat Step with emit first</a></li>
-<li><a href="#_repeat_step_with_emit_last">Repeat Step with emit last</a></li>
+<li><a href="#_repeat_step_with_timesx">Repeat Step with <code>times(x)</code></a></li>
+<li><a href="#_recursive_repeat_step">Recursive Repeat Step</a></li>
 </ul>
 </li>
 <li><a href="#_optional_step">10.1.8. Optional Step</a></li>
@@ -2382,7 +2382,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql and MariaDB as it run
 <h2 id="_tinkerpop_supported_features">3. TinkerPop supported features</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sqlg version 3.1.1 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.7.3</a>.</p>
+<p>Sqlg version 3.1.1 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.7.</a>.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code>, <code>ProcessStandardSuite</code> test suites then and <code>Gherkin feature</code> tests.</p>
@@ -3565,7 +3565,7 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 <div class="sect2">
 <h3 id="_optimization_strategy_1">10.1. Optimization (strategy 1)</h3>
 <div class="paragraph">
-<p>The following steps are optimized. Steps are</p>
+<p>The following steps are optimized.</p>
 </div>
 <div class="ulist">
 <ul>
@@ -4024,11 +4024,22 @@ WHERE
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#repeat-step"><code>Repeat Step</code></a></p>
 </div>
 <div class="paragraph">
-<p>Sqlg optimizes the <code>RepeatStep</code> so long as the <code>until</code> modulator is <strong>not</strong> present.
-<code>RepeatStep</code> can be optimized with the modulator <code>emit</code> and <code>times</code>.</p>
+<p>Sqlg can optimize `RepeatStep`s,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>with <strong>no</strong> <code>until</code> modulator. i.e. <code>times(x)</code> must be present.</p>
+</li>
+<li>
+<p>recursive gremlin. i.e. the repeat step must loop over the same <code>VertexLabel</code></p>
+</li>
+</ul>
 </div>
 <div class="sect4">
-<h5 id="_repeat_step_with_emit_first">Repeat Step with emit first</h5>
+<h5 id="_repeat_step_with_timesx">Repeat Step with <code>times(x)</code></h5>
+<div class="sect5">
+<h6 id="_repeat_step_with_emit_first">Repeat Step with emit first</h6>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
@@ -4123,8 +4134,8 @@ FROM
 </ol>
 </div>
 </div>
-<div class="sect4">
-<h5 id="_repeat_step_with_emit_last">Repeat Step with emit last</h5>
+<div class="sect5">
+<h6 id="_repeat_step_with_emit_last">Repeat Step with emit last</h6>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
@@ -4207,6 +4218,470 @@ FROM
 <p>Get the 'B&#8217;s to emit.</p>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_recursive_repeat_step">Recursive Repeat Step</h5>
+<div class="paragraph">
+<p>Sqlg is able to optimize recursive repeat steps by utilizing postgres&#8217;s <a href="https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE">recursive query</a> support.</p>
+</div>
+<div class="paragraph">
+<p>Recursive queries can be broken into 2 main groups,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>return leaf nodes</p>
+</li>
+<li>
+<p>do not return leaf nodes</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Some examples,</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void friendOfFriendsTillTheLeafNodes() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap&lt;&gt;() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.out("of").simplePath())
+            .until(
+                    __.not(__.out("of").simplePath()) <b class="conum">(1)</b>
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Repeat traversing <code>of</code> till the leaf nodes.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>path[a, c, e, f]
+path[a, b]
+path[a, c, d]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path) AS (
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        UNION ALL
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I"
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID"
+        WHERE NOT is_cycle
+    )
+    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID"
+ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void friendOfFriendsTillTheLeafNodesOr() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap&lt;&gt;() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.out("of").simplePath())
+            .until(
+                    __.or(
+                            __.not(__.out("of").simplePath()), <b class="conum">(1)</b>
+                            __.has("name", P.within("e")) <b class="conum">(2)</b>
+                    )
+
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Repeat traversing <code>of</code> till the leaf nodes.</p>
+</li>
+<li>
+<p>Repeat till friend 'e'</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>path[a, c, e]
+path[a, b]
+path[a, c, d]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql"> WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path) AS (
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        UNION ALL
+        SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I"
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID"
+        WHERE NOT is_cycle AND NOT 	((v."name" = ?))
+    )
+    SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, c.vertex_id, c.ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS c(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID"
+ORDER BY b.gen_random_uuid, b.path, b.path, b.ordinal;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void friendOfFriendsBoth() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap&lt;&gt;() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = this.sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = this.sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = this.sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = this.sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b);
+    a.addEdge("of", c);
+    c.addEdge("of", d);
+    c.addEdge("of", e);
+    e.addEdge("of", f);
+
+    this.sqlgGraph.tx().commit();
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V(c)
+            .repeat(__.both("of").simplePath())
+            .until(
+                    __.not(__.out("of").simplePath())
+            )
+            .path()
+            .by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.info(path.toString());
+    }
+
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>path[c, e, f]
+path[c, a, b]
+path[c, d]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">WITH start as (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+    WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path, direction) AS (
+        WITH start_out as (
+            SELECT e."ID", e."public.Friend__O", e."public.Friend__I", 1, false,
+                ARRAY[e."public.Friend__O"],
+                ARRAY[e."public.Friend__O", e."public.Friend__I"],
+                'OUT'
+            FROM "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+        ), start_in as (
+            SELECT e."ID", e."public.Friend__O", e."public.Friend__I", 1, false,
+                ARRAY[e."public.Friend__I"],
+                ARRAY[e."public.Friend__I", e."public.Friend__O"],
+                'IN'
+            FROM "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__I"
+        )
+        SELECT start_out.* FROM start_out UNION ALL SELECT start_in.* FROM start_in
+        UNION ALL
+        SELECT e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN e."public.Friend__I" = ANY(path)
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN e."public.Friend__O" = ANY(path)
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN e."public.Friend__O" = ANY(path)
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN e."public.Friend__I" = ANY(path)
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN path
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN path
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN path
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN path
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN path || e."public.Friend__I"
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN path || e."public.Friend__O"
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN path || e."public.Friend__O"
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN path || e."public.Friend__I"
+            END,
+            CASE
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__O" THEN 'OUT'
+            WHEN st.direction = 'OUT' AND st."public.Friend__I" = e."public.Friend__I" THEN 'IN'
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__I" THEN 'IN'
+            WHEN st.direction = 'IN' AND st."public.Friend__O" = e."public.Friend__O" THEN 'OUT'
+            END
+        FROM
+            "public"."E_of" e JOIN
+            search_tree st ON
+                ((st.direction = 'OUT' AND (st."public.Friend__I" = e."public.Friend__O" OR st."public.Friend__I" = e."public.Friend__I"))
+                OR
+                 (st.direction = 'IN' AND (st."public.Friend__O" = e."public.Friend__I" OR st."public.Friend__O" = e."public.Friend__O"))) JOIN
+            "public"."V_Friend" v ON
+                ((st.direction = 'OUT' AND (st."public.Friend__I" = v."ID"))
+                OR
+                (st.direction = 'IN' AND (st."public.Friend__O" = v."ID")))
+        WHERE
+            NOT is_cycle
+    )
+    SELECT *, gen_random_uuid() FROM search_tree
+    WHERE NOT is_cycle
+), b AS (
+    SELECT a.gen_random_uuid, a.path, vertex_id, ordinal FROM a LEFT JOIN UNNEST(a.path) WITH ORDINALITY AS b(vertex_id, ordinal) ON true
+    WHERE a.path NOT IN (SELECT previous from a)
+    ORDER BY a.gen_random_uuid, a.path, ordinal
+)
+SELECT b.path, "public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2" from b JOIN "public"."V_Friend" ON b.vertex_id = "public"."V_Friend"."ID";</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testOutRepeatWithEdgeInPathDoc() {
+    VertexLabel friendVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Friend", new LinkedHashMap&lt;&gt;() {{
+        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+    }});
+    friendVertexLabel.ensureEdgeLabelExist(
+            "of",
+            friendVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, -1),
+                    Multiplicity.of(0, -1)
+            ),
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+
+    Vertex a = sqlgGraph.addVertex(T.label, "Friend", "name", "a");
+    Vertex b = sqlgGraph.addVertex(T.label, "Friend", "name", "b");
+    Vertex c = sqlgGraph.addVertex(T.label, "Friend", "name", "c");
+    Vertex d = sqlgGraph.addVertex(T.label, "Friend", "name", "d");
+    Vertex e = sqlgGraph.addVertex(T.label, "Friend", "name", "e");
+    Vertex f = sqlgGraph.addVertex(T.label, "Friend", "name", "f");
+
+    a.addEdge("of", b, "name", "ab");
+    a.addEdge("of", c, "name", "ac");
+    c.addEdge("of", d, "name", "cd");
+    c.addEdge("of", e, "name", "ce");
+    e.addEdge("of", f, "name", "ef");
+
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V(a)
+            .repeat(__.outE("of").as("e").inV().as("v").simplePath())
+            .until(
+                    __.select("e").has("name", "ce")
+            )
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        LOGGER.debug(path.toString());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>path[a, ac, c, ce, e]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">WITH start AS (
+    SELECT
+	"public"."V_Friend"."ID" AS "alias1",
+	"public"."V_Friend"."name" AS "alias2"
+FROM
+	"public"."V_Friend"
+WHERE
+	( "public"."V_Friend"."ID" = ?)
+), a AS (
+	WITH RECURSIVE search_tree("ID", "public.Friend__O", "public.Friend__I", depth, is_cycle, previous, path, epath) AS (
+		SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", 1, false, ARRAY[e."public.Friend__O"], ARRAY[e."public.Friend__O", e."public.Friend__I"], ARRAY[e."ID"]
+        FROM
+            "public"."E_of" e JOIN start ON start."alias1" = e."public.Friend__O"
+		UNION ALL
+		SELECT
+            e."ID", e."public.Friend__O", e."public.Friend__I", st.depth + 1, e."public.Friend__I" = ANY(path), path, path || e."public.Friend__I", epath || e."ID"
+		FROM
+            "public"."E_of" e JOIN
+            search_tree st ON st."public.Friend__I" = e."public.Friend__O" JOIN
+            "public"."V_Friend" v ON st."public.Friend__I" = v."ID" JOIN
+            "public"."E_of" previous_e ON st."ID" = previous_e."ID"
+		WHERE NOT is_cycle AND NOT	((previous_e."name" = ?))
+	)
+	SELECT *, gen_random_uuid() FROM search_tree WHERE NOT is_cycle
+), b AS (
+ 	SELECT * FROM a JOIN
+ 	"public"."V_Friend" v ON a."public.Friend__I" = v."ID" JOIN
+ 	"public"."E_of" e ON a."ID" = e."ID"
+ 	WHERE  	((e."name" = ?))
+), c AS (
+	SELECT 'vertex' as "type", b.path, b.gen_random_uuid FROM b
+	WHERE b.path NOT IN (SELECT previous from b)
+	UNION ALL
+	SELECT 'edge' as "type", b.epath, b.gen_random_uuid FROM b
+	WHERE b.path NOT IN (SELECT previous from b)
+), d AS (
+    SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'vertex' WHERE c."type" = 'vertex'
+    UNION ALL
+	SELECT * FROM c JOIN UNNEST(c.path) WITH ORDINALITY AS cc(element_id, ordinal) ON c."type" = 'edge' WHERE c."type" = 'edge'
+), e AS (
+    SELECT d.path, type, "ID", "name", null as dummy, null AS "name", ordinal, d.gen_random_uuid FROM d JOIN "public"."V_Friend" AS _v on d.element_id = _v."ID" WHERE d.type = 'vertex'
+	UNION ALL
+    SELECT d.path, type, "ID", null AS "name", null as dummy, "name", ordinal, d.gen_random_uuid FROM d JOIN "public"."E_of" AS _e on d.element_id = _e."ID" WHERE d.type = 'edge'
+)
+SELECT * from e
+ORDER BY gen_random_uuid, ordinal, type desc</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -5419,7 +5894,7 @@ GROUP BY
 <div class="sect2">
 <h3 id="_optimization_strategy_2">10.2. Optimization (strategy 2)</h3>
 <div class="paragraph">
-<p>The following steps are optimized. Steps are</p>
+<p>The following steps are optimized.</p>
 </div>
 <div class="ulist">
 <ul>
@@ -9221,7 +9696,7 @@ globals &lt;&lt; [g : graph.traversal()]</pre>
 <div id="footer">
 <div id="footer-text">
 Version 3.1.1<br>
-Last updated 2024-12-08 11:39:02 +0200
+Last updated 2024-12-08 11:42:49 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
