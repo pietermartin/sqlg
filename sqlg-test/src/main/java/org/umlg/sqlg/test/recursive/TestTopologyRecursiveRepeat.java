@@ -11,8 +11,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -23,8 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TestTopologyRecursiveRepeat extends BaseTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestTopologyRecursiveRepeat.class);
 
     @BeforeClass
     public static void beforeClass() {
