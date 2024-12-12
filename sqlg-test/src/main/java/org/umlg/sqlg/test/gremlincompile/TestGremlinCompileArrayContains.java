@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -25,6 +26,28 @@ public class TestGremlinCompileArrayContains extends BaseTest {
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
+    }
+
+    @Test
+    public void testArrayIsEmpty() {
+        Assume.assumeTrue(isPostgres());
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Foo", "values", new int[]{1, 2, 3, 4, 5});
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Foo", "values", new int[]{6, 2, 8});
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Foo", "values", new int[]{9});
+        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Foo", "values", new int[]{});
+        Vertex v5 = this.sqlgGraph.addVertex(T.label, "Foo");
+        Vertex v6 = this.sqlgGraph.addVertex(T.label, "Foo", "values", new int[]{9, 2});
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> empties = this.sqlgGraph.traversal().V().hasLabel("Foo").has("values", new ArrayContains<>(new Integer[]{}).getPredicate()).toList();
+        Assert.assertEquals(5, empties.size());
+        empties = this.sqlgGraph.traversal().V().hasLabel("Foo").has("values", P.eq(new int[]{})).toList();
+        Assert.assertEquals(1, empties.size());
+        Assert.assertEquals(v4, empties.get(0));
+
+        empties = this.sqlgGraph.traversal().V().hasLabel("Foo").has("values", P.eq(new double[]{})).toList();
+        Assert.assertEquals(1, empties.size());
+        Assert.assertEquals(v4, empties.get(0));
     }
 
     @Test
