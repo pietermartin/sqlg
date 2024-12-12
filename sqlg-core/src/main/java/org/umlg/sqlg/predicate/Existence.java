@@ -11,7 +11,7 @@ public enum Existence implements PBiPredicate<String, String> {
     NULL {
         @Override
         public boolean test(String t, String u) {
-            return t == null || t.length() == 0;
+            return t == null || t.isEmpty();
         }
 
         @Override
@@ -22,7 +22,7 @@ public enum Existence implements PBiPredicate<String, String> {
     NOTNULL {
         @Override
         public boolean test(String t, String u) {
-            return t != null && t.length() > 0;
+            return t != null && !t.isEmpty();
         }
 
         @Override
