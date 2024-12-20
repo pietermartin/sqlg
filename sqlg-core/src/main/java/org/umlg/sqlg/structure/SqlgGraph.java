@@ -359,7 +359,7 @@ public class SqlgGraph implements Graph {
         return (G) sqlgGraph;
     }
 
-    private SqlgGraph(final Configuration configuration, SqlgDataSource dataSource) {
+    public SqlgGraph(final Configuration configuration, SqlgDataSource dataSource) {
         this.configuration = configuration;
         this.jdbcUrl = this.configuration.getString(JDBC_URL);
         this.sqlgDataSource = dataSource;
