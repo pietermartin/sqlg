@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.postgis.Point;
 import org.umlg.sqlg.gis.Gis;
+import org.umlg.sqlg.test.BaseTest;
 
 /**
  * Created by pieter on 2015/09/13.

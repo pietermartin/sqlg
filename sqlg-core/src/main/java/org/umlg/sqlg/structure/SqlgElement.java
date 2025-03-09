@@ -129,6 +129,7 @@ public abstract class SqlgElement implements Element {
     }
 
     public abstract SchemaTable getSchemaTablePrefixed();
+
     public abstract SchemaTable getSchemaTable();
 
     @Override
@@ -684,15 +685,29 @@ public abstract class SqlgElement implements Element {
                 } else {
                     return false;
                 }
-            case JSON_ORDINAL:
-            case GEOGRAPHY_POLYGON_ORDINAL:
-            case GEOGRAPHY_POINT_ORDINAL:
-            case POLYGON_ORDINAL:
-            case LINESTRING_ORDINAL:
-            case POINT_ORDINAL:
+            case JSON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, GEOGRAPHY_POINT_ORDINAL, POLYGON_ORDINAL, LINESTRING_ORDINAL,
+                 POINT_ORDINAL:
                 Object object = resultSet.getObject(columnIndex);
                 if (object != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object, propertyDefinition.propertyType());
+                    return true;
+                } else {
+                    return false;
+                }
+            case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL:
+                sqlgGraph.getSqlDialect().registerTypes(sqlgGraph, propertyDefinition.propertyType().ordinal());
+                Object pgvector = resultSet.getObject(columnIndex);
+                if (pgvector != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, pgvector, propertyDefinition.propertyType());
+                    return true;
+                } else {
+                    return false;
+                }
+            case PGBIT_ORDINAL:
+                sqlgGraph.getSqlDialect().registerTypes(sqlgGraph, propertyDefinition.propertyType().ordinal());
+                Object pgbit = resultSet.getObject(columnIndex);
+                if (pgbit != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, pgbit, propertyDefinition.propertyType());
                     return true;
                 } else {
                     return false;

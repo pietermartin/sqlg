@@ -493,6 +493,9 @@ public interface SqlDialect {
     }
 
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
+    default void registerTypes(SqlgGraph sqlgGraph, int propertyTypeOrdinal) {
+
+    }
 
     default void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         throw SqlgExceptions.gisNotSupportedException(PropertyType.POINT);

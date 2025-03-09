@@ -562,6 +562,9 @@ public class SqlgUtil {
                     parameterStartIndex++;
                 }
                 case UUID_ORDINAL -> preparedStatement.setObject(parameterStartIndex++, pair.right);
+                case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> {
+                    preparedStatement.setObject(parameterStartIndex++, pair.right);
+                }
                 case BOOLEAN_ARRAY_ORDINAL ->
                         sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                 case boolean_ARRAY_ORDINAL ->
@@ -1335,6 +1338,7 @@ public class SqlgUtil {
             case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((
                             propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL),
                     "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
+            case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> Preconditions.checkState(true);
             case NULL_ORDINAL -> Preconditions.checkState(true);
             default ->
                     Preconditions.checkState(incomingPropertyType == propertyType, "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());

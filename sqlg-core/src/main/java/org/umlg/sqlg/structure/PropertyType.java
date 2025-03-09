@@ -113,9 +113,33 @@ public class PropertyType {
     public static final PropertyType NULL = new PropertyType("NULL", NULL_ORDINAL, null, new String[]{});
     public static final int LTREE_ORDINAL = 47;
     public static final PropertyType LTREE = new PropertyType("LTREE", LTREE_ORDINAL, null, new String[]{});
+    public static final int PGVECTOR_ORDINAL = 48;
+    public static final PropertyType PGVECTOR = new PropertyType("PGVECTOR", PGVECTOR_ORDINAL, "com.pgvector.PGvector", new String[]{});
+    public static final int PGSPARSEVEC_ORDINAL = 49;
+    public static final PropertyType PGSPARSEVEC = new PropertyType("PGSPARSEVEC", PGSPARSEVEC_ORDINAL, "com.pgvector.PGsparsevec", new String[]{});
+    public static final int PGHALFVEC_ORDINAL = 50;
+    public static final PropertyType PGHALFVEC = new PropertyType("PGHALFVEC", PGHALFVEC_ORDINAL, "com.pgvector.PGhalfvec", new String[]{});
+    public static final int PGBIT_ORDINAL = 51;
+    public static final PropertyType PGBIT = new PropertyType("PGBIT", PGBIT_ORDINAL, "com.pgvector.PGbit", new String[]{});
 
     public static PropertyType varChar(int length) {
-        return new PropertyType(String.class.getName(), new String[]{}, length);
+        return new PropertyType("VARCHAR", PropertyType.VARCHAR_ORDINAL, String.class.getName(), new String[]{}, length);
+    }
+
+    public static PropertyType pgvector(int length) {
+        return new PropertyType("PGVECTOR", PropertyType.PGVECTOR_ORDINAL, "com.pgvector.PGvector", new String[]{}, length);
+    }
+
+    public static PropertyType pgsparcvec(int length) {
+        return new PropertyType("PGSPARSEVEC", PropertyType.PGSPARSEVEC_ORDINAL, "com.pgvector.PGsparsevec", new String[]{}, length);
+    }
+
+    public static PropertyType pghalfvec(int length) {
+        return new PropertyType("PGHALFVEC", PropertyType.PGHALFVEC_ORDINAL, "com.pgvector.PGhalfvec", new String[]{}, length);
+    }
+
+    public static PropertyType pgbit(int length) {
+        return new PropertyType("PGBIT", PropertyType.PGBIT_ORDINAL, "com.pgvector.PGbit", new String[]{}, length);
     }
 
     private final String name;
@@ -130,8 +154,8 @@ public class PropertyType {
     private static final Map<String, PropertyType> JAVA_CLASS_NAME_TO_ENUM = new HashMap<>();
     private static final Map<String, PropertyType> NAME_TO_ENUM = new HashMap<>();
 
-    private PropertyType(String javaClassName, String[] postFixes, int length) {
-        this("VARCHAR", PropertyType.VARCHAR_ORDINAL, javaClassName, postFixes);
+    private PropertyType(String name, int ordinal, String javaClassName, String[] postFixes, int length) {
+        this(name, ordinal, javaClassName, postFixes);
         this.length = length;
     }
 
@@ -236,7 +260,11 @@ public class PropertyType {
                 PropertyType.DURATION_ARRAY,
                 PropertyType.PERIOD_ARRAY,
                 PropertyType.JSON_ARRAY,
-                PropertyType.LTREE
+                PropertyType.LTREE,
+                PropertyType.PGVECTOR,
+                PropertyType.PGSPARSEVEC,
+                PropertyType.PGHALFVEC,
+                PropertyType.PGBIT
         };
     }
 

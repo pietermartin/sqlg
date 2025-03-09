@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.pgvector.PGbit;
+import com.pgvector.PGhalfvec;
+import com.pgvector.PGsparsevec;
+import com.pgvector.PGvector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
@@ -35,8 +39,8 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.sql.Date;
 import java.sql.*;
+import java.sql.Date;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -1746,6 +1750,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case JSON_ARRAY_ORDINAL -> new String[]{"JSONB[]"};
             case VARCHAR_ORDINAL -> new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
             case UUID_ORDINAL -> new String[]{"UUID"};
+            case PGVECTOR_ORDINAL -> new String[]{"VECTOR(" + propertyType.getLength() + ")"};
+            case PGSPARSEVEC_ORDINAL -> new String[]{"SPARSEVEC(" + propertyType.getLength() + ")"};
+            case PGHALFVEC_ORDINAL -> new String[]{"HALFVEC(" + propertyType.getLength() + ")"};
+            case PGBIT_ORDINAL -> new String[]{"BIT(" + propertyType.getLength() + ")"};
             default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
@@ -1942,6 +1950,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             return;
         }
         if (value instanceof UUID) {
+            return;
+        }
+        if (value instanceof PGvector) {
+            return;
+        }
+        if (value instanceof PGsparsevec) {
+            return;
+        }
+        if (value instanceof PGhalfvec) {
+            return;
+        }
+        if (value instanceof PGbit) {
             return;
         }
         if (value instanceof BigDecimal) {
@@ -2196,6 +2216,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public void registerTypes(SqlgGraph sqlgGraph, int propertyTypeOrdinal) {
+        try {
+            switch (propertyTypeOrdinal) {
+                case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL ->
+                        PGvector.registerTypes(sqlgGraph.tx().getConnection());
+                case PGBIT_ORDINAL -> PGbit.registerType(sqlgGraph.tx().getConnection());
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
         switch (propertyType.ordinal()) {
             case POINT_ORDINAL -> properties.put(columnName, ((PGgeometry) o).getGeometry());
@@ -2241,6 +2274,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     result[count++] = Byte.parseByte("");
                 }
                 properties.put(columnName, result);
+            }
+            case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> {
+                properties.put(columnName, o);
             }
             default ->
                     throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
