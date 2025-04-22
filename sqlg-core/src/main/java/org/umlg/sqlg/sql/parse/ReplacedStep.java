@@ -83,6 +83,11 @@ public class ReplacedStep<S, E> {
      */
     private RecursiveRepeatStepConfig recursiveRepeatStepConfig;
 
+    /**
+     * Hold information about the pg routing step.
+     */
+    private PGRoutingConfig pgRoutingConfig;
+
     private ReplacedStep() {
     }
 
@@ -149,6 +154,14 @@ public class ReplacedStep<S, E> {
 
     public RecursiveRepeatStepConfig getRecursiveRepeatStepConfig() {
         return recursiveRepeatStepConfig;
+    }
+
+    public PGRoutingConfig getPgRoutingConfig() {
+        return pgRoutingConfig;
+    }
+
+    public void setPgRoutingConfig(PGRoutingConfig pgRoutingConfig) {
+        this.pgRoutingConfig = pgRoutingConfig;
     }
 
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
@@ -592,7 +605,8 @@ public class ReplacedStep<S, E> {
                 aggregateFunction,
                 groupBy,
                 idOnly,
-                this.recursiveRepeatStepConfig
+                this.recursiveRepeatStepConfig,
+                this.pgRoutingConfig
         );
         schemaTableTree.getRestrictedProperties().addAll(this.restrictedProperties);
         return schemaTableTree;

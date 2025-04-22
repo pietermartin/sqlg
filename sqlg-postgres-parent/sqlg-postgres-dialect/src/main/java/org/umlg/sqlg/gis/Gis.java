@@ -1,9 +1,12 @@
 package org.umlg.sqlg.gis;
 
-import org.postgis.Point;
+import net.postgis.jdbc.geometry.Point;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Created by pieter on 2015/09/13.
@@ -20,10 +23,11 @@ public class Gis {
     public double distanceBetween(Point johannesburg, Point pretoria) {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            if (statement.execute("SELECT ST_Distance_Sphere('" + johannesburg.toString() + "', '" + pretoria.toString() + "')")) {
+            String sql = "SELECT ST_DistanceSphere(ST_GeomFromText('" + johannesburg.toString() + "'), ST_GeomFromText('" + pretoria.toString() + "'))";
+            if (statement.execute(sql)) {
                 ResultSet resultSet = statement.getResultSet();
                 if (resultSet.next()) {
-                    return resultSet.getDouble("st_distance_sphere");
+                    return resultSet.getDouble("st_distancesphere");
                 } else {
                     return -1;
                 }

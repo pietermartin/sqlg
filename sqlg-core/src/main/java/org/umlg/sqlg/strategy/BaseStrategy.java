@@ -33,6 +33,7 @@ import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.*;
+import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.sql.parse.*;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
@@ -91,7 +92,8 @@ public abstract class BaseStrategy {
             GroupStep.class,
             GroupCountStep.class,
             IdStep.class,
-            NotStep.class
+            NotStep.class,
+            CallStep.class
 //            FoldStep.class
     );
 
@@ -148,6 +150,8 @@ public abstract class BaseStrategy {
         } else {
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount, false);
+            } else if (step instanceof CallStep callStep) {
+                handleCallStep(stepIterator, callStep, pathCount);
             } else if (step instanceof RepeatStep repeatStep) {
                 List<RepeatStep> repeatSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, this.traversal);
 //                if (false && isRecursiveRepeatStep(repeatStep)) {
@@ -217,7 +221,7 @@ public abstract class BaseStrategy {
                         }
                     }
                 } else {
-                    SelectStep<?,?> selectStep = (SelectStep<?,?>) step;
+                    SelectStep<?, ?> selectStep = (SelectStep<?, ?>) step;
                     List<? extends Traversal.Admin<Object, ?>> children = selectStep.getLocalChildren();
                     if (children.size() == selectStep.getSelectKeys().size()) {
                         Optional<? extends Traversal.Admin<Object, ?>> traversalOpt = children.stream().filter(c -> c.getSteps().isEmpty() || !(c.getSteps().get(0) instanceof ElementMapStep)).findAny();
@@ -229,7 +233,7 @@ public abstract class BaseStrategy {
 //                            .by(__.elementMap("prop1"))
 //                            .by(__.elementMap("prop2"));
                             int count = 0;
-                            for (String selectKey: selectStep.getSelectKeys()) {
+                            for (String selectKey : selectStep.getSelectKeys()) {
                                 Traversal.Admin<Object, ?> traversal = children.get(count++);
                                 ElementMapStep elementMapStep = (ElementMapStep) traversal.getSteps().get(0);
 
@@ -635,6 +639,54 @@ public abstract class BaseStrategy {
         if (index != -1) {
             this.traversal.removeStep(repeatStep);
         }
+    }
+
+    private void handleCallStep(ListIterator<Step<?, ?>> stepIterator, CallStep<?, ?> callStep, MutableInt pathCount) {
+        String serviceName = callStep.getServiceName();
+        Preconditions.checkArgument(serviceName.equals(SqlgPGRoutingFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgPGRoutingFactory.NAME, serviceName);
+        Map param = callStep.getMergedParams();
+        String function = (String) param.get(SqlgPGRoutingFactory.Params.FUNCTION);
+        Long start_vid = (Long) param.get(SqlgPGRoutingFactory.Params.START_VID);
+        Long end_vid = (Long) param.get(SqlgPGRoutingFactory.Params.END_VID);
+        Boolean directed = (Boolean) param.get(SqlgPGRoutingFactory.Params.DIRECTED);
+
+        GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
+        Preconditions.checkState(graphStep.returnsEdge());
+        List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+        Preconditions.checkState(labelHasContainers.size() == 1);
+        HasContainer labelHasContainer = labelHasContainers.get(0);
+        String _edgeLabel = (String)labelHasContainer.getValue();
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
+        Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOpt.isPresent());
+        Schema schema = schemaOpt.get();
+        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
+        Preconditions.checkState(edgeLabelOptional.isPresent());
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+        Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+        Preconditions.checkState(inVertexLabels.size() == 1);
+        Preconditions.checkState(outVertexLabels.size() == 1);
+        Preconditions.checkState(inVertexLabels.equals(outVertexLabels));
+
+        VertexLabel vertexLabel = inVertexLabels.iterator().next();
+
+        this.currentReplacedStep.addLabel("a");
+
+        this.currentReplacedStep.setPgRoutingConfig(
+                new PGRoutingConfig( function, start_vid, end_vid, directed, vertexLabel, edgeLabel)
+        );
+
+        this.currentReplacedStep = ReplacedStep.from(
+                this.sqlgGraph.getTopology(),
+                new EdgeVertexStep(traversal, Direction.OUT),
+                pathCount.getValue()
+        );
+        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.currentTreeNodeNode = treeNodeNode;
+
+        this.traversal.removeStep(callStep);
+        this.traversal.addStep(new PathStep<>(traversal));
     }
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount, boolean notStep) {

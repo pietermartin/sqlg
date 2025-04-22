@@ -14,7 +14,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IdentityRemovalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
@@ -23,13 +22,17 @@ import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.services.SqlgServiceRegistry;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.strategy.barrier.*;
-import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.File;
@@ -257,6 +260,7 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "Fails for MariaDb, the test is copied to TestHas for the other dbs")
 public class SqlgGraph implements Graph {
 
+    public static final String GREMLIN_SQLG_SERVICE = "gremlin.sqlg.service";
     public static final String DATA_SOURCE = "sqlg.dataSource";
     public static final String JDBC_URL = "jdbc.url";
     public static final String DISTRIBUTED = "distributed";
@@ -273,6 +277,7 @@ public class SqlgGraph implements Graph {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Configuration configuration;
     private final ISqlGFeatures features = new SqlgFeatures();
+    private SqlgServiceRegistry serviceRegistry;
 
     /**
      * the build version of sqlg
@@ -393,6 +398,24 @@ public class SqlgGraph implements Graph {
             this.getTopology().ensureSchemaExist(this.sqlDialect.getPublicSchema());
         }
         this.tx().commit();
+
+        serviceRegistry = new SqlgServiceRegistry(this);
+        configuration.getList(String.class, GREMLIN_SQLG_SERVICE, Collections.emptyList()).forEach(serviceClass ->
+                serviceRegistry.registerService(instantiate(serviceClass)));
+    }
+
+    @Override
+    public SqlgServiceRegistry getServiceRegistry() {
+        return serviceRegistry;
+    }
+
+    protected SqlgServiceRegistry.SqlgServiceFactory instantiate(final String className) {
+        try {
+            return (SqlgServiceRegistry.SqlgServiceFactory) Class.forName(className).getConstructor(SqlgGraph.class).newInstance(this);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
+                 NoSuchMethodException | InvocationTargetException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     Configuration getConfiguration() {

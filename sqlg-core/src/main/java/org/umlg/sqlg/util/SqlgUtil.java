@@ -129,6 +129,55 @@ public class SqlgUtil {
 
     }
 
+    public static List<Emit<SqlgElement>> loadPGRoutingResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent
+    ) throws SQLException {
+
+        Preconditions.checkState(subQueryStacks.size() == 1);
+        LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
+        Preconditions.checkState(schemaTableTrees.size() == 2);
+        SchemaTableTree edgeSchemaTableTree = schemaTableTrees.getFirst();
+        SchemaTableTree vertexSchemaTableTree = schemaTableTrees.get(1);
+        Preconditions.checkState(edgeSchemaTableTree.equals(rootSchemaTableTree));
+
+        if (first) {
+            rootSchemaTableTree.getAliasMapHolder().calculateColumns(subQueryStacks);
+        }
+
+        List<Emit<SqlgElement>> result = new ArrayList<>();
+        while (resultSet.next()) {
+
+            Long vertexId = resultSet.getLong("vertex_id");
+            String rawLabel = rootSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
+            List<LinkedHashMap<ColumnList.Column, String>> _columns = vertexSchemaTableTree.getAliasMapHolder().getColumns(vertexSchemaTableTree);
+            vertexSchemaTableTree.loadProperty(resultSet, sqlgVertex, _columns);
+
+            Emit<SqlgElement> emit = new Emit<>(sqlgVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+            result.add(emit);
+
+            Long edgeId = resultSet.getLong("edge_id");
+            if (!resultSet.wasNull()) {
+                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                _columns = edgeSchemaTableTree.getAliasMapHolder().getColumns(edgeSchemaTableTree);
+                edgeSchemaTableTree.loadProperty(resultSet, sqlgEdge, _columns);
+                edgeSchemaTableTree.loadEdgeInOutVertices(resultSet, sqlgEdge);
+
+                emit = new Emit<>(sqlgEdge, edgeSchemaTableTree.getStepDepth(), edgeSchemaTableTree.getSqlgComparatorHolder());
+                result.add(emit);
+            }
+
+        }
+        return result;
+    }
+
     public static List<Emit<SqlgElement>> loadRecursiveResultSetIntoResultIterator(
             SqlgGraph sqlgGraph,
             ResultSetMetaData resultSetMetaData,

@@ -2,9 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.ltree.TestPostgresLtree;
-import org.umlg.sqlg.test.schema.TestMultiThread;
-import org.umlg.sqlg.test.topology.TestForeignSchema;
+import org.umlg.sqlg.test.services.SqlgGraphPGRoutingTest;
 
 /**
  * Date: 2014/07/16
@@ -12,10 +10,12 @@ import org.umlg.sqlg.test.topology.TestForeignSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTest.class,
-        TestMultiThread.class,
-        TestForeignSchema.class,
-        TestPostgresLtree.class
+//        TestRepeatStepIncludeEdgeWithoutNotStep.class,
+        SqlgGraphPGRoutingTest.class
+//        TestTest.class,
+//        TestMultiThread.class,
+//        TestForeignSchema.class,
+//        TestPostgresLtree.class
 //        TestPostgresLtree.class
 //        TestGremlinCompileArrayContains.class
 })

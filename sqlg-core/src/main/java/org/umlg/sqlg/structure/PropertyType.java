@@ -46,11 +46,11 @@ public class PropertyType {
     public static final int JSON_ORDINAL = 14;
     public static final PropertyType JSON = new PropertyType("JSON", JSON_ORDINAL, JsonNode.class.getName(), new String[]{});
     public static final int POINT_ORDINAL = 15;
-    public static final PropertyType POINT = new PropertyType("POINT", POINT_ORDINAL, "org.postgis.Point", new String[]{});
+    public static final PropertyType POINT = new PropertyType("POINT", POINT_ORDINAL, "net.postgis.jdbc.geometry.Point", new String[]{});
     public static final int LINESTRING_ORDINAL = 16;
-    public static final PropertyType LINESTRING = new PropertyType("LINESTRING", LINESTRING_ORDINAL, "org.postgis.LineString", new String[]{});
+    public static final PropertyType LINESTRING = new PropertyType("LINESTRING", LINESTRING_ORDINAL, "net.postgis.jdbc.geometry.LineString", new String[]{});
     public static final int POLYGON_ORDINAL = 17;
-    public static final PropertyType POLYGON = new PropertyType("POLYGON", POLYGON_ORDINAL, "org.postgis.Polygon", new String[]{});
+    public static final PropertyType POLYGON = new PropertyType("POLYGON", POLYGON_ORDINAL, "net.postgis.jdbc.geometry.Polygon", new String[]{});
     public static final int GEOGRAPHY_POINT_ORDINAL = 18;
     public static final PropertyType GEOGRAPHY_POINT = new PropertyType("GEOGRAPHY_POINT", GEOGRAPHY_POINT_ORDINAL, "org.umlg.sqlg.gis.GeographyPoint", new String[]{});
     public static final int GEOGRAPHY_POLYGON_ORDINAL = 19;

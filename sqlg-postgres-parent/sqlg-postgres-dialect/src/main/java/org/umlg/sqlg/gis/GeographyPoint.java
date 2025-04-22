@@ -1,6 +1,6 @@
 package org.umlg.sqlg.gis;
 
-import org.postgis.Point;
+import net.postgis.jdbc.geometry.Point;
 
 import java.sql.SQLException;
 

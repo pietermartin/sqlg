@@ -8,6 +8,11 @@ import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGsparsevec;
 import com.pgvector.PGvector;
+import net.postgis.jdbc.PGgeometry;
+import net.postgis.jdbc.geometry.Geometry;
+import net.postgis.jdbc.geometry.LineString;
+import net.postgis.jdbc.geometry.Point;
+import net.postgis.jdbc.geometry.Polygon;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,7 +21,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -2235,7 +2239,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LINESTRING_ORDINAL -> properties.put(columnName, ((PGgeometry) o).getGeometry());
             case GEOGRAPHY_POINT_ORDINAL -> {
                 try {
-                    Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
+                    Geometry geometry = new PGgeometry(((PGobject) o).getValue()).getGeometry();
                     properties.put(columnName, new GeographyPoint((Point) geometry));
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
@@ -2243,7 +2247,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             case GEOGRAPHY_POLYGON_ORDINAL -> {
                 try {
-                    Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
+                    Geometry geometry = new PGgeometry(((PGobject) o).getValue()).getGeometry();
                     properties.put(columnName, new GeographyPolygon((Polygon) geometry));
                 } catch (SQLException e) {
                     throw new RuntimeException(e);

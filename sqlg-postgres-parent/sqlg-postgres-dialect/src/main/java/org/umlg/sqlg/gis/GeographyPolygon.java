@@ -1,8 +1,8 @@
 package org.umlg.sqlg.gis;
 
-import org.postgis.Geometry;
-import org.postgis.LinearRing;
-import org.postgis.Polygon;
+import net.postgis.jdbc.geometry.Geometry;
+import net.postgis.jdbc.geometry.LinearRing;
+import net.postgis.jdbc.geometry.Polygon;
 
 import java.sql.SQLException;
 

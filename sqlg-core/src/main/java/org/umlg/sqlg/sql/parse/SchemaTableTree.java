@@ -92,6 +92,8 @@ public class SchemaTableTree {
     private final RecursiveRepeatStepConfig recursiveRepeatStepConfig;
     private SchemaTableTree untilTraversalRootSchemaTableTree;
 
+    private final PGRoutingConfig pgRoutingConfig;
+
     //NON FINAL properties
     //labels are immutable
     private Set<String> labels;
@@ -168,6 +170,7 @@ public class SchemaTableTree {
         this.groupBy = groupBy == null ? List.of() : Collections.unmodifiableList(groupBy);
         this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
         this.recursiveRepeatStepConfig = null;
+        this.pgRoutingConfig = null;
     }
 
     /**
@@ -197,7 +200,8 @@ public class SchemaTableTree {
             Pair<String, List<String>> aggregateFunction,
             List<String> groupBy,
             boolean idOnly,
-            RecursiveRepeatStepConfig recursiveRepeatStepConfig
+            RecursiveRepeatStepConfig recursiveRepeatStepConfig,
+            PGRoutingConfig pgRoutingConfig
     ) {
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -229,6 +233,7 @@ public class SchemaTableTree {
         this.localStep = false;
         this.localBarrierStep = false;
         this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
+        this.pgRoutingConfig = pgRoutingConfig;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -864,6 +869,8 @@ public class SchemaTableTree {
 
         if (distinctQueryStack.getFirst().isRecursiveQuery()) {
             return constructRecursiveQuery(distinctQueryStack);
+        } else if (distinctQueryStack.getFirst().isPGRoutingQuery()) {
+            return constructPGRoutingQuery(distinctQueryStack);
         } else if (duplicatesInStack(distinctQueryStack)) {
             List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
             return constructDuplicatePathSql(subQueryStacks, Collections.emptySet());
@@ -1048,6 +1055,93 @@ public class SchemaTableTree {
         return result.toString();
     }
 
+    private String constructPGRoutingQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        Preconditions.checkState(distinctQueryStack.size() <= 2);
+        SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+        Preconditions.checkNotNull(schemaTableTree.pgRoutingConfig);
+        Preconditions.checkState(this == schemaTableTree);
+
+        LinkedList<SchemaTableTree> startDistinctQueryStack = new LinkedList<>();
+        startDistinctQueryStack.add(distinctQueryStack.getFirst());
+        String startSql = constructSinglePathSql(
+                false,
+                startDistinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+
+        resetColumnAliasMaps();
+        String ignore = constructSinglePathSql(
+                false,
+                distinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+
+        PGRoutingConfig pgRoutingConfig = schemaTableTree.pgRoutingConfig;
+        VertexLabel vertexLabel = pgRoutingConfig.vertexLabel();
+        SchemaTable vertexLabelSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), Topology.VERTEX_PREFIX + vertexLabel.getName());
+        EdgeLabel edgeLabel = pgRoutingConfig.edgeLabel();
+        SchemaTable edgeLabelSchemaTable = SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName());
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(0, edgeLabelSchemaTable);
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID() && !column.isForeignKey()) {
+                    edgeColumns.add(column.getColumn());
+                }
+            }
+            columns = columnList.getFor(1, vertexLabelSchemaTable);
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + vertexLabelSchemaTable.withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + vertexLabelSchemaTable.withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> "b." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String edgeColumnsToAdd = edgeColumns.stream().map(a -> "c." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+
+        String sql = """
+                WITH a AS (
+                    SELECT * FROM pgr_dijkstra(
+                    'SELECT a."alias3" as id, a."alias2" as source, a."alias1" as target, a."alias4" as cost FROM (
+                        %s
+                    ) a', %d, %d, %b)
+                ), b AS (
+                    SELECT * from %s
+                ), c AS (
+                    SELECT * from %s
+                )
+                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns} FROM
+                    a JOIN
+                    b ON a.node = b."ID" LEFT JOIN
+                    c ON a.edge = c."ID"
+                """
+                .formatted(
+                        startSql,
+                        pgRoutingConfig.start_vid(),
+                        pgRoutingConfig.end_vid(),
+                        pgRoutingConfig.directed(),
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable())
+                )
+                .replace("{edgeColumns}", edgeColumnsToAdd)
+                .replace("{vertexColumns}", vertexColumnsToAdd)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey);
+        return sql;
+    }
+
     private String constructRecursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(distinctQueryStack.size() <= 2);
         SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
@@ -1089,14 +1183,14 @@ public class SchemaTableTree {
         //we need to do this to create the ColumnList
         //if includeEdge = true, then the columnList thinks there are 2 additional columns for the foreignKeys,
         //This maps in a bad way to the 2 additional columns for the 'path' and 'type'
-        constructSinglePathSql(
+        String ignore = constructSinglePathSql(
                 false,
                 distinctQueryStack,
                 null,
                 null,
                 Collections.emptySet(),
                 false,
-               includeEdge ? 1 : 2
+                includeEdge ? 1 : 2
         );
         String sql;
         //includes the edge
@@ -1123,9 +1217,12 @@ public class SchemaTableTree {
         } else {
             if (this.recursiveRepeatStepConfig.hasNotStepForPathTraversal()) {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
-                    case OUT -> constructRecursiveOutQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
-                    case IN -> constructRecursiveInQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
-                    case BOTH -> constructRecursiveBothQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case OUT ->
+                            constructRecursiveOutQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case IN ->
+                            constructRecursiveInQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
+                    case BOTH ->
+                            constructRecursiveBothQuery(startSql, select, this.recursiveRepeatStepConfig.edge(), optionalUntilWhereClause);
                 };
             } else {
                 sql = switch (this.recursiveRepeatStepConfig.direction()) {
@@ -2003,6 +2100,10 @@ public class SchemaTableTree {
 
     public boolean isRecursiveQuery() {
         return this.recursiveRepeatStepConfig != null;
+    }
+
+    public boolean isPGRoutingQuery() {
+        return this.pgRoutingConfig != null;
     }
 
     public void setUntilTraversalRootSchemaTableTree(SchemaTableTree untilTraversalRootSchemaTableTree) {
