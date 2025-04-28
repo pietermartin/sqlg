@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -1071,6 +1072,16 @@ public class SchemaTableTree {
                 Collections.emptySet(),
                 false
         );
+        List<ColumnList> _columnLists = getRootColumnListStack();
+        Preconditions.checkState(_columnLists.size() == 1);
+        ColumnList _columnList = _columnLists.get(0);
+        String idAlias = _columnList.getAlias(this, "ID");
+        String costAlias = _columnList.getAlias(this, "cost");
+        String reverseCostAlias = _columnList.getAlias(this, "reverse_cost");
+//        String sourceAlias = _columnList.getAlias(this, "source");
+//        String targetAlias = _columnList.getAlias(this, "target");
+        String sourceAlias = "alias2";
+        String targetAlias = "alias1";
 
         resetColumnAliasMaps();
         String ignore = constructSinglePathSql(
@@ -1111,29 +1122,32 @@ public class SchemaTableTree {
         String vertexColumnsToAdd = vertexColumns.stream().map(a -> "b." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
         String edgeColumnsToAdd = edgeColumns.stream().map(a -> "c." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
 
+        @SuppressWarnings("UnnecessaryLocalVariable")
         String sql = """
                 WITH a AS (
                     SELECT * FROM pgr_dijkstra(
-                    'SELECT a."alias3" as id, a."alias2" as source, a."alias1" as target, a."alias4" as cost FROM (
+                    'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
                         %s
-                    ) a', %d, %d, %b)
+                    ) a', %s, %s, %b)
                 ), b AS (
                     SELECT * from %s
                 ), c AS (
                     SELECT * from %s
                 )
-                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns} FROM
+                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
                     a JOIN
                     b ON a.node = b."ID" LEFT JOIN
                     c ON a.edge = c."ID"
                 """
                 .formatted(
+                        idAlias, sourceAlias, targetAlias, costAlias, reverseCostAlias,
                         startSql,
-                        pgRoutingConfig.start_vid(),
-                        pgRoutingConfig.end_vid(),
+                        pgRoutingConfig.toStartVidsString(),
+                        pgRoutingConfig.toEndVidsString(),
                         pgRoutingConfig.directed(),
                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable())
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
+                        SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
                 )
                 .replace("{edgeColumns}", edgeColumnsToAdd)
                 .replace("{vertexColumns}", vertexColumnsToAdd)

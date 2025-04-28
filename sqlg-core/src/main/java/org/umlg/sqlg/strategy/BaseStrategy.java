@@ -647,7 +647,26 @@ public abstract class BaseStrategy {
         Map param = callStep.getMergedParams();
         String function = (String) param.get(SqlgPGRoutingFactory.Params.FUNCTION);
         Long start_vid = (Long) param.get(SqlgPGRoutingFactory.Params.START_VID);
+        List<Long> start_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.START_VIDS);
         Long end_vid = (Long) param.get(SqlgPGRoutingFactory.Params.END_VID);
+        List<Long> end_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.END_VIDS);
+
+        Preconditions.checkState(start_vid != null || start_vids != null, "start_vid or start_vids must be set");
+        Preconditions.checkState(end_vid != null || end_vids != null, "end_vid or end_vids must be set");
+
+        List<Long> _startVids = new ArrayList<>();
+        if (start_vid != null) {
+            _startVids.add(start_vid);
+        } else {
+            _startVids.addAll(start_vids);
+        }
+        List<Long> _endVids = new ArrayList<>();
+        if (end_vid != null) {
+            _endVids.add(end_vid);
+        } else {
+            _endVids.addAll(end_vids);
+        }
+
         Boolean directed = (Boolean) param.get(SqlgPGRoutingFactory.Params.DIRECTED);
 
         GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
@@ -655,7 +674,7 @@ public abstract class BaseStrategy {
         List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
         Preconditions.checkState(labelHasContainers.size() == 1);
         HasContainer labelHasContainer = labelHasContainers.get(0);
-        String _edgeLabel = (String)labelHasContainer.getValue();
+        String _edgeLabel = (String) labelHasContainer.getValue();
         SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
         Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
         Preconditions.checkState(schemaOpt.isPresent());
@@ -673,8 +692,11 @@ public abstract class BaseStrategy {
 
         this.currentReplacedStep.addLabel("a");
 
+        if (start_vid != null) {
+
+        }
         this.currentReplacedStep.setPgRoutingConfig(
-                new PGRoutingConfig( function, start_vid, end_vid, directed, vertexLabel, edgeLabel)
+                new PGRoutingConfig(function, _startVids, _endVids, directed, vertexLabel, edgeLabel)
         );
 
         this.currentReplacedStep = ReplacedStep.from(
@@ -1278,7 +1300,7 @@ public abstract class BaseStrategy {
                     //skip step
                     this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(rgs.getLowRange()));
                 } else {
-                    this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
+                    this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.of(rgs.getLowRange(), high)));
                 }
                 //add a label if the step does not yet have one and is not a leaf node
                 if (!this.currentReplacedStep.hasLabels()) {

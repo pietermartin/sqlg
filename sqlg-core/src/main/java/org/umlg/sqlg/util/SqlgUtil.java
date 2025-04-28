@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Lquery;
 import org.umlg.sqlg.predicate.LqueryArray;
+import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ColumnList;
@@ -152,28 +154,43 @@ public class SqlgUtil {
         }
 
         List<Emit<SqlgElement>> result = new ArrayList<>();
+        SqlgPGRoutingFactory.StartEndVid previousStartEndVid = null;
         while (resultSet.next()) {
 
             Long vertexId = resultSet.getLong("vertex_id");
-            String rawLabel = rootSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
-            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
+
+            SqlgPGRoutingFactory.StartEndVid startEndVid = new SqlgPGRoutingFactory.StartEndVid(resultSet.getLong("start_vid"), resultSet.getLong("end_vid"));
+            if (previousStartEndVid != null && !previousStartEndVid.equals(startEndVid)) {
+                boolean previousSuccess = resultSet.previous();
+                return result;
+            }
+
+            String vertexLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            String edgeLabel = edgeSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), vertexLabel);
             List<LinkedHashMap<ColumnList.Column, String>> _columns = vertexSchemaTableTree.getAliasMapHolder().getColumns(vertexSchemaTableTree);
             vertexSchemaTableTree.loadProperty(resultSet, sqlgVertex, _columns);
+
 
             Emit<SqlgElement> emit = new Emit<>(sqlgVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
             result.add(emit);
 
             Long edgeId = resultSet.getLong("edge_id");
             if (!resultSet.wasNull()) {
-                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), edgeLabel);
                 _columns = edgeSchemaTableTree.getAliasMapHolder().getColumns(edgeSchemaTableTree);
                 edgeSchemaTableTree.loadProperty(resultSet, sqlgEdge, _columns);
                 edgeSchemaTableTree.loadEdgeInOutVertices(resultSet, sqlgEdge);
 
+                double traversal_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_COST);
+                double agg_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COST), traversal_cost);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST), agg_cost);
+
                 emit = new Emit<>(sqlgEdge, edgeSchemaTableTree.getStepDepth(), edgeSchemaTableTree.getSqlgComparatorHolder());
                 result.add(emit);
             }
-
+            previousStartEndVid = startEndVid;
         }
         return result;
     }

@@ -34,7 +34,7 @@ import java.util.function.BiFunction;
 /**
  * TinkerGraph services are currently just "toy" services, used to demonstrate and to test.
  *
- * @author Mike Personick (http://github.com/mikepersonick)
+ * @author Pieter Martin (http://sqlg.org)
  */
 public class SqlgServiceRegistry extends ServiceRegistry {
 

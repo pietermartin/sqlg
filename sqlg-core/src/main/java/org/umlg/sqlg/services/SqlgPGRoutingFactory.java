@@ -16,6 +16,10 @@ public class SqlgPGRoutingFactory  extends SqlgServiceRegistry.SqlgServiceFactor
 
     public static final String NAME = "sqlg.pgrouting";
     public static final String pgr_dijkstra = "pgr_dijkstra";
+    public static final String TRAVERSAL_COST = "traversal_cost";
+    public static final String TRAVERSAL_AGG_COST = "traversal_agg_cost";
+
+    public record StartEndVid(long start_vid, long end_vid) {}
 
     public interface Params {
         String FUNCTION = "function";
