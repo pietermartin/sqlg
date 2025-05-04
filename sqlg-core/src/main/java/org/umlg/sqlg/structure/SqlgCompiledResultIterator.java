@@ -51,6 +51,9 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private final Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
 
+    //pgDrivingDistance cache, map::depth, vertex id, path
+    private List<List<Emit<SqlgElement>>> pgDrivingDistanceResult = null;
+
     private enum QUERY {
         REGULAR,
         OPTIONAL,
@@ -268,16 +271,49 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 );
             }
         } else if (this.currentRootSchemaTableTree.isPGRoutingQuery()) {
-            result = SqlgUtil.loadPGRoutingResultSetIntoResultIterator(
-                    this.sqlgGraph,
-                    this.queryResult.getMiddle(),
-                    this.queryResult.getLeft(),
-                    this.currentRootSchemaTableTree,
-                    this.subQueryStacks,
-                    this.first,
-                    this.lastElementIdCountMap,
-                    this.forParent
-            );
+            if (this.currentRootSchemaTableTree.isPGRoutingDijkstraQuery()) {
+                result = SqlgUtil.loadPGDijkstraResultSetIntoResultIterator(
+                        this.sqlgGraph,
+                        this.queryResult.getMiddle(),
+                        this.queryResult.getLeft(),
+                        this.currentRootSchemaTableTree,
+                        this.subQueryStacks,
+                        this.first,
+                        this.lastElementIdCountMap,
+                        this.forParent
+                );
+            } else if (this.currentRootSchemaTableTree.isPGRoutingDrivingDistanceQuery()) {
+                if (first) {
+                    this.pgDrivingDistanceResult = SqlgUtil.loadPgrDrivingDistanceResultSetIntoResultIterator(
+                            this.sqlgGraph,
+                            this.queryResult.getMiddle(),
+                            this.queryResult.getLeft(),
+                            this.currentRootSchemaTableTree,
+                            this.subQueryStacks,
+                            this.first,
+                            this.lastElementIdCountMap,
+                            this.forParent
+                    );
+                }
+                if (!this.pgDrivingDistanceResult.isEmpty()) {
+                    result = this.pgDrivingDistanceResult.remove(0);
+                } else {
+                    result = List.of();
+                }
+            } else if (this.currentRootSchemaTableTree.isPGRoutingConnectedComponentQuery()) {
+                result = SqlgUtil.loadPGConnectedComponentResultSetIntoResultIterator(
+                        this.sqlgGraph,
+                        this.queryResult.getMiddle(),
+                        this.queryResult.getLeft(),
+                        this.currentRootSchemaTableTree,
+                        this.subQueryStacks,
+                        this.first,
+                        this.lastElementIdCountMap,
+                        this.forParent
+                );
+            } else {
+                throw new IllegalStateException("Unknown routing query");
+            }
         } else {
             result = SqlgUtil.loadResultSetIntoResultIterator(
                     this.sqlgGraph,

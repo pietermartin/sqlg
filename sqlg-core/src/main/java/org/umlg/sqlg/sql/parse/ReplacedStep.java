@@ -86,7 +86,9 @@ public class ReplacedStep<S, E> {
     /**
      * Hold information about the pg routing step.
      */
-    private PGRoutingConfig pgRoutingConfig;
+    private PGRoutingDijkstraConfig pgRoutingDijkstraConfig;
+    private PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
+    private PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
 
     private ReplacedStep() {
     }
@@ -156,12 +158,29 @@ public class ReplacedStep<S, E> {
         return recursiveRepeatStepConfig;
     }
 
-    public PGRoutingConfig getPgRoutingConfig() {
-        return pgRoutingConfig;
+
+    public PGRoutingDijkstraConfig getPgRoutingDijkstraConfig() {
+        return pgRoutingDijkstraConfig;
     }
 
-    public void setPgRoutingConfig(PGRoutingConfig pgRoutingConfig) {
-        this.pgRoutingConfig = pgRoutingConfig;
+    public void setPgRoutingDijkstraConfig(PGRoutingDijkstraConfig pgRoutingDijkstraConfig) {
+        this.pgRoutingDijkstraConfig = pgRoutingDijkstraConfig;
+    }
+
+    public PGRoutingDrivingDistanceConfig getPgRoutingDrivingDistanceConfig() {
+        return pgRoutingDrivingDistanceConfig;
+    }
+
+    public void setPgRoutingDrivingDistanceConfig(PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig) {
+        this.pgRoutingDrivingDistanceConfig = pgRoutingDrivingDistanceConfig;
+    }
+
+    public PGRoutingConnectedComponentConfig getPgRoutingConnectedComponentConfig() {
+        return pgRoutingConnectedComponentConfig;
+    }
+
+    public void setPgRoutingConnectedComponentConfig(PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig) {
+        this.pgRoutingConnectedComponentConfig = pgRoutingConnectedComponentConfig;
     }
 
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
@@ -606,7 +625,9 @@ public class ReplacedStep<S, E> {
                 groupBy,
                 idOnly,
                 this.recursiveRepeatStepConfig,
-                this.pgRoutingConfig
+                this.pgRoutingDijkstraConfig,
+                this.pgRoutingDrivingDistanceConfig,
+                this.pgRoutingConnectedComponentConfig
         );
         schemaTableTree.getRestrictedProperties().addAll(this.restrictedProperties);
         return schemaTableTree;

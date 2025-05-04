@@ -93,7 +93,9 @@ public class SchemaTableTree {
     private final RecursiveRepeatStepConfig recursiveRepeatStepConfig;
     private SchemaTableTree untilTraversalRootSchemaTableTree;
 
-    private final PGRoutingConfig pgRoutingConfig;
+    private final PGRoutingDijkstraConfig pgRoutingDijkstraConfig;
+    private final PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
+    private final PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
 
     //NON FINAL properties
     //labels are immutable
@@ -171,7 +173,9 @@ public class SchemaTableTree {
         this.groupBy = groupBy == null ? List.of() : Collections.unmodifiableList(groupBy);
         this.aggregateFunction = aggregateFunction != null ? Pair.of(aggregateFunction.getLeft(), Collections.unmodifiableList(aggregateFunction.getRight())) : null;
         this.recursiveRepeatStepConfig = null;
-        this.pgRoutingConfig = null;
+        this.pgRoutingDijkstraConfig = null;
+        this.pgRoutingDrivingDistanceConfig = null;
+        this.pgRoutingConnectedComponentConfig = null;
     }
 
     /**
@@ -202,7 +206,9 @@ public class SchemaTableTree {
             List<String> groupBy,
             boolean idOnly,
             RecursiveRepeatStepConfig recursiveRepeatStepConfig,
-            PGRoutingConfig pgRoutingConfig
+            PGRoutingDijkstraConfig pgRoutingDijkstraConfig,
+            PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig,
+            PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig
     ) {
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -234,7 +240,9 @@ public class SchemaTableTree {
         this.localStep = false;
         this.localBarrierStep = false;
         this.recursiveRepeatStepConfig = recursiveRepeatStepConfig;
-        this.pgRoutingConfig = pgRoutingConfig;
+        this.pgRoutingDijkstraConfig = pgRoutingDijkstraConfig;
+        this.pgRoutingDrivingDistanceConfig = pgRoutingDrivingDistanceConfig;
+        this.pgRoutingConnectedComponentConfig = pgRoutingConnectedComponentConfig;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -1056,10 +1064,10 @@ public class SchemaTableTree {
         return result.toString();
     }
 
-    private String constructPGRoutingQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+    private String constructPGDijkstraQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(distinctQueryStack.size() <= 2);
         SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
-        Preconditions.checkNotNull(schemaTableTree.pgRoutingConfig);
+        Preconditions.checkState(this.pgRoutingDijkstraConfig != null);
         Preconditions.checkState(this == schemaTableTree);
 
         LinkedList<SchemaTableTree> startDistinctQueryStack = new LinkedList<>();
@@ -1093,10 +1101,111 @@ public class SchemaTableTree {
                 false
         );
 
-        PGRoutingConfig pgRoutingConfig = schemaTableTree.pgRoutingConfig;
-        VertexLabel vertexLabel = pgRoutingConfig.vertexLabel();
+        PGRoutingDijkstraConfig pgRoutingDijkstraConfig = schemaTableTree.pgRoutingDijkstraConfig;
+        VertexLabel vertexLabel = pgRoutingDijkstraConfig.vertexLabel();
         SchemaTable vertexLabelSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), Topology.VERTEX_PREFIX + vertexLabel.getName());
-        EdgeLabel edgeLabel = pgRoutingConfig.edgeLabel();
+        EdgeLabel edgeLabel = pgRoutingDijkstraConfig.edgeLabel();
+        SchemaTable edgeLabelSchemaTable = SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName());
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(0, edgeLabelSchemaTable);
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID() && !column.isForeignKey()) {
+                    edgeColumns.add(column.getColumn());
+                }
+            }
+            columns = columnList.getFor(1, vertexLabelSchemaTable);
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String inForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + vertexLabelSchemaTable.withOutPrefix().getTable() + Topology.IN_VERTEX_COLUMN_END);
+        String outForeignKey = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema() + "." + vertexLabelSchemaTable.withOutPrefix().getTable() + Topology.OUT_VERTEX_COLUMN_END);
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> "b." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+        String edgeColumnsToAdd = edgeColumns.stream().map(a -> "c." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+
+        String sql;
+        sql = """
+                WITH a AS (
+                    SELECT * FROM pgr_dijkstra(
+                    'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
+                        %s
+                    ) a', %s, %s, %b)
+                ), b AS (
+                    SELECT * from %s
+                ), c AS (
+                    SELECT * from %s
+                )
+                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
+                    a JOIN
+                    b ON a.node = b."ID" LEFT JOIN
+                    c ON a.edge = c."ID"
+                """
+                .formatted(
+                        idAlias, sourceAlias, targetAlias, costAlias, reverseCostAlias,
+                        startSql,
+                        pgRoutingDijkstraConfig.toStartVidsString(),
+                        pgRoutingDijkstraConfig.toEndVidsString(),
+                        pgRoutingDijkstraConfig.directed(),
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
+                        SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
+                )
+                .replace("{edgeColumns}", edgeColumnsToAdd)
+                .replace("{vertexColumns}", vertexColumnsToAdd)
+                .replace("{outForeignKey}", outForeignKey)
+                .replace("{inForeignKey}", inForeignKey);
+        return sql;
+
+    }
+
+    private String constructPGDrivingDistanceQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        Preconditions.checkState(distinctQueryStack.size() <= 2);
+        SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+        Preconditions.checkState(schemaTableTree.pgRoutingDrivingDistanceConfig != null);
+        Preconditions.checkState(this == schemaTableTree);
+
+        LinkedList<SchemaTableTree> startDistinctQueryStack = new LinkedList<>();
+        startDistinctQueryStack.add(distinctQueryStack.getFirst());
+        String startSql = constructSinglePathSql(
+                false,
+                startDistinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+        List<ColumnList> _columnLists = getRootColumnListStack();
+        Preconditions.checkState(_columnLists.size() == 1);
+        ColumnList _columnList = _columnLists.get(0);
+        String idAlias = _columnList.getAlias(this, "ID");
+        String costAlias = _columnList.getAlias(this, "cost");
+        String reverseCostAlias = _columnList.getAlias(this, "reverse_cost");
+//        String sourceAlias = _columnList.getAlias(this, "source");
+//        String targetAlias = _columnList.getAlias(this, "target");
+        String sourceAlias = "alias2";
+        String targetAlias = "alias1";
+
+        resetColumnAliasMaps();
+        String ignore = constructSinglePathSql(
+                false,
+                distinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+
+        PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig = schemaTableTree.pgRoutingDrivingDistanceConfig;
+        VertexLabel vertexLabel = pgRoutingDrivingDistanceConfig.vertexLabel();
+        SchemaTable vertexLabelSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), Topology.VERTEX_PREFIX + vertexLabel.getName());
+        EdgeLabel edgeLabel = pgRoutingDrivingDistanceConfig.edgeLabel();
         SchemaTable edgeLabelSchemaTable = SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName());
 
         List<String> vertexColumns = new ArrayList<>();
@@ -1125,16 +1234,16 @@ public class SchemaTableTree {
         @SuppressWarnings("UnnecessaryLocalVariable")
         String sql = """
                 WITH a AS (
-                    SELECT * FROM pgr_dijkstra(
+                    SELECT * FROM pgr_drivingDistance(
                     'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
                         %s
-                    ) a', %s, %s, %b)
+                    ) a', %s, %d, %b)
                 ), b AS (
                     SELECT * from %s
                 ), c AS (
                     SELECT * from %s
                 )
-                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
+                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a.depth, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.pred FROM
                     a JOIN
                     b ON a.node = b."ID" LEFT JOIN
                     c ON a.edge = c."ID"
@@ -1142,9 +1251,9 @@ public class SchemaTableTree {
                 .formatted(
                         idAlias, sourceAlias, targetAlias, costAlias, reverseCostAlias,
                         startSql,
-                        pgRoutingConfig.toStartVidsString(),
-                        pgRoutingConfig.toEndVidsString(),
-                        pgRoutingConfig.directed(),
+                        pgRoutingDrivingDistanceConfig.toStartVidsString(),
+                        pgRoutingDrivingDistanceConfig.distance(),
+                        pgRoutingDrivingDistanceConfig.directed(),
                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
                         SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
@@ -1154,6 +1263,100 @@ public class SchemaTableTree {
                 .replace("{outForeignKey}", outForeignKey)
                 .replace("{inForeignKey}", inForeignKey);
         return sql;
+    }
+
+    private String constructPGConnectedComponentQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        Preconditions.checkState(distinctQueryStack.size() <= 2);
+        SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+        Preconditions.checkState(this.pgRoutingConnectedComponentConfig != null);
+        Preconditions.checkState(this == schemaTableTree);
+
+        LinkedList<SchemaTableTree> startDistinctQueryStack = new LinkedList<>();
+        startDistinctQueryStack.add(distinctQueryStack.getFirst());
+        String startSql = constructSinglePathSql(
+                false,
+                startDistinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+        List<ColumnList> _columnLists = getRootColumnListStack();
+        Preconditions.checkState(_columnLists.size() == 1);
+        ColumnList _columnList = _columnLists.get(0);
+        String idAlias = _columnList.getAlias(this, "ID");
+        String costAlias = _columnList.getAlias(this, "cost");
+        String reverseCostAlias = _columnList.getAlias(this, "reverse_cost");
+//        String sourceAlias = _columnList.getAlias(this, "source");
+//        String targetAlias = _columnList.getAlias(this, "target");
+        String sourceAlias = "alias2";
+        String targetAlias = "alias1";
+
+        resetColumnAliasMaps();
+
+        String ignore = constructSinglePathSql(
+                false,
+                distinctQueryStack,
+                null,
+                null,
+                Collections.emptySet(),
+                false
+        );
+
+        PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig = schemaTableTree.pgRoutingConnectedComponentConfig;
+        VertexLabel vertexLabel = pgRoutingConnectedComponentConfig.vertexLabel();
+        SchemaTable vertexLabelSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), Topology.VERTEX_PREFIX + vertexLabel.getName());
+
+        List<String> vertexColumns = new ArrayList<>();
+        List<String> edgeColumns = new ArrayList<>();
+        List<ColumnList> columnLists = getRootColumnListStack();
+        for (ColumnList columnList : columnLists) {
+            LinkedHashMap<ColumnList.Column, String> columns = columnList.getFor(1, vertexLabelSchemaTable);
+            for (ColumnList.Column column : columns.keySet()) {
+                if (!column.isID()) {
+                    vertexColumns.add(column.getColumn());
+                }
+            }
+        }
+
+        String vertexColumnsToAdd = vertexColumns.stream().map(a -> "b." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
+
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        String sql = """
+                WITH a AS (
+                    SELECT * FROM pgr_connectedComponents(
+                    'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
+                        %s
+                    ) a')
+                ), b AS (
+                    SELECT * from %s
+                )
+                SELECT b."ID" as vertex_id {vertexColumns}, a."component" as "traversal_component" FROM
+                    a JOIN
+                    b ON a.node = b."ID"
+                """
+                .formatted(
+                        idAlias, sourceAlias, targetAlias, costAlias, reverseCostAlias,
+                        startSql,
+                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable())
+                )
+                .replace("{vertexColumns}", vertexColumnsToAdd);
+        return sql;
+    }
+
+    private String constructPGRoutingQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
+        Preconditions.checkState(distinctQueryStack.size() <= 2);
+        SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+
+        if (schemaTableTree.pgRoutingDijkstraConfig != null) {
+            return constructPGDijkstraQuery(distinctQueryStack);
+        } else if (schemaTableTree.pgRoutingDrivingDistanceConfig != null) {
+            return constructPGDrivingDistanceQuery(distinctQueryStack);
+        } else if (schemaTableTree.pgRoutingConnectedComponentConfig != null) {
+            return constructPGConnectedComponentQuery(distinctQueryStack);
+        } else {
+            throw new IllegalStateException("No PGRoutingConfig found for " + schemaTableTree);
+        }
     }
 
     private String constructRecursiveQuery(LinkedList<SchemaTableTree> distinctQueryStack) {
@@ -2117,7 +2320,27 @@ public class SchemaTableTree {
     }
 
     public boolean isPGRoutingQuery() {
-        return this.pgRoutingConfig != null;
+        return this.pgRoutingDijkstraConfig != null || this.pgRoutingDrivingDistanceConfig != null || this.pgRoutingConnectedComponentConfig != null;
+    }
+
+    public boolean isPGRoutingConnectedComponentQuery() {
+        return this.pgRoutingConnectedComponentConfig != null;
+    }
+
+    public boolean isPGRoutingDijkstraQuery() {
+        return this.pgRoutingDijkstraConfig != null;
+    }
+
+    public boolean isPGRoutingDrivingDistanceQuery() {
+        return this.pgRoutingDrivingDistanceConfig != null;
+    }
+
+    public PGRoutingDijkstraConfig getPgRoutingDijkstraConfig() {
+        return pgRoutingDijkstraConfig;
+    }
+
+    public PGRoutingDrivingDistanceConfig getPgRoutingDrivingDistanceConfig() {
+        return pgRoutingDrivingDistanceConfig;
     }
 
     public void setUntilTraversalRootSchemaTableTree(SchemaTableTree untilTraversalRootSchemaTableTree) {

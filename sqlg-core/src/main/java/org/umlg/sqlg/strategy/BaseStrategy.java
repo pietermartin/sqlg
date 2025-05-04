@@ -646,6 +646,29 @@ public abstract class BaseStrategy {
         Preconditions.checkArgument(serviceName.equals(SqlgPGRoutingFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgPGRoutingFactory.NAME, serviceName);
         Map param = callStep.getMergedParams();
         String function = (String) param.get(SqlgPGRoutingFactory.Params.FUNCTION);
+        Preconditions.checkState(function != null, "function is null");
+        Preconditions.checkState(function.equals(SqlgPGRoutingFactory.pgr_dijkstra) ||
+                        function.equals(SqlgPGRoutingFactory.pgr_drivingDistance) ||
+                        function.equals(SqlgPGRoutingFactory.pgr_connectedComponents),
+                "Unknown callStep function %s", function);
+
+        switch (function) {
+            case SqlgPGRoutingFactory.pgr_dijkstra:
+                handlePgrDijkstra(callStep, pathCount, param);
+                break;
+            case SqlgPGRoutingFactory.pgr_drivingDistance:
+                handlePgrDrivingDistance(callStep, pathCount, param);
+                break;
+            case SqlgPGRoutingFactory.pgr_connectedComponents:
+                handlePgrConnectedComponents(callStep, pathCount, param);
+                break;
+            default:
+                throw new IllegalStateException("Unknown callStep function " + function);
+        }
+
+    }
+
+    private void handlePgrDijkstra(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
         Long start_vid = (Long) param.get(SqlgPGRoutingFactory.Params.START_VID);
         List<Long> start_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.START_VIDS);
         Long end_vid = (Long) param.get(SqlgPGRoutingFactory.Params.END_VID);
@@ -660,6 +683,7 @@ public abstract class BaseStrategy {
         } else {
             _startVids.addAll(start_vids);
         }
+
         List<Long> _endVids = new ArrayList<>();
         if (end_vid != null) {
             _endVids.add(end_vid);
@@ -692,11 +716,8 @@ public abstract class BaseStrategy {
 
         this.currentReplacedStep.addLabel("a");
 
-        if (start_vid != null) {
-
-        }
-        this.currentReplacedStep.setPgRoutingConfig(
-                new PGRoutingConfig(function, _startVids, _endVids, directed, vertexLabel, edgeLabel)
+        this.currentReplacedStep.setPgRoutingDijkstraConfig(
+                new PGRoutingDijkstraConfig(SqlgPGRoutingFactory.pgr_dijkstra, _startVids, _endVids, directed != null ? directed : false, vertexLabel, edgeLabel)
         );
 
         this.currentReplacedStep = ReplacedStep.from(
@@ -704,12 +725,106 @@ public abstract class BaseStrategy {
                 new EdgeVertexStep(traversal, Direction.OUT),
                 pathCount.getValue()
         );
-        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
-        this.currentTreeNodeNode = treeNodeNode;
-
+        this.currentTreeNodeNode =  this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         this.traversal.removeStep(callStep);
         this.traversal.addStep(new PathStep<>(traversal));
+
     }
+
+    private void handlePgrDrivingDistance(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
+        Long start_vid = (Long) param.get(SqlgPGRoutingFactory.Params.START_VID);
+        List<Long> start_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.START_VIDS);
+
+        Long distance = (Long) param.get(SqlgPGRoutingFactory.Params.DISTANCE);
+        Preconditions.checkState(start_vid != null || start_vids != null, "start_vid or start_vids must be set");
+        Preconditions.checkNotNull(distance, "distance must be set for %s", SqlgPGRoutingFactory.pgr_drivingDistance);
+
+        List<Long> _startVids = new ArrayList<>();
+        if (start_vid != null) {
+            _startVids.add(start_vid);
+        } else {
+            _startVids.addAll(start_vids);
+        }
+
+        Boolean directed = (Boolean) param.get(SqlgPGRoutingFactory.Params.DIRECTED);
+
+        GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
+        Preconditions.checkState(graphStep.returnsEdge());
+        List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+        Preconditions.checkState(labelHasContainers.size() == 1);
+        HasContainer labelHasContainer = labelHasContainers.get(0);
+        String _edgeLabel = (String) labelHasContainer.getValue();
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
+        Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOpt.isPresent());
+        Schema schema = schemaOpt.get();
+        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
+        Preconditions.checkState(edgeLabelOptional.isPresent());
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+        Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+        Preconditions.checkState(inVertexLabels.size() == 1);
+        Preconditions.checkState(outVertexLabels.size() == 1);
+        Preconditions.checkState(inVertexLabels.equals(outVertexLabels));
+
+        VertexLabel vertexLabel = inVertexLabels.iterator().next();
+
+        this.currentReplacedStep.addLabel("a");
+
+        this.currentReplacedStep.setPgRoutingDrivingDistanceConfig(
+                new PGRoutingDrivingDistanceConfig(SqlgPGRoutingFactory.pgr_drivingDistance, _startVids, directed != null ? directed : false, distance, vertexLabel, edgeLabel)
+        );
+
+        this.currentReplacedStep = ReplacedStep.from(
+                this.sqlgGraph.getTopology(),
+                new EdgeVertexStep(traversal, Direction.OUT),
+                pathCount.getValue()
+        );
+        this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.traversal.removeStep(callStep);
+        this.traversal.addStep(new PathStep<>(traversal));
+
+    }
+
+    private void handlePgrConnectedComponents(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
+
+        GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
+        Preconditions.checkState(graphStep.returnsEdge());
+        List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+        Preconditions.checkState(labelHasContainers.size() == 1);
+        HasContainer labelHasContainer = labelHasContainers.get(0);
+        String _edgeLabel = (String) labelHasContainer.getValue();
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
+        Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOpt.isPresent());
+        Schema schema = schemaOpt.get();
+        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
+        Preconditions.checkState(edgeLabelOptional.isPresent());
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+        Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+        Preconditions.checkState(inVertexLabels.size() == 1);
+        Preconditions.checkState(outVertexLabels.size() == 1);
+        Preconditions.checkState(inVertexLabels.equals(outVertexLabels));
+
+        VertexLabel vertexLabel = inVertexLabels.iterator().next();
+
+//        this.currentReplacedStep.addLabel("a");
+
+        this.currentReplacedStep.setPgRoutingConnectedComponentConfig(
+                new PGRoutingConnectedComponentConfig(SqlgPGRoutingFactory.pgr_connectedComponents, vertexLabel, edgeLabel)
+        );
+
+        this.currentReplacedStep = ReplacedStep.from(
+                this.sqlgGraph.getTopology(),
+                new EdgeVertexStep(traversal, Direction.OUT),
+                pathCount.getValue()
+        );
+        this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.traversal.removeStep(callStep);
+
+    }
+
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount, boolean notStep) {
         this.currentReplacedStep = ReplacedStep.from(

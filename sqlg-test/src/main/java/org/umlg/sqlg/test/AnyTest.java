@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.services.SqlgGraphPGRoutingTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestRepeatStepIncludeEdgeWithoutNotStep.class,
-        SqlgGraphPGRoutingTest.class
+        SqlgGraphPGRoutingTest.class,
 //        TestTest.class,
 //        TestMultiThread.class,
 //        TestForeignSchema.class,

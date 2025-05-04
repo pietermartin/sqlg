@@ -31,8 +31,8 @@ import org.umlg.sqlg.structure.topology.Topology;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.*;
+import java.sql.Date;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -76,9 +76,9 @@ public class SqlgUtil {
         LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
         Preconditions.checkState(schemaTableTrees.size() == 2);
         SchemaTableTree vertexSchemaTableTree = schemaTableTrees.getFirst();
-        SchemaTable vertexSchemaTable= vertexSchemaTableTree.getSchemaTable().withOutPrefix();
+        SchemaTable vertexSchemaTable = vertexSchemaTableTree.getSchemaTable().withOutPrefix();
         SchemaTableTree edgeSchemaTableTree = schemaTableTrees.get(1);
-        SchemaTable edgeSchemaTable= edgeSchemaTableTree.getSchemaTable().withOutPrefix();
+        SchemaTable edgeSchemaTable = edgeSchemaTableTree.getSchemaTable().withOutPrefix();
 
         List<Emit<SqlgElement>> result = new ArrayList<>();
         while (resultSet.next()) {
@@ -131,7 +131,82 @@ public class SqlgUtil {
 
     }
 
-    public static List<Emit<SqlgElement>> loadPGRoutingResultSetIntoResultIterator(
+    public static List<List<Emit<SqlgElement>>> loadPgrDrivingDistanceResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent
+    ) throws SQLException {
+
+        Preconditions.checkState(subQueryStacks.size() == 1);
+        LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
+        Preconditions.checkState(schemaTableTrees.size() == 2);
+        SchemaTableTree edgeSchemaTableTree = schemaTableTrees.getFirst();
+        SchemaTableTree vertexSchemaTableTree = schemaTableTrees.get(1);
+        String vertexLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+        String edgeLabel = edgeSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+
+        Preconditions.checkState(edgeSchemaTableTree.equals(rootSchemaTableTree));
+
+        if (first) {
+            rootSchemaTableTree.getAliasMapHolder().calculateColumns(subQueryStacks);
+        }
+        List<LinkedHashMap<ColumnList.Column, String>> _vertexColumns = vertexSchemaTableTree.getAliasMapHolder().getColumns(vertexSchemaTableTree);
+        List<LinkedHashMap<ColumnList.Column, String>> _edgeColumns = edgeSchemaTableTree.getAliasMapHolder().getColumns(edgeSchemaTableTree);
+
+        List<List<Emit<SqlgElement>>> result = new ArrayList<>();
+        Set<Pair<Long, Long>> toRemove = new HashSet<>();
+        Map<Pair<Long, Long>, List<Emit<SqlgElement>>> cache = new HashMap<>();
+        while (resultSet.next()) {
+
+            Long vertexId = resultSet.getLong("vertex_id");
+            Long pred = resultSet.getLong("pred");
+            long depth = resultSet.getLong("depth");
+
+            List<Emit<SqlgElement>> previousPath = cache.computeIfAbsent(Pair.of(depth - 1, pred), k -> new ArrayList<>());
+            List<Emit<SqlgElement>> path = new ArrayList<>(previousPath);
+
+            long edgeId = resultSet.getLong("edge_id");
+            if (!resultSet.wasNull()) {
+                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), edgeLabel);
+                edgeSchemaTableTree.loadProperty(resultSet, sqlgEdge, _edgeColumns);
+                edgeSchemaTableTree.loadEdgeInOutVertices(resultSet, sqlgEdge);
+
+                double traversal_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_COST);
+                double agg_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COST), traversal_cost);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST), agg_cost);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_DEPTH), depth);
+
+                Emit<SqlgElement> emit = new Emit<>(sqlgEdge, edgeSchemaTableTree.getStepDepth(), edgeSchemaTableTree.getSqlgComparatorHolder());
+                path.add(emit);
+            }
+
+            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), vertexLabel);
+            vertexSchemaTableTree.loadProperty(resultSet, sqlgVertex, _vertexColumns);
+            Emit<SqlgElement> emit = new Emit<>(sqlgVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+            path.add(emit);
+
+            cache.put(Pair.of(depth, vertexId), path);
+            toRemove.add(Pair.of(depth - 1, pred));
+        }
+
+
+        for (Pair<Long, Long> longLongPair : toRemove) {
+            cache.remove(longLongPair);
+        }
+        for (Pair<Long, Long> longLongPair : cache.keySet()) {
+            List<Emit<SqlgElement>> path = cache.get(longLongPair);
+            result.add(path);
+        }
+        return result;
+    }
+
+    public static List<Emit<SqlgElement>> loadPGDijkstraResultSetIntoResultIterator(
             SqlgGraph sqlgGraph,
             ResultSetMetaData resultSetMetaData,
             ResultSet resultSet,
@@ -191,6 +266,44 @@ public class SqlgUtil {
                 result.add(emit);
             }
             previousStartEndVid = startEndVid;
+        }
+        return result;
+    }
+
+    public static List<Emit<SqlgElement>> loadPGConnectedComponentResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent
+    ) throws SQLException {
+
+        List<Emit<SqlgElement>> result = new ArrayList<>();
+        if (resultSet.next()) {
+            Preconditions.checkState(subQueryStacks.size() == 1);
+            LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
+            Preconditions.checkState(schemaTableTrees.size() == 2);
+            SchemaTableTree edgeSchemaTableTree = schemaTableTrees.getFirst();
+            SchemaTableTree vertexSchemaTableTree = schemaTableTrees.get(1);
+            Preconditions.checkState(edgeSchemaTableTree.equals(rootSchemaTableTree));
+
+            if (first) {
+                rootSchemaTableTree.getAliasMapHolder().calculateColumns(subQueryStacks);
+            }
+
+            Long vertexId = resultSet.getLong("vertex_id");
+            String vertexLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), vertexLabel);
+            List<LinkedHashMap<ColumnList.Column, String>> _columns = vertexSchemaTableTree.getAliasMapHolder().getColumns(vertexSchemaTableTree);
+            vertexSchemaTableTree.loadProperty(resultSet, sqlgVertex, _columns);
+            long component = resultSet.getLong(SqlgPGRoutingFactory.TRAVERSAL_COMPONENT);
+            sqlgVertex.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COMPONENT), component);
+            Emit<SqlgElement> emit = new Emit<>(sqlgVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+
+            result.add(emit);
         }
         return result;
     }
@@ -1404,7 +1517,8 @@ public class SqlgUtil {
             case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((
                             propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL),
                     "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
-            case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> Preconditions.checkState(true);
+            case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL ->
+                    Preconditions.checkState(true);
             case NULL_ORDINAL -> Preconditions.checkState(true);
             default ->
                     Preconditions.checkState(incomingPropertyType == propertyType, "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());

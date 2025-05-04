@@ -16,14 +16,19 @@ public class SqlgPGRoutingFactory  extends SqlgServiceRegistry.SqlgServiceFactor
 
     public static final String NAME = "sqlg.pgrouting";
     public static final String pgr_dijkstra = "pgr_dijkstra";
+    public static final String pgr_drivingDistance = "pgr_drivingDistance";
+    public static final String pgr_connectedComponents = "pgr_connectedComponents";
     public static final String TRAVERSAL_COST = "traversal_cost";
     public static final String TRAVERSAL_AGG_COST = "traversal_agg_cost";
+    public static final String TRAVERSAL_DEPTH = "traversal_depth";
+    public static final String TRAVERSAL_COMPONENT = "traversal_component";
 
     public record StartEndVid(long start_vid, long end_vid) {}
 
     public interface Params {
         String FUNCTION = "function";
         String DIRECTED = "directed";
+        String DISTANCE = "distance";
         String START_VID = "start_vid";
         String START_VIDS = "start_vids";
         String END_VID = "end_vid";
@@ -35,7 +40,8 @@ public class SqlgPGRoutingFactory  extends SqlgServiceRegistry.SqlgServiceFactor
                 SqlgPGRoutingFactory.Params.START_VIDS, "Array of identifiers of starting vertices.",
                 SqlgPGRoutingFactory.Params.END_VID, "Identifier of the ending vertex of the path.",
                 SqlgPGRoutingFactory.Params.END_VIDS, "Array of identifiers of ending vertices.",
-                SqlgPGRoutingFactory.Params.DIRECTED, "When true the graph is considered Directed, When false the graph is considered as Undirected."
+                SqlgPGRoutingFactory.Params.DIRECTED, "When true the graph is considered Directed, When false the graph is considered as Undirected.",
+                Params.DISTANCE, "Seems to be the depth of the path."
         );
     }
 

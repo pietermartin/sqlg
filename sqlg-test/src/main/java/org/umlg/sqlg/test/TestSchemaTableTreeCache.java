@@ -67,7 +67,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
 
     }
 
-//    @Test
+    //    @Test
     public void testSchemaTableTreeHashCode() {
 
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
@@ -114,7 +114,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
                 List.of("groupBy1"),
                 false,
                 null,
-                null
+                null, null, null
         );
         LOGGER.info(Integer.toString(schemaTableTree1.hashCode()));
     }
