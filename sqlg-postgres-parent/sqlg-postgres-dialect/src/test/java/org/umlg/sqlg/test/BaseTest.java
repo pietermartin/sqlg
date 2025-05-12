@@ -15,6 +15,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.services.SqlgPGRoutingFactory;
+import org.umlg.sqlg.services.SqlgPGVectorFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -89,6 +91,8 @@ public abstract class BaseTest {
             assertEquals(this.sqlgGraph.getBuildVersion(), this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
+        sqlgGraph.getServiceRegistry().registerService(new SqlgPGRoutingFactory(sqlgGraph));
+        sqlgGraph.getServiceRegistry().registerService(new SqlgPGVectorFactory(sqlgGraph));
         LOGGER.info("Startup time for test = " + stopWatch);
     }
 

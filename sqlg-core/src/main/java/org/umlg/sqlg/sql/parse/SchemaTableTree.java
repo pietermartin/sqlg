@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.predicate.PGVectorOrderByComparator;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.PropertyType;
@@ -96,6 +97,8 @@ public class SchemaTableTree {
     private final PGRoutingDijkstraConfig pgRoutingDijkstraConfig;
     private final PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
     private final PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
+    private final PGVectorConfig pgVectorConfig;
+    private final SqlgFunctionConfig sqlgFunctionConfig;
 
     //NON FINAL properties
     //labels are immutable
@@ -176,6 +179,8 @@ public class SchemaTableTree {
         this.pgRoutingDijkstraConfig = null;
         this.pgRoutingDrivingDistanceConfig = null;
         this.pgRoutingConnectedComponentConfig = null;
+        this.pgVectorConfig = null;
+        this.sqlgFunctionConfig = null;
     }
 
     /**
@@ -208,7 +213,11 @@ public class SchemaTableTree {
             RecursiveRepeatStepConfig recursiveRepeatStepConfig,
             PGRoutingDijkstraConfig pgRoutingDijkstraConfig,
             PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig,
-            PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig
+            PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig,
+            PGVectorConfig pgVectorConfig,
+            SqlgFunctionConfig sqlgFunctionConfig
+
+
     ) {
         this.sqlgGraph = sqlgGraph;
         this.parent = parent;
@@ -243,6 +252,8 @@ public class SchemaTableTree {
         this.pgRoutingDijkstraConfig = pgRoutingDijkstraConfig;
         this.pgRoutingDrivingDistanceConfig = pgRoutingDrivingDistanceConfig;
         this.pgRoutingConnectedComponentConfig = pgRoutingConnectedComponentConfig;
+        this.pgVectorConfig = pgVectorConfig;
+        this.sqlgFunctionConfig = sqlgFunctionConfig;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -2212,6 +2223,42 @@ public class SchemaTableTree {
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
                 }
+            } else if (comparator.getValue1() instanceof PGVectorOrderByComparator pgVectorOrderByComparator &&
+                    comparator.getValue0() instanceof ValueTraversal<?, ?> valueTraversal) {
+
+                String prefix = String.valueOf(this.stepDepth);
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += this.reducedLabels();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += this.getSchemaTable().getSchema();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += this.getSchemaTable().getTable();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+
+                String key = valueTraversal.getPropertyKey();
+                float[] vector = pgVectorOrderByComparator.getVector();
+
+                prefix += key;
+                String alias;
+                String rawAlias = this.getColumnNameAliasMap().get(prefix);
+                if (rawAlias == null) {
+                    throw new IllegalArgumentException("order by field '" + prefix + "' not found!");
+                }
+                if (counter == -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
+
+                } else {
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
+                }
+                result.append(" ")
+                        .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()))
+                        .append(".")
+                        .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()))
+                        .append(".")
+                        .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(key))
+                        .append(" <-> ").append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(vector));
+
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
@@ -2333,6 +2380,22 @@ public class SchemaTableTree {
 
     public boolean isPGRoutingDrivingDistanceQuery() {
         return this.pgRoutingDrivingDistanceConfig != null;
+    }
+
+    public boolean isPgVectorConfigQuery() {
+        return this.pgVectorConfig != null;
+    }
+
+    public boolean isSqlgFuntionConfigQuery() {
+        return this.sqlgFunctionConfig != null;
+    }
+
+    public PGVectorConfig getPgVectorConfig() {
+        return pgVectorConfig;
+    }
+
+    public SqlgFunctionConfig getSqlgFunctionConfig() {
+        return sqlgFunctionConfig;
     }
 
     public PGRoutingDijkstraConfig getPgRoutingDijkstraConfig() {
@@ -2640,6 +2703,9 @@ public class SchemaTableTree {
             if (lastSchemaTableTree.shouldSelectProperty(col)) {
                 printColumn(lastSchemaTableTree, cols, propertyDefinitionMap, col);
             }
+        }
+        if (lastSchemaTableTree.isSqlgFuntionConfigQuery()) {
+            printColumn(lastSchemaTableTree, cols, propertyDefinitionMap, "");
         }
     }
 

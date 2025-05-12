@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SqlgTraversalSource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -29,7 +30,12 @@ public class PGRDijkstraTest extends BasePGRouting {
     public void g_V_call_dijkstra() {
         loadWikiGraph();
 
-        List<Path> result = sqlgGraph.traversal().E().hasLabel("connects").<Path>call(
+        List<Path> result1 = sqlgGraph.traversal(SqlgTraversalSource.class).E()
+                .hasLabel("connects")
+                .dijkstra(1L, 5L, false)
+                .toList();
+
+        List<Path> result2 = sqlgGraph.traversal().E().hasLabel("connects").<Path>call(
                         SqlgPGRoutingFactory.NAME,
                         Map.of(
                                 SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_dijkstra,
@@ -38,6 +44,10 @@ public class PGRDijkstraTest extends BasePGRouting {
                                 SqlgPGRoutingFactory.Params.DIRECTED, false
                         ))
                 .toList();
+
+        Assert.assertEquals(result1, result2);
+        List<Path> result = result1;
+
         Assert.assertEquals(1, result.size());
         Path p = result.get(0);
         LOGGER.debug(p.toString());
@@ -96,14 +106,11 @@ public class PGRDijkstraTest extends BasePGRouting {
     }
 
     private void assertPGRoutingManyToManySampleData(List<Long> start_vids, List<Long> end_vids, boolean directed) {
-        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>call(
-                        SqlgPGRoutingFactory.NAME,
-                        Map.of(
-                                SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_dijkstra,
-                                SqlgPGRoutingFactory.Params.START_VIDS, start_vids,
-                                SqlgPGRoutingFactory.Params.END_VIDS, end_vids,
-                                SqlgPGRoutingFactory.Params.DIRECTED, directed
-                        ))
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").dijkstra(
+                        start_vids,
+                        end_vids,
+                        directed
+                )
                 .toList();
         String startVids;
         if (start_vids.size() == 1) {
@@ -126,14 +133,11 @@ public class PGRDijkstraTest extends BasePGRouting {
     }
 
     private void assertPGRoutingManyToOneSampleData(List<Long> start_vids, Long end_vid, boolean directed) {
-        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>call(
-                        SqlgPGRoutingFactory.NAME,
-                        Map.of(
-                                SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_dijkstra,
-                                SqlgPGRoutingFactory.Params.START_VIDS, start_vids,
-                                SqlgPGRoutingFactory.Params.END_VID, end_vid,
-                                SqlgPGRoutingFactory.Params.DIRECTED, directed
-                        ))
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>dijkstra(
+                        start_vids,
+                        end_vid,
+                        directed
+                )
                 .toList();
         String startVids;
         if (start_vids.size() == 1) {
@@ -151,14 +155,11 @@ public class PGRDijkstraTest extends BasePGRouting {
     }
 
     private void assertPGRoutingOneToManySampleData(long start_vid, List<Long> end_vids, boolean directed) {
-        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>call(
-                        SqlgPGRoutingFactory.NAME,
-                        Map.of(
-                                SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_dijkstra,
-                                SqlgPGRoutingFactory.Params.START_VID, start_vid,
-                                SqlgPGRoutingFactory.Params.END_VIDS, end_vids,
-                                SqlgPGRoutingFactory.Params.DIRECTED, directed
-                        ))
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>dijkstra(
+                        start_vid,
+                        end_vids,
+                        directed
+                )
                 .toList();
         String endVids;
         if (end_vids.size() == 1) {
@@ -175,14 +176,11 @@ public class PGRDijkstraTest extends BasePGRouting {
     }
 
     private void assertPGRoutingOneToOneSampleData(long start_vid, long end_vid, boolean directed) {
-        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>call(
-                        SqlgPGRoutingFactory.NAME,
-                        Map.of(
-                                SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_dijkstra,
-                                SqlgPGRoutingFactory.Params.START_VID, start_vid,
-                                SqlgPGRoutingFactory.Params.END_VID, end_vid,
-                                SqlgPGRoutingFactory.Params.DIRECTED, directed
-                        ))
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>dijkstra(
+                        start_vid,
+                        end_vid,
+                        directed
+                )
                 .toList();
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(

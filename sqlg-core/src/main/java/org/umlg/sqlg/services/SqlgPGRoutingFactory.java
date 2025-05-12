@@ -12,7 +12,7 @@ import java.util.Set;
 
 import static org.apache.tinkerpop.gremlin.util.CollectionUtil.asMap;
 
-public class SqlgPGRoutingFactory  extends SqlgServiceRegistry.SqlgServiceFactory<Vertex,Long> implements Service<Vertex, Long> {
+public class SqlgPGRoutingFactory extends SqlgServiceRegistry.SqlgServiceFactory<Vertex,Long> implements Service<Vertex, Long> {
 
     public static final String NAME = "sqlg.pgrouting";
     public static final String pgr_dijkstra = "pgr_dijkstra";

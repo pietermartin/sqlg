@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.services.SqlgGraphPGRoutingTest;
+import org.umlg.sqlg.test.labels.TestHasLabelAndId;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +11,9 @@ import org.umlg.sqlg.test.services.SqlgGraphPGRoutingTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestRepeatStepIncludeEdgeWithoutNotStep.class,
-        SqlgGraphPGRoutingTest.class,
-//        TestTest.class,
+//        TestFunctions.class
+//        TestPostgresLtree.class,
+        TestHasLabelAndId.class,
 //        TestMultiThread.class,
 //        TestForeignSchema.class,
 //        TestPostgresLtree.class

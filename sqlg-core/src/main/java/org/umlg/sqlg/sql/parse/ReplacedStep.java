@@ -90,6 +90,17 @@ public class ReplacedStep<S, E> {
     private PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
     private PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
 
+    /**
+     * Hold information about the pg vector step.
+     */
+    private PGVectorConfig pgVectorConfig;
+
+    /**
+     * Hold information about the arbitary functions.
+     */
+    private SqlgFunctionConfig sqlgFunctionConfig;
+
+
     private ReplacedStep() {
     }
 
@@ -181,6 +192,22 @@ public class ReplacedStep<S, E> {
 
     public void setPgRoutingConnectedComponentConfig(PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig) {
         this.pgRoutingConnectedComponentConfig = pgRoutingConnectedComponentConfig;
+    }
+
+    public PGVectorConfig getPgVectorConfig() {
+        return pgVectorConfig;
+    }
+
+    public void setPgVectorConfig(PGVectorConfig pgVectorConfig) {
+        this.pgVectorConfig = pgVectorConfig;
+    }
+
+    public SqlgFunctionConfig getSqlgFunctionConfig() {
+        return sqlgFunctionConfig;
+    }
+
+    public void setSqlgFunctionConfig(SqlgFunctionConfig sqlgFunctionConfig) {
+        this.sqlgFunctionConfig = sqlgFunctionConfig;
     }
 
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
@@ -627,7 +654,9 @@ public class ReplacedStep<S, E> {
                 this.recursiveRepeatStepConfig,
                 this.pgRoutingDijkstraConfig,
                 this.pgRoutingDrivingDistanceConfig,
-                this.pgRoutingConnectedComponentConfig
+                this.pgRoutingConnectedComponentConfig,
+                this.pgVectorConfig,
+                this.sqlgFunctionConfig
         );
         schemaTableTree.getRestrictedProperties().addAll(this.restrictedProperties);
         return schemaTableTree;

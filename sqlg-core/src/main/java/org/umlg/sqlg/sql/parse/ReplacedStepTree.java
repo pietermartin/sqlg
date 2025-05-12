@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
+import org.umlg.sqlg.predicate.PGVectorOrderByComparator;
 import org.umlg.sqlg.strategy.BaseStrategy;
 
 import java.util.*;
@@ -174,7 +175,8 @@ public class ReplacedStepTree<S, E> {
     public boolean orderByIsOrder() {
         for (ReplacedStep<S, E> replacedStep : linearPathToLeafNode()) {
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
-                if (!(objects.getValue1() instanceof Order && objects.getValue1() != Order.shuffle)) {
+                if (!(objects.getValue1() instanceof PGVectorOrderByComparator)
+                        && (!(objects.getValue1() instanceof Order && objects.getValue1() != Order.shuffle))) {
                     return false;
                 }
             }

@@ -177,6 +177,14 @@ public class WhereClause {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result.append(sqlgGraph.getSqlDialect().getArrayOverlapsQueryText(prefix));
             return result.toString();
+        } else if (p.getBiPredicate() instanceof PGVectorPredicate pgVectorPredicate) {
+            prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+//            embedding <-> '[3,1,2]' < 5;
+            result.append(prefix)
+                    .append(pgVectorPredicate.operator())
+                    .append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(pgVectorPredicate.vector()))
+                    .append(" < ?");
+            return result.toString();
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
     }

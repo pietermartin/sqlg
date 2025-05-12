@@ -18,6 +18,7 @@ public class TestAddTemporaryVertex extends BaseTest {
 
     @Test
     public void testAddTemporaryVertex() throws SQLException {
+
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addTemporaryVertex(T.label, "A", "name", "halo");
         }

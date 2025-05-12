@@ -12,6 +12,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Topology;
 
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * List of column, managing serialization to SQL
@@ -76,8 +77,8 @@ public class ColumnList {
      * @param stepDepth
      * @param alias
      */
-    private Column internalAdd(String schema, String table, String column, int stepDepth, String alias, String aggregateFunction) {
-        Column c = new Column(schema, table, column, this.filteredAllTables.get(schema + "." + table).get(column), stepDepth, aggregateFunction);
+    private Column internalAdd(String schema, String table, String column, int stepDepth, String alias, String aggregateFunction, Function<Object, String> selectColumnFunction) {
+        Column c = new Column(schema, table, column, this.filteredAllTables.get(schema + "." + table).get(column), stepDepth, aggregateFunction, selectColumnFunction);
         this.columns.put(c, alias);
         this.aliases.put(alias, c);
         this.containsAggregate = this.containsAggregate || aggregateFunction != null;
@@ -85,7 +86,7 @@ public class ColumnList {
     }
 
     public Column add(SchemaTable st, String column, int stepDepth, String alias, String aggregateFunction) {
-        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction);
+        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction, null);
     }
 
     /**
@@ -97,7 +98,7 @@ public class ColumnList {
      * @param alias
      */
     public Column add(SchemaTable st, String column, int stepDepth, String alias) {
-        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null);
+        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null, null);
     }
 
     /**
@@ -111,7 +112,7 @@ public class ColumnList {
      * @param foreignKeyParts The foreign key column broken up into its parts. schema, table and for user supplied identifiers the property name.
      */
     private void addForeignKey(String schema, String table, String column, int stepDepth, String alias, String[] foreignKeyParts) {
-        Column c = internalAdd(schema, table, column, stepDepth, alias, null);
+        Column c = internalAdd(schema, table, column, stepDepth, alias, null, null);
         c.isForeignKey = true;
         if (foreignKeyParts.length == 3) {
             Map<String, PropertyDefinition> properties = this.filteredAllTables.get(foreignKeyParts[0] + "." + Topology.VERTEX_PREFIX + foreignKeyParts[1]);
@@ -151,7 +152,7 @@ public class ColumnList {
      */
     private String getAlias(String schema, String table, String column, int stepDepth, String aggregateFunction) {
         //PropertyType is not part of equals or hashCode so not needed for the lookup.
-        Column c = new Column(schema, table, column, null, stepDepth, aggregateFunction);
+        Column c = new Column(schema, table, column, null, stepDepth, aggregateFunction, null);
         return columns.get(c);
     }
 
@@ -326,7 +327,7 @@ public class ColumnList {
             Column column = this.aliases.get(alias);
             if (stackContainsAggregate && (
                     column.isID() ||
-                    column.isForeignKey()) ||
+                            column.isForeignKey()) ||
                     alias.endsWith(Topology.IN_VERTEX_COLUMN_END) ||
                     alias.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
 
@@ -352,6 +353,7 @@ public class ColumnList {
         private final int stepDepth;
         private final boolean ID;
         private final String aggregateFunction;
+        private final Function<Object, String> selectColumnFunction;
         private PropertyDefinition propertyDefinition;
         private int columnIndex = -1;
         //Foreign key properties
@@ -361,7 +363,13 @@ public class ColumnList {
         //Only set for user identifier primary keys
         private String foreignKeyProperty;
 
-        Column(String schema, String table, String column, PropertyDefinition propertyDefinition, int stepDepth, String aggregateFunction) {
+        Column(String schema,
+               String table,
+               String column,
+               PropertyDefinition propertyDefinition,
+               int stepDepth,
+               String aggregateFunction,
+               Function<Object, String> selectColumnFunction) {
             super();
             this.schema = schema;
             this.table = table;
@@ -371,6 +379,7 @@ public class ColumnList {
             this.stepDepth = stepDepth;
             this.ID = this.column.equals(Topology.ID);
             this.aggregateFunction = aggregateFunction;
+            this.selectColumnFunction = selectColumnFunction;
         }
 
         @Override

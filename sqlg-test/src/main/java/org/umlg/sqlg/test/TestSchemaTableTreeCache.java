@@ -114,7 +114,9 @@ public class TestSchemaTableTreeCache extends BaseTest {
                 List.of("groupBy1"),
                 false,
                 null,
-                null, null, null
+                null, null, null,
+                null,
+                null
         );
         LOGGER.info(Integer.toString(schemaTableTree1.hashCode()));
     }

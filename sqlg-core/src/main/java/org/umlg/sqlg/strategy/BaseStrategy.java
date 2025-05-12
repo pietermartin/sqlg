@@ -33,13 +33,16 @@ import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.*;
+import org.umlg.sqlg.services.SqlgFunctionFactory;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
+import org.umlg.sqlg.services.SqlgPGVectorFactory;
 import org.umlg.sqlg.sql.parse.*;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.AbstractLabel;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -52,6 +55,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Compare.*;
@@ -643,6 +647,25 @@ public abstract class BaseStrategy {
 
     private void handleCallStep(ListIterator<Step<?, ?>> stepIterator, CallStep<?, ?> callStep, MutableInt pathCount) {
         String serviceName = callStep.getServiceName();
+
+        switch (serviceName) {
+            case SqlgPGRoutingFactory.NAME:
+                handlePgRouting(serviceName, callStep, pathCount);
+                break;
+            case SqlgPGVectorFactory.NAME:
+                handlePGVector(serviceName, callStep, pathCount);
+                break;
+            case SqlgFunctionFactory.NAME:
+                handleFunction(serviceName, callStep, pathCount);
+                break;
+            default:
+                throw new IllegalStateException("Unknown serviceName: " + serviceName);
+        }
+
+
+    }
+
+    private void handlePgRouting(String serviceName, CallStep<?, ?> callStep, MutableInt pathCount) {
         Preconditions.checkArgument(serviceName.equals(SqlgPGRoutingFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgPGRoutingFactory.NAME, serviceName);
         Map param = callStep.getMergedParams();
         String function = (String) param.get(SqlgPGRoutingFactory.Params.FUNCTION);
@@ -666,6 +689,59 @@ public abstract class BaseStrategy {
                 throw new IllegalStateException("Unknown callStep function " + function);
         }
 
+    }
+
+    private void handleFunction(String serviceName, CallStep<?, ?> callStep, MutableInt pathCount) {
+        Preconditions.checkArgument(serviceName.equals(SqlgFunctionFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgFunctionFactory.NAME, serviceName);
+        Map param = callStep.getMergedParams();
+        Function<Object, String> function = (Function<Object, String>) param.get(SqlgFunctionFactory.Params.FUNCTION_AS_STRING_PRODUCER);
+        Preconditions.checkState(function != null, "function is null");
+        this.currentReplacedStep.setSqlgFunctionConfig(
+                new SqlgFunctionConfig(function)
+        );
+        this.traversal.removeStep(callStep);
+    }
+
+    private void handlePGVector(String serviceName, CallStep<?, ?> callStep, MutableInt pathCount) {
+        Preconditions.checkArgument(serviceName.equals(SqlgPGVectorFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgPGVectorFactory.NAME, serviceName);
+        Map param = callStep.getMergedParams();
+
+        String function = (String) param.get(SqlgPGVectorFactory.Params.FUNCTION);
+        Preconditions.checkState(function != null, "function is null");
+        Preconditions.checkState(function.equals(SqlgPGVectorFactory.l2distance), "Unknown callStep function %s", function);
+
+        handlePGVectorL2Distance(callStep, pathCount, param);
+    }
+
+    private void handlePGVectorL2Distance(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
+
+        String source = (String) param.get(SqlgPGVectorFactory.Params.SOURCE);
+        float[] target = (float[]) param.get(SqlgPGVectorFactory.Params.TARGET);
+
+        GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
+        List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+        Preconditions.checkState(labelHasContainers.size() == 1);
+        HasContainer labelHasContainer = labelHasContainers.get(0);
+        String _abstractLabel = (String) labelHasContainer.getValue();
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _abstractLabel);
+        Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOpt.isPresent());
+        Schema schema = schemaOpt.get();
+        AbstractLabel abstractLabel = null;
+        Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(_abstractLabel);
+        if (vertexLabelOptional.isPresent()) {
+            abstractLabel = vertexLabelOptional.get();
+        } else {
+            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_abstractLabel);
+            if (edgeLabelOptional.isPresent()) {
+                abstractLabel = edgeLabelOptional.get();
+            }
+        }
+        Preconditions.checkNotNull(abstractLabel, "Failed to find %s", _abstractLabel);
+        this.currentReplacedStep.setPgVectorConfig(
+                new PGVectorConfig(SqlgPGVectorFactory.l2distance, source, target, abstractLabel)
+        );
+        this.traversal.removeStep(callStep);
     }
 
     private void handlePgrDijkstra(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
@@ -725,7 +801,7 @@ public abstract class BaseStrategy {
                 new EdgeVertexStep(traversal, Direction.OUT),
                 pathCount.getValue()
         );
-        this.currentTreeNodeNode =  this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         this.traversal.removeStep(callStep);
         this.traversal.addStep(new PathStep<>(traversal));
 
@@ -1061,6 +1137,7 @@ public abstract class BaseStrategy {
                     toRemoveHasContainers.addAll(optimizeTextContains(replacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeArray(replacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLquery(replacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizePGVectorPredicate(replacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLqueryArray(replacedStep, hasContainers));
                     if (toRemoveHasContainers.size() == hasContainers.size()) {
                         if (!currentStep.getLabels().isEmpty()) {
@@ -1613,6 +1690,17 @@ public abstract class BaseStrategy {
             if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
                     hasContainer.getBiPredicate() instanceof FullText
             ) {
+                replacedStep.addHasContainer(hasContainer);
+                result.add(hasContainer);
+            }
+        }
+        return result;
+    }
+
+    private static List<HasContainer> optimizePGVectorPredicate(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof PGVectorPredicate) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }

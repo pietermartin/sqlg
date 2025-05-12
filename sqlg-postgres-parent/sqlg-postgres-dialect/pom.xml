@@ -54,13 +54,19 @@
             <groupId>com.pgvector</groupId>
             <artifactId>pgvector</artifactId>
             <version>0.1.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.postgis</groupId>
             <artifactId>postgis-jdbc</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>postgresql</groupId>
+                    <groupId>org.postgresql</groupId>
                     <artifactId>postgresql</artifactId>
                 </exclusion>
                 <exclusion>

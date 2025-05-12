@@ -1317,7 +1317,17 @@ public interface SqlDialect {
             case LONG_ARRAY_ORDINAL:
                 break;
             case float_ARRAY_ORDINAL:
-                break;
+                float[] floats = (float[]) value;
+                StringBuilder sb = new StringBuilder("'[");
+                int count = 1;
+                for (float aFloat : floats) {
+                    sb.append(aFloat);
+                    if (count++ < floats.length) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("]'");
+                return sb.toString();
             case FLOAT_ARRAY_ORDINAL:
                 break;
             case double_ARRAY_ORDINAL:

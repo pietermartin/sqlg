@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.labels;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -11,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -302,7 +302,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").hasLabel("B");
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").hasLabel("B");
         Assert.assertEquals(0, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
@@ -320,7 +320,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").has(T.label, P.neq("A"));
         Assert.assertEquals(0, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -339,7 +339,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").has(T.label, P.neq("B"));
         Assert.assertEquals(1, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -358,7 +358,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").has(T.label, P.within("B"));
         Assert.assertEquals(0, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -377,7 +377,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").has(T.label, P.without("B", "C"));
         Assert.assertEquals(1, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -396,7 +396,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a).hasLabel("B");
         Assert.assertEquals(0, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -415,7 +415,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a, b, c).hasLabel("B");
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -436,7 +436,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a).hasLabel("A").hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(0, vertices.size());
@@ -458,7 +458,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("B").has(T.id, P.without(b.id(), b2.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -481,7 +481,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C").hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -503,7 +503,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C").hasId(b.id()).hasId(a.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(0, vertices.size());
@@ -524,7 +524,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C").hasId(b.id()).hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -545,7 +545,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C").has(T.id, P.within(b.id(), b2.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -566,7 +566,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C", "D").has(T.id, P.without(b.id(), b2.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(3, vertices.size());
@@ -590,7 +590,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex d = this.sqlgGraph.addVertex(T.label, "D");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B", "C", "D").has(T.id, P.neq(b.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(4, vertices.size());
@@ -616,7 +616,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B");
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -641,7 +641,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B");
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -668,7 +668,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B").hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -695,7 +695,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B").hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -723,7 +723,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B").has(T.id, P.neq(b.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -752,7 +752,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B", "C", "D").has(T.id, P.within(b.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -780,7 +780,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B", "C", "D").has(T.id, P.without(b.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -809,7 +809,7 @@ public class TestHasLabelAndId extends BaseTest {
         a.addEdge("ad", d);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().hasLabel("B", "C", "D").has(T.id, P.neq(c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(3, vertices.size());
@@ -838,7 +838,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B", "C", "D").has(T.id, P.within(b.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -866,7 +866,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B", "C", "D").has(T.id, P.without(b.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -894,7 +894,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B", "C", "D").has(T.id, P.neq(b.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(3, vertices.size());
@@ -1077,7 +1077,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B").hasId(b.id());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -1104,7 +1104,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B").has(T.id, P.within(b.id(), b2.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());
@@ -1131,7 +1131,7 @@ public class TestHasLabelAndId extends BaseTest {
         d.addEdge("ad", a);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").in().hasLabel("B").has(T.id, P.without(b.id(), c.id()));
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
@@ -1299,7 +1299,7 @@ public class TestHasLabelAndId extends BaseTest {
         Edge e3 = vSProvider.addEdge("primary", vSPerson);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
                 .hasLabel("EnterprisePerson")
                 .has("_uniqueId", "1")
                 .in("euid")
@@ -1331,7 +1331,7 @@ public class TestHasLabelAndId extends BaseTest {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
         this.sqlgGraph.addVertex(T.label, "A", "name", "b");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").has("name", "a");
+        DefaultSqlgTraversal<Vertex, Vertex> graphTraversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").has("name", "a");
         Assert.assertEquals(2, graphTraversal.getSteps().size());
         List<Vertex> vertices = graphTraversal.toList();
         Assert.assertEquals(1, graphTraversal.getSteps().size());
@@ -1352,7 +1352,7 @@ public class TestHasLabelAndId extends BaseTest {
     }
 
     private void testCompareBetween_assert(SqlgGraph sqlgGraph, Vertex a1) {
-        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A").has("name", P.between(1, 2));
+        DefaultSqlgTraversal<Vertex, Vertex> graphTraversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A").has("name", P.between(1, 2));
         Assert.assertEquals(2, graphTraversal.getSteps().size());
         List<Vertex> vertices = graphTraversal.toList();
         Assert.assertEquals(1, graphTraversal.getSteps().size());

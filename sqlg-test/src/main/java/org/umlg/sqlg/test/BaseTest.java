@@ -9,8 +9,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -29,6 +29,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.services.SqlgFunctionFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
@@ -115,6 +116,7 @@ public abstract class BaseTest {
             assertNotNull(this.sqlgGraph1);
             assertEquals(this.sqlgGraph.getBuildVersion(), this.sqlgGraph1.getBuildVersion());
         }
+        sqlgGraph.getServiceRegistry().registerService(new SqlgFunctionFactory(sqlgGraph));
         stopWatch.stop();
         LOGGER.info("Startup time for test = " + stopWatch);
     }
