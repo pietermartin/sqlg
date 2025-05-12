@@ -1,13 +1,13 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -140,7 +140,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1).optional(
                         __.out().hasLabel("B")
                 ).path();
@@ -172,7 +172,7 @@ public class TestGremlinOptional extends BaseTest {
         b1.addEdge("bc", c1);
         b1.addEdge("bc", c2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1).optional(
                         __.out().optional(
                                 __.out().hasLabel("C")
@@ -203,7 +203,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out()
@@ -236,7 +236,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b2);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out().optional(
@@ -258,7 +258,7 @@ public class TestGremlinOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
 
-        DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal1 = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .optional(
                         __.out().optional(
@@ -298,7 +298,7 @@ public class TestGremlinOptional extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("ab", "abb")
@@ -341,7 +341,7 @@ public class TestGremlinOptional extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("ab", "abb").optional(
@@ -374,7 +374,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("ab", "bb")
@@ -394,7 +394,7 @@ public class TestGremlinOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
 
-        DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal1 = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("bb")
@@ -430,7 +430,7 @@ public class TestGremlinOptional extends BaseTest {
         c1.addEdge("ccc", cc1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("ab").optional(
@@ -453,7 +453,7 @@ public class TestGremlinOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
 
-        DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal1 = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("ab").optional(
@@ -484,7 +484,7 @@ public class TestGremlinOptional extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         b1.addEdge("knows", a1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out("knows")
@@ -533,7 +533,7 @@ public class TestGremlinOptional extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(vadasVertex, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) g.traversal()
                 .V()
                 .optional(
                         __.out().optional(
@@ -573,7 +573,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V()
                 .optional(
                         __.out().optional(
@@ -608,7 +608,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out().optional(
@@ -643,7 +643,7 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b1);
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out().optional(
@@ -691,7 +691,7 @@ public class TestGremlinOptional extends BaseTest {
         b2.addEdge("bd", d1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .optional(
                         __.out().optional(
@@ -724,7 +724,7 @@ public class TestGremlinOptional extends BaseTest {
         Edge e1 = a1.addEdge("aa", a2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .optional(
                         __.toE(Direction.BOTH, "aa").otherV()

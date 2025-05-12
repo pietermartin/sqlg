@@ -2,12 +2,12 @@ package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -32,7 +32,7 @@ class TestVertexStepPerformance extends BaseTest {
 
         StopWatch stopWatch = new StopWatch();
         for (int i = 0; i < 1000; i++) {
-            DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.gt
+            DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.gt
                     .V()
                     .local(
                             __.optional(
@@ -111,7 +111,7 @@ class TestVertexStepPerformance extends BaseTest {
         for (int i = 0; i < 10000; i++) {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
-            DefaultGraphTraversal<Vertex, Map<String, Map<String, Number>>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Map<String, Number>>>) this.sqlgGraph.traversal()
+            DefaultSqlgTraversal<Vertex, Map<String, Map<String, Number>>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Map<String, Number>>>) this.sqlgGraph.traversal()
                     .V()
                     .out("followedBy")
                     .<String, Map<String, Number>>group()

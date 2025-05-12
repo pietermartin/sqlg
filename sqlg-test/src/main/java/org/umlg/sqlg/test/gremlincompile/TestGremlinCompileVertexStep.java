@@ -1,12 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -41,7 +41,7 @@ public class TestGremlinCompileVertexStep extends BaseTest {
     }
 
     private void testVertexStep_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1) {
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>)sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>)sqlgGraph.traversal()
                 .V(a1).as("a").local(__.out().as("b")).select("a", "b");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Map<String, Object>> t = traversal.toList();

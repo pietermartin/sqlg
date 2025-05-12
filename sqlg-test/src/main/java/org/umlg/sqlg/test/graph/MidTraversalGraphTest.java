@@ -1,11 +1,11 @@
 package org.umlg.sqlg.test.graph;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -52,7 +52,7 @@ public class MidTraversalGraphTest extends BaseTest {
      * @param g
      */
     private void ensureCompiledGraphStep(GraphTraversal<?, ?> g, int expectedCount) {
-        DefaultGraphTraversal<?, ?> dgt = (DefaultGraphTraversal<?, ?>) g;
+        DefaultSqlgTraversal<?, ?> dgt = (DefaultSqlgTraversal<?, ?>) g;
         int count = 0;
         for (Step<?, ?> s : dgt.getSteps()) {
             if (s.getClass().getSimpleName().equals("SqlgGraphStep")) {

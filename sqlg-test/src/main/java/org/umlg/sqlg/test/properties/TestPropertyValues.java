@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.properties;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.IdStep;
@@ -19,6 +18,7 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -98,7 +98,7 @@ public class TestPropertyValues extends BaseTest {
         c1.addEdge("cd", d1);
         c2.addEdge("cd", d2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, String> traversal = (DefaultSqlgTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
                 .hasLabel("C")
                 .has("yyyy", "y1")
                 .as("c")
@@ -140,7 +140,7 @@ public class TestPropertyValues extends BaseTest {
         c1.addEdge("cd", d1);
         c2.addEdge("cd", d2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, String> traversal = (DefaultSqlgTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
                 .hasLabel("C")
                 .has("yyyy", "y1")
                 .as("c")
@@ -205,7 +205,7 @@ public class TestPropertyValues extends BaseTest {
         vA.addEdge("likes", vI, "howMuch", 5, "who", "Joe");
         this.sqlgGraph.tx().commit();
         Object id0 = vI.id();
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>) sqlgGraph.traversal().V()
                 .hasLabel("A")
                 .has("name", "root")
                 .outE("likes")

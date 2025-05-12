@@ -1,12 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -43,7 +43,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
     }
 
     private void testEqualsLocalDate_assert(SqlgGraph sqlgGraph, LocalDate born1, LocalDate born2, LocalDate born3, Vertex v1, Vertex v2, Vertex v3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal().V()
                 .hasLabel("Person").has("born", P.eq(born1));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -51,7 +51,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v1, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal1 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born2));
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
@@ -59,7 +59,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v2, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2.getSteps().size());
         vertices = traversal2.toList();
@@ -68,7 +68,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal3 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
         vertices = traversal3.toList();
@@ -77,7 +77,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v2));
         Assert.assertTrue(vertices.contains(v3));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal4 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.between(born1, born3));
         Assert.assertEquals(2, traversal4.getSteps().size());
         vertices = traversal4.toList();
@@ -86,7 +86,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal5 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.within(born1, born3));
         Assert.assertEquals(2, traversal5.getSteps().size());
         vertices = traversal5.toList();
@@ -113,7 +113,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
     }
 
     private void testEqualsLocalDateTime_assert(SqlgGraph sqlgGraph, LocalDateTime born1, LocalDateTime born2, LocalDateTime born3, Vertex v1, Vertex v2, Vertex v3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born1));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -121,7 +121,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v1, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal1 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born2));
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
@@ -129,7 +129,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v2, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2.getSteps().size());
         vertices = traversal2.toList();
@@ -138,7 +138,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2bis = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2bis = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("name","johnny").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2bis.getSteps().size());
         vertices = traversal2bis.toList();
@@ -147,7 +147,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertFalse(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2ter = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2ter = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("name").has("born", P.lt(born3));
         Assert.assertEquals(4, traversal2ter.getSteps().size());
         vertices = traversal2ter.toList();
@@ -156,14 +156,14 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2cuatro = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2cuatro = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").hasNot("name").has("born", P.lt(born3));
         Assert.assertEquals(4, traversal2cuatro.getSteps().size());
         vertices = traversal2cuatro.toList();
         Assert.assertEquals(traversal2cuatro.toString(),1, traversal2cuatro.getSteps().size());
         Assert.assertEquals(0, vertices.size());
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2cinquo = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2cinquo = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").hasNot("unknown").has("born", P.lt(born3));
         Assert.assertEquals(4, traversal2cinquo.getSteps().size());
         vertices = traversal2cinquo.toList();
@@ -172,7 +172,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal3 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
         vertices = traversal3.toList();
@@ -181,7 +181,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v2));
         Assert.assertTrue(vertices.contains(v3));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal4 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.between(born1, born3));
         Assert.assertEquals(2, traversal4.getSteps().size());
         vertices = traversal4.toList();
@@ -190,7 +190,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal5 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.within(born1, born3));
         Assert.assertEquals(2, traversal5.getSteps().size());
         vertices = traversal5.toList();
@@ -220,7 +220,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
     }
 
     private void testEqualsZonedDateTime_assert(SqlgGraph sqlgGraph, ZonedDateTime born1, ZonedDateTime born2, ZonedDateTime born3, Vertex v1, Vertex v2, Vertex v3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born1));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -228,7 +228,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v1, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal1 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born2));
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
@@ -236,7 +236,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v2, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("Person").has("born", P.lt(born3));
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("Person").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2.getSteps().size());
         vertices = traversal2.toList();
         Assert.assertEquals(2, traversal2.getSteps().size());
@@ -244,7 +244,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal3 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
         vertices = traversal3.toList();
@@ -253,7 +253,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v2));
         Assert.assertTrue(vertices.contains(v3));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal4 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.between(born1, born3));
         Assert.assertEquals(2, traversal4.getSteps().size());
         vertices = traversal4.toList();
@@ -262,7 +262,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal5 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.within(born1, born3));
         Assert.assertEquals(2, traversal5.getSteps().size());
         vertices = traversal5.toList();
@@ -293,7 +293,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
     }
 
     private void testEqualsZonedDateTime2_assert(SqlgGraph sqlgGraph, ZonedDateTime born2) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born2));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -318,7 +318,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
     }
 
     private void testEqualsDuration_assert(SqlgGraph sqlgGraph, Duration born1, Duration born2, Duration born3, Vertex v1, Vertex v2, Vertex v3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born1));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -326,7 +326,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v1, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal1 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.eq(born2));
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
@@ -334,7 +334,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v2, vertices.get(0));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal2 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2.getSteps().size());
         vertices = traversal2.toList();
@@ -343,7 +343,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal3 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
         vertices = traversal3.toList();
@@ -352,7 +352,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v2));
         Assert.assertTrue(vertices.contains(v3));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal4 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.between(born1, born3));
         Assert.assertEquals(2, traversal4.getSteps().size());
         vertices = traversal4.toList();
@@ -361,7 +361,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal5 = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.within(born1, born3));
         Assert.assertEquals(2, traversal5.getSteps().size());
         vertices = traversal5.toList();

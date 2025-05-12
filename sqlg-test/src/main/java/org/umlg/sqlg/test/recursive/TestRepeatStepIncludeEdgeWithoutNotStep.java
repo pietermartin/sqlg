@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.recursive;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -14,6 +13,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -112,7 +112,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Edge e3 = a.addEdge("of", d, "field1", "of3", "field2", "of33");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.outE("of").inV().simplePath())
                 .until(
                         __.has("field1", "c")
@@ -127,7 +127,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Assert.assertEquals(1, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(a) && p.get(1).equals(e1) && p.get(2).equals(b) && p.get(3).equals(e2) && p.get(4).equals(c)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.outE("of").as("e").inV().as("v").simplePath())
                 .until(
                         __.select("e").has("field2", "of22")
@@ -174,7 +174,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Edge e3 = d.addEdge("of", a, "field1", "of3", "field2", "of33");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.inE("of").outV().simplePath())
                 .until(
                         __.has("field1", "c")
@@ -189,7 +189,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Assert.assertEquals(1, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(a) && p.get(1).equals(e2) && p.get(2).equals(b) && p.get(3).equals(e1) && p.get(4).equals(c)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.inE("of").as("e").outV().as("v").simplePath())
                 .until(
                         __.select("e").has("field2", "of22")
@@ -236,7 +236,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Edge e3 = d.addEdge("of", a, "field1", "of3", "field2", "of33");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.bothE("of").otherV().simplePath())
                 .until(
                         __.has("field1", "c")
@@ -251,7 +251,7 @@ public class TestRepeatStepIncludeEdgeWithoutNotStep extends BaseTest {
         Assert.assertEquals(1, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(a) && p.get(1).equals(e2) && p.get(2).equals(b) && p.get(3).equals(e1) && p.get(4).equals(c)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(__.bothE("of").as("e").otherV().as("v").simplePath())
                 .until(
                         __.select("e").has("field2", "of22")

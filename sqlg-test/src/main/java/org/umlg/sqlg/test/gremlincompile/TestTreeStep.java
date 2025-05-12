@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -9,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -38,7 +38,7 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Tree> traversal = (DefaultGraphTraversal<Vertex, Tree>) this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree();
+        DefaultSqlgTraversal<Vertex, Tree> traversal = (DefaultSqlgTraversal<Vertex, Tree>) this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree();
         Assert.assertEquals(5, traversal.getSteps().size());
         Tree tree = traversal.next();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -75,7 +75,7 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c2);
         b1.addEdge("bc", c3);
 
-        DefaultGraphTraversal<Vertex, Tree> traversal = (DefaultGraphTraversal<Vertex, Tree>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Tree> traversal = (DefaultSqlgTraversal<Vertex, Tree>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().out().tree().by("name");
         Assert.assertEquals(5, traversal.getSteps().size());
         Tree tree = traversal.next();
@@ -108,7 +108,7 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c2);
         b1.addEdge("bc", c3);
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().out().tree("a");
         Assert.assertEquals(5, traversal.getSteps().size());
         Vertex v = traversal.next();
@@ -122,9 +122,9 @@ public class TestTreeStep extends BaseTest {
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = this.sqlgGraph.traversal();
-        @SuppressWarnings("unchecked") final List<DefaultGraphTraversal<Vertex, Tree>> traversals = Arrays.asList(
-                (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree().by("name"),
-                (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree("a").by("name").both().both().cap("a")
+        @SuppressWarnings("unchecked") final List<DefaultSqlgTraversal<Vertex, Tree>> traversals = Arrays.asList(
+                (DefaultSqlgTraversal)g.V(convertToVertexId("marko")).out().out().tree().by("name"),
+                (DefaultSqlgTraversal)g.V(convertToVertexId("marko")).out().out().tree("a").by("name").both().both().cap("a")
         );
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);

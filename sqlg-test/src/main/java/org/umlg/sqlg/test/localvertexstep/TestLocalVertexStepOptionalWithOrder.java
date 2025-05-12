@@ -3,8 +3,6 @@ package org.umlg.sqlg.test.localvertexstep;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
@@ -20,6 +18,8 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+import org.umlg.sqlg.structure.__;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -41,7 +41,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         a1.addEdge("ab", b2);
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .local(
                         __.out().order().by("order", Order.desc)
@@ -79,7 +79,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         a12.addEdge("ab", b22);
         a12.addEdge("ab", b32);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").as("a")
                 .local(
                         __.out().as("b")
@@ -140,7 +140,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b2.addEdge("bcc", cc3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .local(
                         __.optional(
@@ -253,7 +253,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b2.addEdge("bcc", cc3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .local(
                         __.optional(
@@ -331,7 +331,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b2.addEdge("bcc", cc3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .local(
                         __.optional(
@@ -377,7 +377,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").as("a")
                 .local(
                         __.optional(
@@ -426,7 +426,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Edge cd2 = c1.addEdge("cd", d2, "order", 2);
         Edge cd3 = c1.addEdge("cd", d3, "order", 1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1.id())
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1.id())
                 .local(
                         __.optional(
                                 __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.asc)
@@ -613,7 +613,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         a2.addEdge("abb", bb3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .local(
                         __.optional(
                                 __.out("ab")
@@ -679,7 +679,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b1.addEdge("bcc", cc3, "order", 1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal()
                 .V().hasLabel("A").as("a").order().by("name", Order.desc)
                 .local(
                         __.optional(
@@ -700,7 +700,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgLocalStepBarrier);
         SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getSteps().get(2);
-        @SuppressWarnings("unchecked") DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
+        @SuppressWarnings("unchecked") DefaultSqlgTraversal<Vertex, Vertex> t = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
 
 //        First optional is a non optimized, optimized SqlgOptionalBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
@@ -715,7 +715,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         @SuppressWarnings("unused") SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
         //noinspection unchecked
-        t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
+        t = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());
 
@@ -815,7 +815,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b1.addEdge("bcc", cc2, "order", 2);
         b1.addEdge("bcc", cc3, "order", 1);
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal()
                 .V().hasLabel("A").as("a").order().by("name", Order.desc)
                 .local(
                         __.optional(
@@ -836,7 +836,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(2) instanceof LocalStep);
         LocalStep localStep = (LocalStep) traversal.getSteps().get(2);
-        @SuppressWarnings("unchecked") DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) localStep.getLocalChildren().get(0);
+        @SuppressWarnings("unchecked") DefaultSqlgTraversal<Vertex, Vertex> t = (DefaultSqlgTraversal<Vertex, Vertex>) localStep.getLocalChildren().get(0);
 
         //First optional is a non optimized, optimized SqlgChooseBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
@@ -850,7 +850,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
         //noinspection unchecked
-        t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier1.getLocalChildren().get(0);
+        t = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgLocalStepBarrier1.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());
 

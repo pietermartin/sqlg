@@ -2,9 +2,7 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,7 +12,9 @@ import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.barrier.SqlgCountGlobalStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.__;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -100,7 +100,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         } catch (IllegalStateException e) {
             Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.B:::1]:missing2", e.getMessage());
         }
-        DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) sqlgGraph.traversal().V().count();
+        DefaultSqlgTraversal<Vertex, Long> traversal = (DefaultSqlgTraversal<Vertex, Long>) sqlgGraph.traversal().V().count();
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep<?, ?>);
@@ -143,7 +143,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b2);
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .out()
                 .order().by("order", Order.desc);
@@ -175,7 +175,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a12.addEdge("ab", b22);
         a12.addEdge("ab", b32);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").as("a")
                 .out().as("b")
                 .order()
@@ -204,7 +204,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Edge e2 = a1.addEdge("ab", b2, "order", 1);
         Edge e3 = a1.addEdge("ab", b3, "order", 2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Edge> traversal = (DefaultSqlgTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.desc);
@@ -217,7 +217,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(e2, edges.get(1));
         Assert.assertEquals(e1, edges.get(2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.asc);
@@ -230,7 +230,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(e2, edges.get(1));
         Assert.assertEquals(e3, edges.get(2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order");
@@ -260,7 +260,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Edge ec2 = a1.addEdge("ac", c2, "order", 4);
         Edge ec3 = a1.addEdge("ac", c3, "order", 5);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Edge> traversal = (DefaultSqlgTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.desc);
@@ -287,7 +287,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b2, "order", 11);
         a1.addEdge("ab", b3, "order", 2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.desc)
@@ -301,7 +301,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(b3, vertices.get(1));
         Assert.assertEquals(b1, vertices.get(2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.asc)
@@ -326,7 +326,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b2, "order", 11);
         a1.addEdge("ab", b3, "order", 2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> traversal = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> traversal = (DefaultSqlgTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.desc)
@@ -340,7 +340,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals("b3", vertices.get(1));
         Assert.assertEquals("b1", vertices.get(2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.asc)
@@ -371,7 +371,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ac", c2, "order", 4);
         a1.addEdge("ac", c3, "order", 5);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.desc)
@@ -526,7 +526,7 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .out("created").as("b")
                 .order().by(Order.shuffle)
                 .select("a", "b");
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) traversal;
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultSqlgTraversal<Vertex, Map<String, Vertex>>) traversal;
         System.out.println(defaultGraphTraversal.getStrategies());
         printTraversalForm(traversal);
         int counter = 0;
@@ -587,7 +587,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex b1, Vertex b2, Vertex b3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .order()
                 .by("name", Order.asc).by("surname", Order.desc);
@@ -640,7 +640,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy2_assert(SqlgGraph sqlgGraph) {
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
                 .hasLabel("Group").as("g")
                 .out("groupNetwork").as("network")
                 .out("networkNetworkSoftwareVersion").as("nsv")
@@ -706,7 +706,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy3_assert(SqlgGraph sqlgGraph) {
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
                 .hasLabel("A").as("a")
                 .out("ab").as("b")
                 .<Vertex>select("a", "b")

@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.filter.and.barrier;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
@@ -14,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -126,7 +126,7 @@ public class TestAndStepBarrier extends BaseTest {
     @Test
     public void g_VX1X_repeatXboth_simplePathX_untilXhasXname_peterX_and_loops_isX3XX_hasXname_peterX_path_byXnameX() {
         loadModern();
-        final DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        final DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(convertToVertexId("marko"))
                 .repeat(
                         __.both().simplePath()
@@ -154,7 +154,7 @@ public class TestAndStepBarrier extends BaseTest {
     @Test
     public void g_V_asXaX_outXknowsX_and_outXcreatedX_inXcreatedX_asXaX_name() {
         loadModern();
-        final DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+        final DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("knows")
                 .and()
@@ -180,7 +180,7 @@ public class TestAndStepBarrier extends BaseTest {
         a3.addEdge("abbb", b3);
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),
                 __.out("abb")
         );
@@ -249,7 +249,7 @@ public class TestAndStepBarrier extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),
                 __.out("abb")
         );
@@ -277,7 +277,7 @@ public class TestAndStepBarrier extends BaseTest {
         a3.addEdge("abbb", b3);
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),
                 __.out("abb"),
                 __.out("abbb")

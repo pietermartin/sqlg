@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -14,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.strategy.BaseStrategy;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashSet;
@@ -102,7 +102,7 @@ public class TestPathStep extends BaseTest {
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
 
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) g
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>) g
                 .V().has(T.label, "person").as("a").local(__.out("created").as("b")).select("a", "b").by("name").by(T.id);
         Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
@@ -131,13 +131,13 @@ public class TestPathStep extends BaseTest {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
-        DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) graph.traversal().V().out().path();
+        DefaultSqlgTraversal<Vertex, Path> traversal1 = (DefaultSqlgTraversal<Vertex, Path>) graph.traversal().V().out().path();
         Assert.assertEquals(3, traversal1.getSteps().size());
         List<Path> paths = traversal1.toList();
         Assert.assertEquals(2, traversal1.getSteps().size());
         Assert.assertEquals(6, paths.size());
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) graph.traversal().V().out().path().by("age").by("name");
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) graph.traversal().V().out().path().by("age").by("name");
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -159,7 +159,7 @@ public class TestPathStep extends BaseTest {
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) g
                 .V(convertToVertexId("marko")).out().path().by("age").by("name");
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
@@ -186,7 +186,7 @@ public class TestPathStep extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal().V(a1.id()).bothE();
+        DefaultSqlgTraversal<Vertex, Edge> traversal = (DefaultSqlgTraversal<Vertex, Edge>) this.sqlgGraph.traversal().V(a1.id()).bothE();
         Assert.assertEquals(2, traversal.getSteps().size());
         final List<Edge> v1Edges = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -201,7 +201,7 @@ public class TestPathStep extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> gt = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1).out().in().path();
+        DefaultSqlgTraversal<Vertex, Path> gt = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1).out().in().path();
         Assert.assertEquals(4, gt.getSteps().size());
         Path p = gt.next();
         Assert.assertEquals(2, gt.getSteps().size());
@@ -215,7 +215,7 @@ public class TestPathStep extends BaseTest {
     public void testSimplePath() {
         this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().as("a").has("name", "a1").as("b").has("age", 1).as("c").path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
@@ -231,7 +231,7 @@ public class TestPathStep extends BaseTest {
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) g
                 .V().as("a").has("name", "marko").as("b").has("age", 29).as("c").path();
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
@@ -260,7 +260,7 @@ public class TestPathStep extends BaseTest {
         a3.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
@@ -304,7 +304,7 @@ public class TestPathStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").out().out().path();
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Path> paths = traversal.toList();

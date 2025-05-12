@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.recursive;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -12,6 +11,7 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
@@ -60,7 +60,7 @@ public class TestTopologyRecursiveRepeat extends BaseTest {
                 .id()
                 .toList();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>)this.sqlgGraph.topology().V().hasId(P.within(partitionIds))
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>)this.sqlgGraph.topology().V().hasId(P.within(partitionIds))
                 .repeat(
                         __.out(Topology.SQLG_SCHEMA_PARTITION_PARTITION_EDGE).simplePath()
                 )

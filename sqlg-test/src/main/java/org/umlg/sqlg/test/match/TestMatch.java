@@ -2,13 +2,13 @@ package org.umlg.sqlg.test.match;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -103,7 +103,7 @@ public class TestMatch extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal()
                 .V()
                 .match(
                         __.as("a").in("ab").as("x"),
@@ -123,7 +123,7 @@ public class TestMatch extends BaseTest {
     public void testMatch2() {
         loadModern();
         Vertex marko = convertToVertex(this.sqlgGraph, "marko");
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>)this.sqlgGraph.traversal()
                 .V(marko)
                 .match(
                         __.as("a").out("knows").as("b"),

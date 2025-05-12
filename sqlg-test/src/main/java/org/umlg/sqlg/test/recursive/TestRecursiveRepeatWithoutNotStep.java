@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.recursive;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -15,6 +14,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -76,7 +76,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -137,7 +137,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -195,7 +195,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -254,7 +254,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -316,7 +316,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -378,7 +378,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -438,7 +438,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -458,7 +458,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(c)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(d)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -480,7 +480,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -504,7 +504,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -532,7 +532,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
         //unoptimized
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.out("of").simplePath()
                 ).until(
@@ -591,7 +591,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -611,7 +611,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(c)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(d)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -633,7 +633,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -657,7 +657,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -685,7 +685,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a) && p.get(1).equals(d) && p.get(2).equals(g)));
 
         //unoptimized
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a)
                 .repeat(
                         __.in("of").simplePath()
                 ).until(
@@ -744,7 +744,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(d)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(d)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -764,7 +764,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(d) && p.get(1).equals(a) && p.get(2).equals(c)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(d) && p.get(1).equals(e) && p.get(2).equals(h)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -786,7 +786,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -810,7 +810,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(f)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(g)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(
@@ -838,7 +838,7 @@ public class TestRecursiveRepeatWithoutNotStep extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(e) && p.get(1).equals(d) && p.get(2).equals(g)));
 
         //unoptimized
-        traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(e)
                 .repeat(
                         __.both("of").simplePath()
                 ).until(

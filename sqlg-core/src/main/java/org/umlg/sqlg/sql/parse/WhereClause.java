@@ -17,7 +17,8 @@ import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Created by pieter on 2015/08/03.

@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.filter.not.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -11,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgNotStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -25,7 +25,7 @@ public class TestNotStepBarrier extends BaseTest {
     @Test
     public void g_VX1X_repeatXoutX_untilXoutE_count_isX0XX_name() {
         loadModern();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, String> traversal = (DefaultSqlgTraversal<Vertex, String>)this.sqlgGraph.traversal()
                 .V(convertToVertexId("marko"))
                 .repeat(__.out())
                 .until(__.outE().count().is(0))
@@ -47,7 +47,7 @@ public class TestNotStepBarrier extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
                 .hasLabel("A")
                 .not(__.out().has("name", "b1"));
         List<Vertex> vertices = traversal.toList();

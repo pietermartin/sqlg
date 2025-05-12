@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -14,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class TestRepeatStepOnEdges extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Edge, Edge> traversal = (DefaultGraphTraversal<Edge, Edge>) this.sqlgGraph.traversal().E().repeat(__.outV().outE()).times(2).emit();
+        DefaultSqlgTraversal<Edge, Edge> traversal = (DefaultSqlgTraversal<Edge, Edge>) this.sqlgGraph.traversal().E().repeat(__.outV().outE()).times(2).emit();
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Edge> edges = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -59,7 +59,7 @@ public class TestRepeatStepOnEdges extends BaseTest {
         v2.addEdge("tsw", v3, "speed", "1", "arrTime", 30L, "depTime", 25L);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal gp = (DefaultGraphTraversal) this.sqlgGraph.traversal().V().outE("tsw").as("e").inV().emit().repeat(
+        DefaultSqlgTraversal gp = (DefaultSqlgTraversal) this.sqlgGraph.traversal().V().outE("tsw").as("e").inV().emit().repeat(
                 __.outE("tsw").as("e").inV().simplePath()
         ).times(20);
         Assert.assertEquals(4, gp.getSteps().size());
@@ -144,7 +144,7 @@ public class TestRepeatStepOnEdges extends BaseTest {
 
 
     @SuppressWarnings("unchecked")
-    private DefaultGraphTraversal query1(GraphTraversalSource g) {
+    private DefaultSqlgTraversal query1(GraphTraversalSource g) {
         Function timeAtWarehouse = o -> {
             Map m = (Map) o;
             Long dt = ((Edge) (m.get("curr"))).value("depTime");
@@ -159,7 +159,7 @@ public class TestRepeatStepOnEdges extends BaseTest {
             return (dt - at) >= 0;
         };
 
-        return (DefaultGraphTraversal)g.V().outE("tsw").as("e").inV().emit().repeat(
+        return (DefaultSqlgTraversal)g.V().outE("tsw").as("e").inV().emit().repeat(
                 __.flatMap(
                         __.outE("tsw").filter(__.as("edge").select(last, "e").where(P.eq("edge")).by("speed")).
                                 group().by(__.inV()).by(__.project("curr", "prev").by().by(__.select(last, "e")).fold()).select(Column.values).unfold().
@@ -172,8 +172,8 @@ public class TestRepeatStepOnEdges extends BaseTest {
     }
 
     @SuppressWarnings({"RedundantCast", "unchecked"})
-    private DefaultGraphTraversal query2(GraphTraversalSource g) {
-        return (DefaultGraphTraversal)g.withSack(0).V().outE("tsw").as("e").inV().emit().repeat(
+    private DefaultSqlgTraversal query2(GraphTraversalSource g) {
+        return (DefaultSqlgTraversal)g.withSack(0).V().outE("tsw").as("e").inV().emit().repeat(
                 __.flatMap(
                         __.outE("tsw").filter(__.as("edge").select(last, "e").where(P.eq("edge")).by("speed")).
                                 group().by(__.inV()).

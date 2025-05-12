@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -11,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.gt
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.gt
                 .V(a11)
                 .local(
                         __.optional(
@@ -85,7 +85,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.gt
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.gt
                 .V()
                 .local(
                         __.optional(
@@ -131,7 +131,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V()
                 .local(
                         __.optional(
@@ -186,7 +186,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V()
                 .local(
                         __.optional(
@@ -230,7 +230,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V()
                 .local(
                         __.<Vertex, Vertex>choose(
@@ -261,7 +261,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(a1)
                 .local(
                         __.optional(
@@ -479,7 +479,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>)this.sqlgGraph.traversal().V(a1)
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>)this.sqlgGraph.traversal().V(a1)
                 .local(
                         __.optional(
                                 __.out("ab").optional(

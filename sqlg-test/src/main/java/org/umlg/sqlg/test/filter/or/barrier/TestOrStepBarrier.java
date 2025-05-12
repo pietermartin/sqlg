@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.filter.or.barrier;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -9,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.barrier.SqlgOrStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -23,7 +23,7 @@ public class TestOrStepBarrier extends BaseTest {
     @Test
     public void g_V_emitXhasXname_markoX_or_loops_isX2XX_repeatXoutX_valuesXnameX() {
         loadModern();
-        final DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>) this.sqlgGraph.traversal()
+        final DefaultSqlgTraversal<Vertex, String> traversal = (DefaultSqlgTraversal<Vertex, String>) this.sqlgGraph.traversal()
                 .V()
                 .emit(
                         __.has("name", "marko")
@@ -56,7 +56,7 @@ public class TestOrStepBarrier extends BaseTest {
         a4.addEdge("abbbb", b4);
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.out("ab"),
@@ -84,7 +84,7 @@ public class TestOrStepBarrier extends BaseTest {
         a3.addEdge("abbb", b3);
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.out("ab"),

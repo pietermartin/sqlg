@@ -2,7 +2,9 @@ package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
-import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.structure.topology.PartitionType;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.TopologyManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -4,7 +4,6 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
@@ -20,8 +19,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeDefinition;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -570,7 +569,7 @@ public class TestDropStep extends BaseTest {
     }
 
     private void testAsWithDuplicatePaths_assert(SqlgGraph sqlgGraph, Vertex a1, Edge e1) {
-        DefaultGraphTraversal<Vertex, Map<String, Element>> gt = (DefaultGraphTraversal<Vertex, Map<String, Element>>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Element>> gt = (DefaultSqlgTraversal<Vertex, Map<String, Element>>) sqlgGraph.traversal()
                 .V(a1)
                 .outE().as("e")
                 .inV()

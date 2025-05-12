@@ -1,13 +1,13 @@
 package org.umlg.sqlg.test.filter.connectivestep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -123,7 +123,7 @@ public class TestAndandOrStep extends BaseTest {
         Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "surname", "ss3", "age", 3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .or(
                         __.has("name", "a1"),
                         __.has("name", "a2"),
@@ -146,7 +146,7 @@ public class TestAndandOrStep extends BaseTest {
         Vertex a5 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "surname", "s4", "age", 4);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .or(
                         __.and(
                                 __.has("name", "a1"),
@@ -178,7 +178,7 @@ public class TestAndandOrStep extends BaseTest {
         this.sqlgGraph.tx().commit();
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .or(
                         __.and(
                                 __.has("name", "a1"),
@@ -220,7 +220,7 @@ public class TestAndandOrStep extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "s2");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .and(
                         __.hasNot("surname"),
                         __.has("name", "a1")
@@ -237,7 +237,7 @@ public class TestAndandOrStep extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "s2");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
                 .or(
                         __.and(
                                 __.hasNot("surname"),

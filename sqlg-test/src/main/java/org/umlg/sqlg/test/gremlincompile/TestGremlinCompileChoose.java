@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
@@ -15,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -129,7 +129,7 @@ public class TestGremlinCompileChoose extends BaseTest {
     @Test
     public void g_V_chooseXlabelX_optionXblah__outXknowsXX_optionXbleep__outXcreatedXX_optionXnone__identityX_name() {
         loadModern();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal().V().choose(__.label())
+        DefaultSqlgTraversal<Vertex, String> traversal = (DefaultSqlgTraversal<Vertex, String>)this.sqlgGraph.traversal().V().choose(__.label())
                 .option("blah", __.out("knows"))
                 .option("bleep", __.out("created"))
                 .option(Pick.none, __.identity()).<String>values("name");
@@ -172,7 +172,7 @@ public class TestGremlinCompileChoose extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V()
                 .hasLabel("A")
                 .choose(

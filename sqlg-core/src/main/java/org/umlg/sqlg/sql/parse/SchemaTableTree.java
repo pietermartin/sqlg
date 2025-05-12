@@ -18,8 +18,8 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.PGVectorOrderByComparator;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.strategy.*;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 

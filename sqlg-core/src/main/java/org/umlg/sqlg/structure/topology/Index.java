@@ -8,7 +8,10 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.TopologyInf;
 import org.umlg.sqlg.util.ThreadLocalList;
 
 import java.sql.*;

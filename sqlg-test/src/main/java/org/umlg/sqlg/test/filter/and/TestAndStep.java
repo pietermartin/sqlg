@@ -1,12 +1,12 @@
 package org.umlg.sqlg.test.filter.and;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -32,7 +32,7 @@ public class TestAndStep extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "aa2");
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "surname", "aa3");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .and(
                         __.has("name", "a1"),
@@ -50,7 +50,7 @@ public class TestAndStep extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "aa2", "middlename", "aaa2");
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "surname", "aa3", "middlename", "aaa3");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .and(
                         __.has("name", "a1"),

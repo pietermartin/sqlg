@@ -1,12 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -42,7 +42,7 @@ public class TestGremlinCompileGraphV extends BaseTest {
     }
 
     private void testGraphStepWithAs_aasert(SqlgGraph sqlgGraph, Vertex a1) {
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path();
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path();
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -78,7 +78,7 @@ public class TestGremlinCompileGraphV extends BaseTest {
     }
 
     private void testGraphVHas_assert(SqlgGraph sqlgGraph) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.label, "A").out("b");
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.label, "A").out("b");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> bs = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());

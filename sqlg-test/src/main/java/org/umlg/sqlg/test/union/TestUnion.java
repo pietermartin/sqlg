@@ -1,10 +1,10 @@
 package org.umlg.sqlg.test.union;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public class TestUnion extends BaseTest {
 //    @Test
 //    public void g_V_hasXperson_name_markoX_path_asXaX_unionXidentity_identityX_selectXaX_unfold() {
 //        loadModern();
-//        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().has("person", "name", "marko")
+//        DefaultSqlgTraversal<Vertex, Vertex> graphTraversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().has("person", "name", "marko")
 //                .path().as("a")
 //                .union(
 //                        __.identity(),
@@ -36,7 +36,7 @@ public class TestUnion extends BaseTest {
     @Test
     public void g_unionXV_out_out_V_hasLabelXsoftwareXX_path_byXnameX() {
         loadModern();
-        DefaultGraphTraversal<Vertex, Path> graphTraversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().union(
+        DefaultSqlgTraversal<Vertex, Path> graphTraversal = (DefaultSqlgTraversal) this.sqlgGraph.traversal().union(
                         __.V().out().out(),
                         __.V().hasLabel("software")
         ).path().by("name");
@@ -50,7 +50,7 @@ public class TestUnion extends BaseTest {
     //    @Test
     public void g_unionXV_out_out_V_hasLabelXsoftwareXX_path() {
         loadModern();
-        DefaultGraphTraversal<Vertex, Path> graphTraversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().union(
+        DefaultSqlgTraversal<Vertex, Path> graphTraversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal().union(
                 __.V().out().out(),
                 __.V().hasLabel("software")
         ).path();
@@ -62,7 +62,7 @@ public class TestUnion extends BaseTest {
             System.out.println(path);
         }
 
-//        DefaultGraphTraversal<Path, Path> graphTraversal = (DefaultGraphTraversal<Path, Path>) this.sqlgGraph.traversal().union(
+//        DefaultSqlgTraversal<Path, Path> graphTraversal = (DefaultSqlgTraversal<Path, Path>) this.sqlgGraph.traversal().union(
 //                __.V().out().out().path(),
 //                __.V().hasLabel("software").path()
 //        );
@@ -91,7 +91,7 @@ public class TestUnion extends BaseTest {
 //    public void g_unionXconstantX1X_constantX2X_constantX3XX() {
 //        loadModern();
 //        GraphTraversalSource g = sqlgGraph.traversal();
-//        DefaultGraphTraversal<String, String> graphTraversal = (DefaultGraphTraversal<String, String>) g.union(
+//        DefaultSqlgTraversal<String, String> graphTraversal = (DefaultSqlgTraversal<String, String>) g.union(
 //                __.constant("d[1].i"),
 //                __.constant("d[2].i"),
 //                __.constant("d[3].i")

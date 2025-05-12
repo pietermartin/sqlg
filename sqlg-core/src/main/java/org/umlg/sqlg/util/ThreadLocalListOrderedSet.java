@@ -2,7 +2,9 @@ package org.umlg.sqlg.util;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @author Pieter Martin

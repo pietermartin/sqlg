@@ -3,12 +3,12 @@ package org.umlg.sqlg.test.branchstep;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -54,7 +54,7 @@ public class TestSqlgBranchStep extends BaseTest {
         b3.addEdge("bc", c9);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").order().by("order")
                 .local(
                         __.optional(
@@ -132,7 +132,7 @@ public class TestSqlgBranchStep extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal traversal = (DefaultSqlgTraversal) this.sqlgGraph.traversal()
                 .V(a1)
                 .branch(__.out().values("name"))
                 .option(P.eq("b2"), __.out());
@@ -140,7 +140,7 @@ public class TestSqlgBranchStep extends BaseTest {
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(0, vertices.size());
 
-        traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal) this.sqlgGraph.traversal()
                 .V(a1)
                 .branch(__.out().values("name"))
                 .option(P.eq("b1"), __.out());

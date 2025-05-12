@@ -11,7 +11,10 @@ import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>

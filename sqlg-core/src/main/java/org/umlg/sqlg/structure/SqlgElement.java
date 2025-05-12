@@ -17,7 +17,6 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
-import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.sql.parse.SchemaTableTree.ALIAS_SEPARATOR;

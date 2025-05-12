@@ -1,11 +1,11 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class TestRepeatStepWithLabels extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1).repeat(out()).times(2).emit().as("bc").<Vertex>select("bc");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
@@ -43,7 +43,7 @@ public class TestRepeatStepWithLabels extends BaseTest {
     @Test
     public void testRepeatEmitLabel1() {
         loadModern();
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .repeat(out()).times(1).emit().as("b")
                 .<Vertex>select("a", "b");
@@ -69,7 +69,7 @@ public class TestRepeatStepWithLabels extends BaseTest {
     @Test
     public void testRepeatEmitLabel2() {
         loadModern();
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .repeat(out()).times(2).emit().as("b")
                 .<Vertex>select("a", "b");

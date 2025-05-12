@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.filter.or;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -11,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.topology.IndexType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -100,7 +100,7 @@ public class TestOrStep extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1"),
@@ -120,7 +120,7 @@ public class TestOrStep extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "p1", "v1");
         this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "p1", "v1");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1").has("p1", "v1"),
@@ -140,7 +140,7 @@ public class TestOrStep extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "p1", "v1");
         this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "p1", "v1");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1").has("p1", "v1"),
@@ -152,7 +152,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1").has("p1", "v1"),
@@ -164,7 +164,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
 
-        traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1").has("p1", "v1"),
@@ -183,7 +183,7 @@ public class TestOrStep extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1"),
@@ -202,7 +202,7 @@ public class TestOrStep extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a1"),
@@ -229,7 +229,7 @@ public class TestOrStep extends BaseTest {
         Vertex a7 = this.sqlgGraph.addVertex(T.label, "A", "name", "a7");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", P.within("a1", "a2", "a3", "a4", "a5")),
@@ -243,7 +243,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
 
         //logic in BaseStrategy is different
-        traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
                         __.has("name", "a6"),
@@ -268,7 +268,7 @@ public class TestOrStep extends BaseTest {
         Vertex a7 = this.sqlgGraph.addVertex(T.label, "A", "name", "a7", "age", 7);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
                 .hasLabel("A")
                 .or(
                         __.has("age", P.between(2, 5)),
@@ -291,7 +291,7 @@ public class TestOrStep extends BaseTest {
         Vertex a7 = this.sqlgGraph.addVertex(T.label, "A", "name", "a7", "age", 7);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
                 .hasLabel("A")
                 .or(
                         __.has("age", P.inside(2, 5)),
@@ -314,7 +314,7 @@ public class TestOrStep extends BaseTest {
         Vertex a7 = this.sqlgGraph.addVertex(T.label, "A", "name", "a7", "age", 7);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
                 .hasLabel("A")
                 .or(
                         __.has("age", P.outside(2, 5)),
@@ -338,7 +338,7 @@ public class TestOrStep extends BaseTest {
         vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").orElseThrow()));
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("Sentence")
                 .or(
                         __.has("name", FullText.fullTextMatch("english", "fat & rat")),
@@ -349,7 +349,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.containsAll(Arrays.asList(v0, v1)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("Sentence")
                 .or(
                         __.has("name", FullText.fullTextMatch("english", "fat & cow")),
@@ -375,7 +375,7 @@ public class TestOrStep extends BaseTest {
         aa1.addEdge("ab", a2);
         aa1.addEdge("ab", a2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("AA")
                 .local(
                         __.out("ab")

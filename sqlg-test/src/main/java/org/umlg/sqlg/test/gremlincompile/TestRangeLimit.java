@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
@@ -12,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -33,7 +33,7 @@ public class TestRangeLimit extends BaseTest {
      * @param g
      */
     private void ensureRangeGlobal(GraphTraversal<?, ?> g) {
-        DefaultGraphTraversal<?, ?> dgt = (DefaultGraphTraversal<?, ?>) g;
+        DefaultSqlgTraversal<?, ?> dgt = (DefaultSqlgTraversal<?, ?>) g;
         boolean found = false;
         for (Step<?, ?> s : dgt.getSteps()) {
             found |= (s instanceof RangeGlobalStep<?>);
@@ -49,7 +49,7 @@ public class TestRangeLimit extends BaseTest {
      * @param g
      */
     private void ensureNoRangeGlobal(GraphTraversal<?, ?> g) {
-        DefaultGraphTraversal<?, ?> dgt = (DefaultGraphTraversal<?, ?>) g;
+        DefaultSqlgTraversal<?, ?> dgt = (DefaultSqlgTraversal<?, ?>) g;
         for (Step<?, ?> s : dgt.getSteps()) {
             Assert.assertFalse(s instanceof RangeGlobalStep<?>);
         }
@@ -78,7 +78,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("ab", b);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .out()
                 .range(5, 6);
@@ -108,7 +108,7 @@ public class TestRangeLimit extends BaseTest {
         a4.addEdge("ab", b4);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").order().by("name").limit(2)
                 .out("ab");
         Assert.assertEquals(5, traversal.getSteps().size());
@@ -138,7 +138,7 @@ public class TestRangeLimit extends BaseTest {
             tag.addEdge("tag", column);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("BigData.Column")
                 .where(
                         __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
@@ -167,7 +167,7 @@ public class TestRangeLimit extends BaseTest {
             tag.addEdge("tag", column);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("BigData.Column")
                 .where(
                         __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
@@ -190,7 +190,7 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "B", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V()
                 .range(1, 2);
         ensureRangeGlobal(traversal);
@@ -208,7 +208,7 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .order().by("name")
                 .range(1, 4).values("name");
@@ -247,7 +247,7 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i, "prop0", "value");
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A").has("prop0", "value")
                 .order().by("name")
                 .range(1, 4)
@@ -287,7 +287,7 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .range(1, 4)
                 .values("name");
@@ -317,7 +317,7 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .order().by("name")
                 .limit(3)
@@ -358,7 +358,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Edge, Object> g = (DefaultGraphTraversal<Edge, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Edge, Object> g = (DefaultSqlgTraversal<Edge, Object>)this.sqlgGraph.traversal()
                 .E().hasLabel("E")
                 .order().by("name")
                 .range(1, 4)
@@ -400,7 +400,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B")
                 .order().by("name")
                 .range(1, 4)
@@ -444,7 +444,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B")
                 .order().by("name")
                 .skip(2)
@@ -486,7 +486,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B")
                 .range(1, 4)
                 .values("name");
@@ -519,7 +519,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A", "B")
                 .limit(4)
                 .values("name");
@@ -556,7 +556,7 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Object> g = (DefaultSqlgTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V(a)
                 .out("E")
                 .order().by("name")
@@ -601,7 +601,7 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .out()
                 .out()
@@ -631,7 +631,7 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> g = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> g = (DefaultSqlgTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .repeat(
                         __.out()
@@ -664,7 +664,7 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> g = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> g = (DefaultSqlgTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V().hasLabel("B")
                 .both()
                 .order().by("age")
@@ -698,7 +698,7 @@ public class TestRangeLimit extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("B")
                 .both()
                 .limit(10);

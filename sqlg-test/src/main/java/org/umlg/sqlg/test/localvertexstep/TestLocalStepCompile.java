@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -10,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -30,7 +30,7 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) gt
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) gt
                 .V(a1)
                 .local(
                         __.out().out()
@@ -84,7 +84,7 @@ public class TestLocalStepCompile extends BaseTest {
         b3.addEdge("bc", c33);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .local(
                         __.out().limit(1).out()
@@ -141,7 +141,7 @@ public class TestLocalStepCompile extends BaseTest {
         bb3.addEdge("bc", c33);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .local(
                         __.out().limit(1).out()
@@ -188,7 +188,7 @@ public class TestLocalStepCompile extends BaseTest {
         a1.addEdge("ab", b2);
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .out()
                 .order()
@@ -201,7 +201,7 @@ public class TestLocalStepCompile extends BaseTest {
         Assert.assertEquals(b2, result.get(1));
         Assert.assertEquals(b3, result.get(2));
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal1 = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .out()
                 .order()
@@ -229,7 +229,7 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("ba", a2);
         b1.addEdge("ba", a3);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .out()
                 .out()
@@ -257,7 +257,7 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("ba", a2);
         b1.addEdge("ba", a3);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .out()
                 .out().as("x")
@@ -288,7 +288,7 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("ba", a3);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1)
                 .out()
                 .out()
@@ -315,7 +315,7 @@ public class TestLocalStepCompile extends BaseTest {
         god.addEdge("godDream", fantasy3, "sequence", 3);
         god.addEdge("godDream", fantasy4, "sequence", 4);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(god)
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(god)
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -342,7 +342,7 @@ public class TestLocalStepCompile extends BaseTest {
         Edge e3 = god.addEdge("godDream", fantasy3, "sequence", 3);
         Edge e4 = god.addEdge("godDream", fantasy4, "sequence", 4);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal().V(god)
+        DefaultSqlgTraversal<Vertex, Map<String, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal().V(god)
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -372,7 +372,7 @@ public class TestLocalStepCompile extends BaseTest {
         root.addEdge("rootFolder", folder1);
         folder1.addEdge("subFolder", folder2, "sequence", 1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(folder1)
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(folder1)
                 .outE("subFolder").as("e")
                 .inV().as("v")
                 .select("e", "v")

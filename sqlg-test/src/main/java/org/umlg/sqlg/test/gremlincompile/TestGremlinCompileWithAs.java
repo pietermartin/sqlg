@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -8,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -45,7 +45,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
 
     @SuppressWarnings("unchecked")
     private void testSchemaTableTreeNextSchemaTableTreeIsEdgeVertex_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1, Vertex c1) {
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> gt = (DefaultGraphTraversal)sqlgGraph.traversal().V(a1).out().as("b").out().as("c").select("b", "c");
+        DefaultSqlgTraversal<Vertex, Map<String, Vertex>> gt = (DefaultSqlgTraversal)sqlgGraph.traversal().V(a1).out().as("b").out().as("c").select("b", "c");
         Assert.assertEquals(4, gt.getSteps().size());
         List<Map<String, Vertex>> list = gt.toList();
         Assert.assertEquals(2, gt.getSteps().size());
@@ -75,7 +75,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testHasLabelOutWithAs_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1, Vertex b2, Vertex b3, Vertex b4, Edge e1, Edge e2, Edge e3, Edge e4) {
-        DefaultGraphTraversal<Vertex, Map<String, Element>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Element>>)sqlgGraph.traversal().V(a1)
+        DefaultSqlgTraversal<Vertex, Map<String, Element>> traversal = (DefaultSqlgTraversal<Vertex, Map<String, Element>>)sqlgGraph.traversal().V(a1)
                 .outE("outB")
                 .as("e")
                 .inV()
@@ -117,7 +117,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
         Assert.assertEquals(b4, queryB4);
         Assert.assertEquals("b4", queryB4.value("name"));
 
-        DefaultGraphTraversal<Vertex, Edge> traversal1 = (DefaultGraphTraversal<Vertex, Edge>) sqlgGraph.traversal().V(a1.id()).bothE();
+        DefaultSqlgTraversal<Vertex, Edge> traversal1 = (DefaultSqlgTraversal<Vertex, Edge>) sqlgGraph.traversal().V(a1.id()).bothE();
         Assert.assertEquals(2, traversal1.getSteps().size());
         final List<Edge> a1Edges = traversal1.toList();
         Assert.assertEquals(1, traversal1.getSteps().size());
@@ -156,7 +156,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testHasLabelOutWithAsNotFromStart_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex c1, Vertex c2) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1)
+        DefaultSqlgTraversal<Vertex, Vertex> traversal = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1)
                 .out("outB")
                 .out("outC")
                 .as("x")
@@ -186,7 +186,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testAsWithDuplicatePaths_assert(SqlgGraph sqlgGraph, Vertex a1, Edge e1) {
-        DefaultGraphTraversal<Vertex, Map<String, Element>> gt = (DefaultGraphTraversal<Vertex, Map<String, Element>>) sqlgGraph.traversal()
+        DefaultSqlgTraversal<Vertex, Map<String, Element>> gt = (DefaultSqlgTraversal<Vertex, Map<String, Element>>) sqlgGraph.traversal()
                 .V(a1)
                 .outE().as("e")
                 .inV()
@@ -217,7 +217,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testChainSelect_assert(SqlgGraph sqlgGraph, Vertex a2) throws Exception {
-        try (DefaultGraphTraversal<Vertex, Vertex> gt = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+        try (DefaultSqlgTraversal<Vertex, Vertex> gt = (DefaultSqlgTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("name", "a1").as("v1")
                 .values("name").as("name1")
                 .select("v1")

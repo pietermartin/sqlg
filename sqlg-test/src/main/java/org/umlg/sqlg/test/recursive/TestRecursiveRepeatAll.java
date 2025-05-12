@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.recursive;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -15,6 +14,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -96,7 +96,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
                 .out("livesAt")
                 .id()
                 .toList();
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasId(P.within(friendIds))
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasId(P.within(friendIds))
                 .repeat(__.both("of").simplePath())
                 .until(__.not(__.both("of").simplePath()))
                 .path();
@@ -151,7 +151,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
+        DefaultSqlgTraversal<Vertex, Path> traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("a"))
                 .repeat(__.both("of").simplePath())
                 .until(__.not(__.both("of").simplePath()))
@@ -168,7 +168,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a) && p.get(1).equals(b) && p.get(2).equals(c) && p.get(3).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a) && p.get(1).equals(f)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("b"))
                 .repeat(__.both("of").simplePath())
                 .until(__.not(__.both("of").simplePath()))
@@ -183,7 +183,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b) && p.get(1).equals(c) && p.get(2).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b) && p.get(1).equals(a) && p.get(2).equals(f)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d"))
                 .repeat(__.both("of").simplePath())
                 .until(__.not(__.both("of").simplePath()))
@@ -197,7 +197,7 @@ public class TestRecursiveRepeatAll extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(e)));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 5 && p.get(0).equals(d) && p.get(1).equals(c) && p.get(2).equals(b) && p.get(3).equals(a) && p.get(4).equals(f)));
 
-        traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
+        traversal = (DefaultSqlgTraversal<Vertex, Path>) sqlgGraph.traversal().V().hasLabel("Friend")
                 .has("name", P.within("d", "c"))
                 .repeat(__.both("of").simplePath())
                 .until(__.not(__.both("of").simplePath()))

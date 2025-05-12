@@ -39,6 +39,7 @@ import org.umlg.sqlg.services.SqlgPGVectorFactory;
 import org.umlg.sqlg.sql.parse.*;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
+import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -569,7 +570,7 @@ public abstract class BaseStrategy {
             hasNotStep = !TraversalHelper.getStepsOfAssignableClassRecursively(NotStep.class, untilTraversal).isEmpty();
             hasLoopAndIsStep = !TraversalHelper.getStepsOfAssignableClass(LoopsStep.class, untilTraversal).isEmpty() &&
                     !TraversalHelper.getStepsOfAssignableClass(IsStep.class, untilTraversal).isEmpty();
-            _untilTraversal = new DefaultGraphTraversal<>();
+            _untilTraversal = new DefaultSqlgTraversal<>();
             _untilTraversal.asAdmin().addStep(new AndStep<Vertex>(_untilTraversal, untilTraversal));
             if (!(untilTraversal.getSteps().get(0) instanceof SelectOneStep<?, ?>)) {
                 untilTraversal.asAdmin().addStep(0, new SelectOneStep<>(_untilTraversal, Pop.last, "v"));
