@@ -35,6 +35,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-language</artifactId>
         </dependency>
         <dependency>

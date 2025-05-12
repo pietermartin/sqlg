@@ -233,6 +233,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-annotations</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
                 <version>${tinkerpop.version}</version>
             </dependency>

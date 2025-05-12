@@ -444,8 +444,8 @@ public class SqlgGraph implements Graph {
     }
 
     @Override
-    public GraphTraversalSource traversal() {
-        return this.traversal(SqlgGraphTraversalSource.class);
+    public SqlgTraversalSource traversal() {
+        return new SqlgTraversalSource(this, TraversalStrategies.GlobalCache.getStrategies(getClass()));
     }
 
     public GraphTraversalSource topology() {
