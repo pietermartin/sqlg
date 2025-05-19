@@ -1297,7 +1297,17 @@ public interface SqlDialect {
             case GEOGRAPHY_POLYGON_ORDINAL:
                 break;
             case boolean_ARRAY_ORDINAL:
-                break;
+                boolean[] booleans = (boolean[]) value;
+                StringBuilder sb = new StringBuilder("'[");
+                int count = 1;
+                for (boolean aBoolean: booleans) {
+                    sb.append(aBoolean);
+                    if (count++ < booleans.length) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("]'");
+                return sb.toString();
             case BOOLEAN_ARRAY_ORDINAL:
                 break;
             case byte_ARRAY_ORDINAL:
@@ -1318,16 +1328,16 @@ public interface SqlDialect {
                 break;
             case float_ARRAY_ORDINAL:
                 float[] floats = (float[]) value;
-                StringBuilder sb = new StringBuilder("'[");
-                int count = 1;
+                StringBuilder sbFloats = new StringBuilder("'[");
+                int countFloats = 1;
                 for (float aFloat : floats) {
-                    sb.append(aFloat);
-                    if (count++ < floats.length) {
-                        sb.append(",");
+                    sbFloats.append(aFloat);
+                    if (countFloats++ < floats.length) {
+                        sbFloats.append(",");
                     }
                 }
-                sb.append("]'");
-                return sb.toString();
+                sbFloats.append("]'");
+                return sbFloats.toString();
             case FLOAT_ARRAY_ORDINAL:
                 break;
             case double_ARRAY_ORDINAL:
@@ -1376,6 +1386,8 @@ public interface SqlDialect {
         }
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null && column.getAggregateFunction().equals(GraphTraversal.Symbols.count)) {
             sb.append("1");
+        } else if (column.getSelectColumnFunction() != null) {
+            sb.append(column.getSelectColumnFunction().apply(column));
         } else {
             sb.append(maybeWrapInQoutes(column.getSchema()));
             sb.append(".");

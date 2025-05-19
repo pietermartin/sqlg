@@ -180,11 +180,46 @@ public class WhereClause {
             return result.toString();
         } else if (p.getBiPredicate() instanceof PGVectorPredicate pgVectorPredicate) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-//            embedding <-> '[3,1,2]' < 5;
-            result.append(prefix)
-                    .append(pgVectorPredicate.operator())
-                    .append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(pgVectorPredicate.vector()))
-                    .append(" < ?");
+            switch (pgVectorPredicate.queryType()) {
+                case L2_DISTANCE, L1_DISTACNE -> {
+                    result.append(prefix)
+                            .append(" ")
+                            .append(pgVectorPredicate.operator())
+                            .append(" ")
+                            .append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(pgVectorPredicate.vector()))
+                            .append(" < ?");
+                }
+                case INNER_PRODUCT -> {
+                    result.append("((")
+                            .append(prefix)
+                            .append(" ")
+                            .append(pgVectorPredicate.operator())
+                            .append(" ")
+                            .append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(pgVectorPredicate.vector()))
+                            .append(") * -1) < ?");
+                }
+                case COSINE_DISTANCE -> {
+                    result.append("(1 - (")
+                            .append(prefix)
+                            .append(" ")
+                            .append(pgVectorPredicate.operator())
+                            .append(" ")
+                            .append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(pgVectorPredicate.vector()))
+                            .append(")) < ?");
+                }
+                case HAMMING_DISTANCE, JACCARD_DISTANCE -> {
+                    StringBuilder targetVectorAsString = new StringBuilder();
+                    for (boolean b : pgVectorPredicate.bitVector()) {
+                        targetVectorAsString.append(b ? "1" : "0");
+                    }
+                    result.append(prefix)
+                            .append(" ")
+                            .append(pgVectorPredicate.operator())
+                            .append(" '")
+                            .append(targetVectorAsString)
+                            .append("' < ?");
+                }
+            }
             return result.toString();
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
@@ -380,35 +415,35 @@ public class WhereClause {
             keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
         } else //noinspection StatementWithEmptyBody
             if (this.p.getBiPredicate() instanceof Existence) {
-            // no value
-        } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
-                hasContainer.getValue() instanceof RecordId recordId &&
-                !recordId.hasSequenceId()) {
+                // no value
+            } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
+                    hasContainer.getValue() instanceof RecordId recordId &&
+                    !recordId.hasSequenceId()) {
 
-            int i = 0;
-            for (Object identifier : recordId.getIdentifiers()) {
-                String schemaTableTreeIdentifier = schemaTableTree.getIdentifiers().get(i++);
-                PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(schemaTableTreeIdentifier);
-                Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + schemaTableTreeIdentifier);
-                keyValueMapAgain.put(propertyDefinition, identifier);
-            }
-        } else {
-            if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                Object value = hasContainer.getValue();
-                RecordId recordId;
-                if (!(value instanceof RecordId)) {
-                    recordId = RecordId.from(value);
-                } else {
-                    recordId = (RecordId) value;
+                int i = 0;
+                for (Object identifier : recordId.getIdentifiers()) {
+                    String schemaTableTreeIdentifier = schemaTableTree.getIdentifiers().get(i++);
+                    PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(schemaTableTreeIdentifier);
+                    Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + schemaTableTreeIdentifier);
+                    keyValueMapAgain.put(propertyDefinition, identifier);
                 }
-                keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
             } else {
-                PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
-                if (propertyDefinition == null) {
-                    propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+                if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                    Object value = hasContainer.getValue();
+                    RecordId recordId;
+                    if (!(value instanceof RecordId)) {
+                        recordId = RecordId.from(value);
+                    } else {
+                        recordId = (RecordId) value;
+                    }
+                    keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
+                } else {
+                    PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+                    if (propertyDefinition == null) {
+                        propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+                    }
+                    keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
                 }
-                keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
             }
-        }
     }
 }

@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
+import org.umlg.sqlg.test.function.TestFunctions;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,12 @@ import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestFunctions.class
+//        TestGroupCount.class
 //        TestRepeatStepIncludeEdgeWithoutNotStep.class,
 //        TestFunctions.class
 //        TestPostgresLtree.class,
-        TestGraphStepWithIds.class,
+//        TestGraphStepWithIds.class,
 //        TestInject.class
 //        TestMultiThread.class,
 //        TestForeignSchema.class,

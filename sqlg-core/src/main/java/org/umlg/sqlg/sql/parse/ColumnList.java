@@ -89,6 +89,10 @@ public class ColumnList {
         return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction, null);
     }
 
+    public Column add(SchemaTable st, String column, int stepDepth, String alias, Function<Object, String> selectColumnFunction) {
+        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null, selectColumnFunction);
+    }
+
     /**
      * add a new column
      *
@@ -455,6 +459,10 @@ public class ColumnList {
             return propertyDefinition;
         }
 
+        public void setPropertyDefinition(PropertyDefinition propertyDefinition) {
+            this.propertyDefinition = propertyDefinition;
+        }
+
         public boolean isID() {
             return ID;
         }
@@ -508,6 +516,10 @@ public class ColumnList {
 
         public String getAggregateFunction() {
             return aggregateFunction;
+        }
+
+        public Function<Object, String> getSelectColumnFunction() {
+            return selectColumnFunction;
         }
     }
 }

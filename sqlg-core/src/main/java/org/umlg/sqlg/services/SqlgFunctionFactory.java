@@ -17,10 +17,14 @@ public class SqlgFunctionFactory  extends SqlgServiceRegistry.SqlgServiceFactory
     public static final String NAME = "sqlg.functions";
 
     public interface Params {
-        String FUNCTION_AS_STRING_PRODUCER = "functionAsStringProducer";
+        String RESUL_PROPERTY_TYPE= "resultPropertyType";
+        String COLUMN_NAME = "columnName";
+        String FUNCTION_AS_STRING = "functionAsString";
 
         Map DESCRIBE = asMap(
-                Params.FUNCTION_AS_STRING_PRODUCER, "Sqlg functions service"
+                Params.FUNCTION_AS_STRING, "Sqlg functions service",
+                Params.COLUMN_NAME, "The name of the column holding the result of the function",
+                Params.RESUL_PROPERTY_TYPE, "The type of the result property."
         );
     }
 

@@ -29,6 +29,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierS
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +40,7 @@ import org.umlg.sqlg.services.SqlgPGVectorFactory;
 import org.umlg.sqlg.sql.parse.*;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
-import org.umlg.sqlg.structure.DefaultSqlgTraversal;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.AbstractLabel;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -695,10 +693,12 @@ public abstract class BaseStrategy {
     private void handleFunction(String serviceName, CallStep<?, ?> callStep, MutableInt pathCount) {
         Preconditions.checkArgument(serviceName.equals(SqlgFunctionFactory.NAME), "Only '%s' is supported, instead got '%s'", SqlgFunctionFactory.NAME, serviceName);
         Map param = callStep.getMergedParams();
-        Function<Object, String> function = (Function<Object, String>) param.get(SqlgFunctionFactory.Params.FUNCTION_AS_STRING_PRODUCER);
+        String col = (String) param.get(SqlgFunctionFactory.Params.COLUMN_NAME);
+        org.umlg.sqlg.structure.PropertyType propertyType = (org.umlg.sqlg.structure.PropertyType) param.get(SqlgFunctionFactory.Params.RESUL_PROPERTY_TYPE);
+        Function<Object, String> function = (Function<Object, String>) param.get(SqlgFunctionFactory.Params.FUNCTION_AS_STRING);
         Preconditions.checkState(function != null, "function is null");
         this.currentReplacedStep.setSqlgFunctionConfig(
-                new SqlgFunctionConfig(function)
+                new SqlgFunctionConfig(col, PropertyDefinition.of(propertyType), function)
         );
         this.traversal.removeStep(callStep);
     }

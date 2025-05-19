@@ -307,7 +307,7 @@ public class SqlgGraph implements Graph {
 
                                 new SqlgSelectOneStepStrategy(),
                                 new SqlgRestrictPropertiesStrategy(),
-                                
+
                                 new SqlgAddVertexStartStepStrategy(),
                                 new SqlgUnionStepStrategy(),
                                 new SqlgUnionPathStrategy(),
@@ -400,8 +400,16 @@ public class SqlgGraph implements Graph {
         this.tx().commit();
 
         serviceRegistry = new SqlgServiceRegistry(this);
-        configuration.getList(String.class, GREMLIN_SQLG_SERVICE, Collections.emptyList()).forEach(serviceClass ->
-                serviceRegistry.registerService(instantiate(serviceClass)));
+        configuration.getList(
+                        String.class,
+                        GREMLIN_SQLG_SERVICE,
+                        List.of(
+                                "org.umlg.sqlg.services.SqlgPGRoutingFactory",
+                                "org.umlg.sqlg.services.SqlgPGVectorFactory",
+                                "org.umlg.sqlg.services.SqlgFunctionFactory"
+                        )
+                )
+                .forEach(serviceClass -> serviceRegistry.registerService(instantiate(serviceClass)));
     }
 
     @Override

@@ -88,6 +88,7 @@ public class SchemaTableTree {
 
     private final List<String> groupBy;
     private final Pair<String, List<String>> aggregateFunction;
+    private final SqlgFunctionConfig sqlgFunctionConfig;
 
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
@@ -98,7 +99,6 @@ public class SchemaTableTree {
     private final PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
     private final PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
     private final PGVectorConfig pgVectorConfig;
-    private final SqlgFunctionConfig sqlgFunctionConfig;
 
     //NON FINAL properties
     //labels are immutable
@@ -572,6 +572,9 @@ public class SchemaTableTree {
             return false;
         } else {
             for (String restrictedProperty : schemaTableTree.getRestrictedProperties()) {
+                if (schemaTableTree.hasFunctionConfig() && schemaTableTree.getSqlgFunctionConfig().col().equals(restrictedProperty)) {
+                    return false;
+                }
                 if (schemaTableTree.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(restrictedProperty)) {
                     return false;
                 }
@@ -2237,19 +2240,20 @@ public class SchemaTableTree {
 
                 String key = valueTraversal.getPropertyKey();
                 float[] vector = pgVectorOrderByComparator.getVector();
+                boolean[] bitVector = pgVectorOrderByComparator.getBitVector();
 
                 prefix += key;
-                String alias;
                 String rawAlias = this.getColumnNameAliasMap().get(prefix);
                 if (rawAlias == null) {
                     throw new IllegalArgumentException("order by field '" + prefix + "' not found!");
                 }
-                if (counter == -1) {
-                    //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
-
-                } else {
-                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
+                switch (pgVectorOrderByComparator.getQueryType()) {
+                    case INNER_PRODUCT -> {
+                        result.append("(");
+                    }
+                    case COSINE_DISTANCE -> {
+                        result.append("1 - (");
+                    }
                 }
                 result.append(" ")
                         .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()))
@@ -2257,8 +2261,31 @@ public class SchemaTableTree {
                         .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()))
                         .append(".")
                         .append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(key))
-                        .append(" <-> ").append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(vector));
-
+                        .append(" ")
+                        .append(pgVectorOrderByComparator.getOperator())
+                        .append(" ");
+                switch (pgVectorOrderByComparator.getQueryType()) {
+                    case L2_DISTANCE, L1_DISTACNE, INNER_PRODUCT, COSINE_DISTANCE -> {
+                        result.append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(vector));
+                    }
+                    case HAMMING_DISTANCE, JACCARD_DISTANCE -> {
+                        StringBuilder targetVectorAsString = new StringBuilder();
+                        for (boolean b : bitVector) {
+                            targetVectorAsString.append(b ? "1" : "0");
+                        }
+                        result.append("'");
+                        result.append(targetVectorAsString);
+                        result.append("'");
+                    }
+                }
+                switch (pgVectorOrderByComparator.getQueryType()) {
+                    case INNER_PRODUCT -> {
+                        result.append(") * -1");
+                    }
+                    case COSINE_DISTANCE -> {
+                        result.append(")");
+                    }
+                }
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
@@ -2705,11 +2732,25 @@ public class SchemaTableTree {
             }
         }
         if (lastSchemaTableTree.isSqlgFuntionConfigQuery()) {
-            printColumn(lastSchemaTableTree, cols, propertyDefinitionMap, "");
+            SqlgFunctionConfig sqlgFunctionConfig = lastSchemaTableTree.getSqlgFunctionConfig();
+            String alias = sqlgFunctionConfig.col();
+            ColumnList.Column c = cols.add(
+                    lastSchemaTableTree.getSchemaTable(),
+                    alias,
+                    lastSchemaTableTree.getStepDepth(),
+                    alias,
+                    sqlgFunctionConfig.function()
+            );
+            c.setPropertyDefinition(sqlgFunctionConfig.propertyDefinition());
         }
     }
 
-    private static void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyDefinition> propertyDefinitionMap, String col) {
+    private static void printColumn(
+            SchemaTableTree lastSchemaTableTree,
+            ColumnList cols,
+            Map<String, PropertyDefinition> propertyDefinitionMap,
+            String col) {
+
         String alias = cols.getAlias(lastSchemaTableTree, col);
         if (alias == null) {
             alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(col);
@@ -3588,6 +3629,15 @@ public class SchemaTableTree {
                                 this.stepDepth,
                                 propertyDefinition
                         );
+                    } else if (column.getSelectColumnFunction() != null) {
+                        settedProperty = sqlgElement.loadProperty(
+                                resultSet,
+                                propertyName,
+                                column.getColumnIndex(),
+                                getColumnNameAliasMap(),
+                                this.stepDepth,
+                                propertyDefinition
+                        );
                     } else {
                         settedProperty = sqlgElement.loadProperty(
                                 resultSet,
@@ -3819,6 +3869,10 @@ public class SchemaTableTree {
 
     public boolean hasAggregateFunction() {
         return this.aggregateFunction != null;
+    }
+
+    public boolean hasFunctionConfig() {
+        return this.sqlgFunctionConfig != null;
     }
 
     public Pair<String, List<String>> getAggregateFunction() {
