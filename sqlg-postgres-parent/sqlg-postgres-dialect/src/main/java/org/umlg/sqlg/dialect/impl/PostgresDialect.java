@@ -29,6 +29,8 @@ import org.postgresql.util.PGobject;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
+import org.umlg.sqlg.inet.PGcidr;
+import org.umlg.sqlg.inet.PGinet;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
@@ -1758,6 +1760,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case PGSPARSEVEC_ORDINAL -> new String[]{"SPARSEVEC(" + propertyType.getLength() + ")"};
             case PGHALFVEC_ORDINAL -> new String[]{"HALFVEC(" + propertyType.getLength() + ")"};
             case PGBIT_ORDINAL -> new String[]{"BIT(" + propertyType.getLength() + ")"};
+            case PGINET_ORDINAL -> new String[]{"INET"};
+            case PGCIDR_ORDINAL -> new String[]{"CIDR"};
             default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
@@ -1966,6 +1970,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             return;
         }
         if (value instanceof PGbit) {
+            return;
+        }
+        if (value instanceof PGinet) {
+            return;
+        }
+        if (value instanceof PGcidr) {
             return;
         }
         if (value instanceof BigDecimal) {
@@ -2226,6 +2236,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL ->
                         PGvector.registerTypes(sqlgGraph.tx().getConnection());
                 case PGBIT_ORDINAL -> PGbit.registerType(sqlgGraph.tx().getConnection());
+                case PGINET_ORDINAL -> PGinet.registerType(sqlgGraph.tx().getConnection());
+                case PGCIDR_ORDINAL -> PGcidr.registerType(sqlgGraph.tx().getConnection());
+                default -> throw new IllegalStateException("Unknown propertyTypeOrdinal " + propertyTypeOrdinal);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -2280,6 +2293,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 properties.put(columnName, result);
             }
             case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> {
+                properties.put(columnName, o);
+            }
+            case PGINET_ORDINAL, PGCIDR_ORDINAL -> {
                 properties.put(columnName, o);
             }
             default ->

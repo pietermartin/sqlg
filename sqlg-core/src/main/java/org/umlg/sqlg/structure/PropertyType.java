@@ -122,6 +122,11 @@ public class PropertyType {
     public static final int PGBIT_ORDINAL = 51;
     public static final PropertyType PGBIT = new PropertyType("PGBIT", PGBIT_ORDINAL, "com.pgvector.PGbit", new String[]{});
 
+    public static final int PGINET_ORDINAL = 52;
+    public static final PropertyType PGINET = new PropertyType("PGINET", PGINET_ORDINAL, "org.umlg.sqlg.inet.PGinet", new String[]{});
+    public static final int PGCIDR_ORDINAL = 53;
+    public static final PropertyType PGCIDR = new PropertyType("PGCIDR", PGCIDR_ORDINAL, "org.umlg.sqlg.inet.PGcidr", new String[]{});
+
     public static PropertyType varChar(int length) {
         return new PropertyType("VARCHAR", PropertyType.VARCHAR_ORDINAL, String.class.getName(), new String[]{}, length);
     }
@@ -264,7 +269,9 @@ public class PropertyType {
                 PropertyType.PGVECTOR,
                 PropertyType.PGSPARSEVEC,
                 PropertyType.PGHALFVEC,
-                PropertyType.PGBIT
+                PropertyType.PGBIT,
+                PropertyType.PGINET,
+                PropertyType.PGCIDR
         };
     }
 

@@ -744,6 +744,9 @@ public class SqlgUtil {
                 case PGVECTOR_ORDINAL, PGSPARSEVEC_ORDINAL, PGHALFVEC_ORDINAL, PGBIT_ORDINAL -> {
                     preparedStatement.setObject(parameterStartIndex++, pair.right);
                 }
+                case PGINET_ORDINAL, PGCIDR_ORDINAL -> {
+                    preparedStatement.setObject(parameterStartIndex++, pair.right);
+                }
                 case BOOLEAN_ARRAY_ORDINAL ->
                         sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                 case boolean_ARRAY_ORDINAL ->

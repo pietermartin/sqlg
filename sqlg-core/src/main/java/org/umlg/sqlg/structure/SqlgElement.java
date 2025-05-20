@@ -711,6 +711,24 @@ public abstract class SqlgElement implements Element {
                 } else {
                     return false;
                 }
+            case PGINET_ORDINAL:
+                sqlgGraph.getSqlDialect().registerTypes(sqlgGraph, propertyDefinition.propertyType().ordinal());
+                Object pginet = resultSet.getObject(columnIndex);
+                if (pginet != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, pginet, propertyDefinition.propertyType());
+                    return true;
+                } else {
+                    return false;
+                }
+            case PGCIDR_ORDINAL:
+                sqlgGraph.getSqlDialect().registerTypes(sqlgGraph, propertyDefinition.propertyType().ordinal());
+                Object pgcidr = resultSet.getObject(columnIndex);
+                if (pgcidr != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, pgcidr, propertyDefinition.propertyType());
+                    return true;
+                } else {
+                    return false;
+                }
             case UUID_ORDINAL:
                 UUID uuid = (UUID) resultSet.getObject(columnIndex);
                 if (!resultSet.wasNull()) {
