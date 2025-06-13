@@ -1,7 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.base.Supplier;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -12,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.math.BigDecimal;
@@ -257,10 +256,10 @@ public abstract class SqlgElement implements Element {
                     vertexLabel.ensurePropertiesExist(new LinkedHashMap<>() {{
                         put(key, PropertyDefinition.of(PropertyType.from(value)));
                     }});
-                    propertyDefinition = vertexLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
+                    propertyDefinition = vertexLabel.getProperty(key).orElseThrow(() -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
                 }
             } else {
-                propertyDefinition = vertexLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
+                propertyDefinition = vertexLabel.getProperty(key).orElseThrow(() -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
             }
         } else {
             Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(this.schema, this.table);
@@ -275,10 +274,10 @@ public abstract class SqlgElement implements Element {
                     edgeLabel.ensurePropertiesExist(new LinkedHashMap<>() {{
                         put(key, PropertyDefinition.of(PropertyType.from(value)));
                     }});
-                    propertyDefinition = edgeLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
+                    propertyDefinition = edgeLabel.getProperty(key).orElseThrow(() -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
                 }
             } else {
-                propertyDefinition = edgeLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
+                propertyDefinition = edgeLabel.getProperty(key).orElseThrow(() -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
             }
         }
         load();
