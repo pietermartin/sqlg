@@ -1,6 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;

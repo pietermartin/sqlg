@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure.topology;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.umlg.sqlg.structure.SchemaTable;

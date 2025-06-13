@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlg.structure.topology.PartitionType;
 import org.umlg.sqlg.structure.topology.Topology;

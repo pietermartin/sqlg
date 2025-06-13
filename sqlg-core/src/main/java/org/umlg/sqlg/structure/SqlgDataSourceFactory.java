@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.umlg.sqlg.structure.ds.JNDIDataSource;

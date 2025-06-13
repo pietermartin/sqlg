@@ -1,6 +1,6 @@
 package org.umlg.sqlg.strategy;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;

@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure.ds.c3p0;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;

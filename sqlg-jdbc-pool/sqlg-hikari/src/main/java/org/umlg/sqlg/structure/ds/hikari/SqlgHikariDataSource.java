@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure.ds.hikari;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.configuration2.Configuration;

@@ -2,7 +2,7 @@ package org.umlg.sqlg.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;

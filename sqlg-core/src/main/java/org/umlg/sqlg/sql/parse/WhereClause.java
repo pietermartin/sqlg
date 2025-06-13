@@ -1,6 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;

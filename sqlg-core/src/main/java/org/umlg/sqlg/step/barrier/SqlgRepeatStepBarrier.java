@@ -1,6 +1,6 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;

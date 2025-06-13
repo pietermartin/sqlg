@@ -1,6 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.base.Preconditions;
+import org.umlg.sqlg.util.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SchemaTable;
