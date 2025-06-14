@@ -2,7 +2,8 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.function.TestFunctions;
+import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
+import org.umlg.sqlg.test.topology.TestTopologyLock;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,10 @@ import org.umlg.sqlg.test.function.TestFunctions;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestFunctions.class
+        TestAndandOrStep.class,
+        TestTopologyLock.class
+//        TestBatch.class
+//        TestFunctions.class
 //        TestGroupCount.class
 //        TestRepeatStepIncludeEdgeWithoutNotStep.class,
 //        TestFunctions.class

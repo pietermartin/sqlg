@@ -1,9 +1,6 @@
 package org.umlg.sqlg.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -570,30 +567,31 @@ public class SqlgUtil {
             PreparedStatement preparedStatement,
             boolean includeAdditionalPartitionHasContainer) throws SQLException {
 
-        Multimap<PropertyDefinition, Object> keyValueMapAgain = LinkedListMultimap.create();
+        List<Pair<PropertyDefinition, Object>> results = new ArrayList<>();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
                 if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinAndOut(sqlgGraph, hasContainer)) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                    whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+                    results.addAll(whereClause.putKeyValueMap(hasContainer, schemaTableTree));
                 }
             }
             if (includeAdditionalPartitionHasContainer) {
                 for (HasContainer hasContainer : schemaTableTree.getAdditionalPartitionHasContainers()) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                    whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+                    results.addAll(whereClause.putKeyValueMap(hasContainer, schemaTableTree));
                 }
             }
             for (AndOrHasContainer andOrHasContainer : schemaTableTree.getAndOrHasContainers()) {
-                andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
+                results.addAll(andOrHasContainer.setParameterOnStatement(schemaTableTree));
             }
         }
         List<ImmutablePair<PropertyDefinition, Object>> typeAndValuesAgain = new ArrayList<>();
-        for (Map.Entry<PropertyDefinition, Object> entry : keyValueMapAgain.entries()) {
-            PropertyDefinition propertyDefinition = entry.getKey();
-            Object value = entry.getValue();
+        for (Pair<PropertyDefinition, Object> result : results) {
+            PropertyDefinition propertyDefinition = result.getKey();
+            Object value = result.getValue();
             typeAndValuesAgain.add(ImmutablePair.of(propertyDefinition, value));
         }
+        
         //This is for selects
         setKeyValuesAsParameter(sqlgGraph, false, 1, preparedStatement, typeAndValuesAgain);
     }

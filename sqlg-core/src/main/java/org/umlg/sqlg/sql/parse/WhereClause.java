@@ -1,7 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.Multimap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -15,9 +14,12 @@ import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -319,13 +321,13 @@ public class WhereClause {
         return prefix + result;
     }
 
-    public void putKeyValueMap(
+    public List<Pair<PropertyDefinition, Object>> putKeyValueMap(
             HasContainer hasContainer,
-            SchemaTableTree schemaTableTree,
-            Multimap<PropertyDefinition, Object> keyValueMapAgain) {
+            SchemaTableTree schemaTableTree) {
 
+        List<Pair<PropertyDefinition, Object>> pairs = new ArrayList<>();
         if (hasContainer.getValue() instanceof PropertyReference) {
-            return;
+            return pairs;
         }
         if (this.p instanceof OrP<?> orP) {
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
@@ -335,8 +337,10 @@ public class WhereClause {
             if (propertyDefinition == null) {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
-            keyValueMapAgain.put(propertyDefinition, p1.getValue());
-            keyValueMapAgain.put(propertyDefinition, p2.getValue());
+
+            pairs.add(Pair.of(propertyDefinition, p1.getValue()));
+            pairs.add(Pair.of(propertyDefinition, p2.getValue()));
+
         } else if (this.p instanceof AndP<?> andP) {
             Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
             P<?> p1 = andP.getPredicates().get(0);
@@ -345,8 +349,10 @@ public class WhereClause {
             if (propertyDefinition == null) {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
-            keyValueMapAgain.put(propertyDefinition, p1.getValue());
-            keyValueMapAgain.put(propertyDefinition, p2.getValue());
+
+            pairs.add(Pair.of(propertyDefinition, p1.getValue()));
+            pairs.add(Pair.of(propertyDefinition, p2.getValue()));
+
         } else if (this.p.getBiPredicate() == Contains.within || this.p.getBiPredicate() == Contains.without) {
             Collection<?> values = (Collection<?>) hasContainer.getValue();
             if (schemaTableTree.isHasIDPrimaryKey()) {
@@ -358,13 +364,15 @@ public class WhereClause {
                         } else {
                             recordId = (RecordId) value;
                         }
-                        keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
+                        pairs.add(Pair.of(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId()));
+
                     } else {
                         PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
                         if (propertyDefinition == null) {
                             propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
                         }
-                        keyValueMapAgain.put(propertyDefinition, value);
+                        pairs.add(Pair.of(propertyDefinition, value));
+
                     }
                 }
             } else {
@@ -375,14 +383,15 @@ public class WhereClause {
                             Comparable<?> comparable = ((RecordId) value).getIdentifiers().get(i++);
                             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(identifier);
                             Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + identifier);
-                            keyValueMapAgain.put(propertyDefinition, comparable);
+                            pairs.add(Pair.of(propertyDefinition, comparable));
+
                         }
                     } else {
                         PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
                         if (propertyDefinition == null) {
                             propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
                         }
-                        keyValueMapAgain.put(propertyDefinition, value);
+                        pairs.add(Pair.of(propertyDefinition, value));
                     }
                 }
             }
@@ -392,28 +401,33 @@ public class WhereClause {
             if (propertyDefinition == null) {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
-            keyValueMapAgain.put(propertyDefinition, "%" + hasContainer.getValue() + "%");
+            pairs.add(Pair.of(propertyDefinition, "%" + hasContainer.getValue() + "%"));
+
         } else if (this.p.getBiPredicate() == Text.startsWith || this.p.getBiPredicate() == Text.nstartsWith) {
             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
             if (propertyDefinition == null) {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
-            keyValueMapAgain.put(propertyDefinition, hasContainer.getValue() + "%");
+            pairs.add(Pair.of(propertyDefinition, hasContainer.getValue() + "%"));
+
         } else if (this.p.getBiPredicate() == Text.endsWith || this.p.getBiPredicate() == Text.nendsWith) {
             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
             if (propertyDefinition == null) {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
-            keyValueMapAgain.put(propertyDefinition, "%" + hasContainer.getValue());
+            pairs.add(Pair.of(propertyDefinition, "%" + hasContainer.getValue()));
+
         } else if (this.p.getBiPredicate() instanceof Lquery) {
             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
             Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + hasContainer.getKey());
-            keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
+            pairs.add(Pair.of(propertyDefinition, hasContainer.getValue()));
+
         } else if (this.p.getBiPredicate() instanceof LqueryArray) {
             PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
             Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + hasContainer.getKey());
-            keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
-        } else //noinspection StatementWithEmptyBody
+            pairs.add(Pair.of(propertyDefinition, hasContainer.getValue()));
+
+        } else {
             if (this.p.getBiPredicate() instanceof Existence) {
                 // no value
             } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
@@ -425,7 +439,8 @@ public class WhereClause {
                     String schemaTableTreeIdentifier = schemaTableTree.getIdentifiers().get(i++);
                     PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(schemaTableTreeIdentifier);
                     Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + schemaTableTreeIdentifier);
-                    keyValueMapAgain.put(propertyDefinition, identifier);
+                    pairs.add(Pair.of(propertyDefinition, identifier));
+
                 }
             } else {
                 if (hasContainer.getKey().equals(T.id.getAccessor())) {
@@ -436,14 +451,18 @@ public class WhereClause {
                     } else {
                         recordId = (RecordId) value;
                     }
-                    keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
+                    pairs.add(Pair.of(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId()));
+
                 } else {
                     PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
                     if (propertyDefinition == null) {
                         propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
                     }
-                    keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
+                    pairs.add(Pair.of(propertyDefinition, hasContainer.getValue()));
+
                 }
             }
+        }
+        return pairs;
     }
 }

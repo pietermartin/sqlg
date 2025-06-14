@@ -1,7 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AndStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
@@ -102,10 +101,9 @@ public class AndOrHasContainer {
                         Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTreeForLabel.getSchemaTable());
                         if (pts != null && !pts.containsKey(k)) {
                             // verify if we have a value
-                            Multimap<PropertyDefinition, Object> keyValueMapAgain = LinkedListMultimap.create();
-                            whereClause.putKeyValueMap(h, schemaTableTreeForLabel, keyValueMapAgain);
+                            List<Pair<PropertyDefinition, Object>> pairs = whereClause.putKeyValueMap(h, schemaTableTreeForLabel);
                             // we do
-                            if (!keyValueMapAgain.isEmpty()) {
+                            if (!pairs.isEmpty()) {
                                 bool = "? is null";
                             } else {
                                 if (Existence.NULL.equals(h.getBiPredicate())) {
@@ -157,22 +155,24 @@ public class AndOrHasContainer {
         }
     }
 
-    public void setParameterOnStatement(Multimap<PropertyDefinition, Object> keyValueMapAgain, SchemaTableTree schemaTableTree) {
+    public List<Pair<PropertyDefinition, Object>> setParameterOnStatement(SchemaTableTree schemaTableTree) {
+        List<Pair<PropertyDefinition, Object>> results = new ArrayList<>();
         for (String selectLabel : this.hasContainers.keySet()) {
             List<HasContainer> _hasContainers = this.hasContainers.get(selectLabel);
             for (HasContainer hasContainer : _hasContainers) {
                 WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+                results.addAll(whereClause.putKeyValueMap(hasContainer, schemaTableTree));
             }
         }
         if (this.loopsStepIsStepContainer != null) {
             HasContainer hasContainer = new HasContainer("depth", this.loopsStepIsStepContainer.isStep().getPredicate());
             WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-            whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
+            results.addAll(whereClause.putKeyValueMap(hasContainer, schemaTableTree));
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
-            andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
+            results.addAll(andOrHasContainer.setParameterOnStatement(schemaTableTree));
         }
+        return results;
     }
 
     //This is to check
