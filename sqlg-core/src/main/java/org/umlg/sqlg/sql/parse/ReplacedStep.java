@@ -1,8 +1,5 @@
 package org.umlg.sqlg.sql.parse;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
@@ -19,6 +16,7 @@ import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.ForeignKey;
 import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -268,8 +266,7 @@ public class ReplacedStep<S, E> {
             default -> throw new IllegalStateException("Unknown direction " + direction.name());
         }
 
-        Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupedIds = groupIdsBySchemaTable1();
-        Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>> _groupedIds = groupIdsBySchemaTable2();
+        Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupedIds = groupIdsBySchemaTable();
 
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inEdgeLabelToTravers : inEdgeLabelsToTraversers) {
@@ -286,7 +283,7 @@ public class ReplacedStep<S, E> {
                     );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), inEdgeLabelToTravers.toString());
-                    List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
+                    List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
 
                     result.add(schemaTableTreeChild);
@@ -349,7 +346,7 @@ public class ReplacedStep<S, E> {
                     );
 
                     SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), outEdgeLabelToTravers.toString());
-                    List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
+                    List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIds);
 
                     result.add(schemaTableTreeChild);
@@ -400,8 +397,7 @@ public class ReplacedStep<S, E> {
     private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction) {
         Preconditions.checkArgument(labelToTravers.isEdgeTable());
 
-        Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupedIds = groupIdsBySchemaTable1();
-        Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>> _groupedIds = groupIdsBySchemaTable2();
+        Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupedIds = groupIdsBySchemaTable();
 
         Set<SchemaTableTree> result = new HashSet<>();
         Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
@@ -427,7 +423,7 @@ public class ReplacedStep<S, E> {
                             this,
                             this.labels
                     );
-                    List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
+                    List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
                     result.add(schemaTableTreeChild);
                 }
@@ -441,7 +437,7 @@ public class ReplacedStep<S, E> {
                             this,
                             this.labels
                     );
-                    List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
+                    List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
                     addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
                     result.add(schemaTableTreeChild);
                 }
@@ -454,7 +450,7 @@ public class ReplacedStep<S, E> {
             SchemaTableTree schemaTableTree,
             SchemaTable schemaTableTo,
             Direction direction,
-            Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupedIds) {
+            Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupedIds) {
 
         Set<SchemaTableTree> result = new HashSet<>();
         //add the child for schemaTableTo to the tree
@@ -466,17 +462,17 @@ public class ReplacedStep<S, E> {
                 this.labels
         );
         SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), schemaTableTo.toString());
-        List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
+        List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
         addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
         result.add(schemaTableTreeChild);
         return result;
     }
 
-    private void addIdHasContainers(SchemaTableTree schemaTableTree1, List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIds) {
+    private void addIdHasContainers(SchemaTableTree schemaTableTree1, List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIds) {
         if (biPredicateRecordIds != null) {
-            for (Multimap<PBiPredicate<?, ?>, RecordId> biPredicateRecordId : biPredicateRecordIds) {
+            for (Map<PBiPredicate<?, ?>, List<RecordId>> biPredicateRecordId : biPredicateRecordIds) {
                 for (PBiPredicate<?, ?> biPredicate : biPredicateRecordId.keySet()) {
-                    Collection<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
+                    List<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
                     HasContainer idHasContainer;
                     //id hasContainers are only optimized for BaseStrategy.SUPPORTED_ID_BI_PREDICATE within, without, eq, neq
                     if (biPredicate == Contains.without || biPredicate == Contains.within) {
@@ -567,11 +563,9 @@ public class ReplacedStep<S, E> {
         final boolean isEdge = !isVertex;
 
         //RecordIds grouped by SchemaTable
-        Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupedIds = null;
-        Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>> _groupedIds = null;
+        Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupedIds = null;
         if (!this.idHasContainers.isEmpty()) {
-            groupedIds = groupIdsBySchemaTable1();
-            _groupedIds = groupIdsBySchemaTable2();
+            groupedIds = groupIdsBySchemaTable();
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
@@ -609,7 +603,7 @@ public class ReplacedStep<S, E> {
     private SchemaTableTree collectSchemaTableTrees(
             SqlgGraph sqlgGraph,
             int replacedStepDepth,
-            Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupedIds,
+            Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupedIds,
             String table) {
 
         SchemaTable schemaTable = SchemaTable.from(sqlgGraph, table);
@@ -617,11 +611,11 @@ public class ReplacedStep<S, E> {
         List<HasContainer> schemaTableTreeHasContainers = new ArrayList<>(this.hasContainers);
 
         if (groupedIds != null) {
-            List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
+            List<Map<PBiPredicate<?, ?>, List<RecordId>>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
             if (biPredicateRecordIds != null) {
-                for (Multimap<PBiPredicate<?, ?>, RecordId> biPredicateRecordId : biPredicateRecordIds) {
+                for (Map<PBiPredicate<?, ?>, List<RecordId>> biPredicateRecordId : biPredicateRecordIds) {
                     for (PBiPredicate<?, ?> biPredicate : biPredicateRecordId.keySet()) {
-                        Collection<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
+                        List<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
                         HasContainer idHasContainer;
                         //id hasContainers are only optimized for BaseStrategy.SUPPORTED_ID_BI_PREDICATE within, without, eq, neq
                         if (biPredicate == Contains.without || biPredicate == Contains.within) {
@@ -732,25 +726,13 @@ public class ReplacedStep<S, E> {
         return false;
     }
 
-    private Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> groupIdsBySchemaTable1() {
-        return groupIdsBySchemaTable().getKey();
-    }
-
-    private Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>> groupIdsBySchemaTable2() {
-        return groupIdsBySchemaTable().getValue();
-    }
-
     /**
      * Groups the idHasContainers by SchemaTable.
      * Each SchemaTable has a list representing the idHasContainers with the relevant BiPredicate and RecordId
      */
-    private Pair<
-            Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>>,
-            Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>>
-            > groupIdsBySchemaTable() {
+    private Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> groupIdsBySchemaTable() {
 
-        Map<SchemaTable, List<Multimap<PBiPredicate<?, ?>, RecordId>>> result = new HashMap<>();
-        Map<SchemaTable, List<List<Pair<PBiPredicate<?, ?>, RecordId>>>> _result = new HashMap<>();
+        Map<SchemaTable, List<Map<PBiPredicate<?, ?>, List<RecordId>>>> result = new HashMap<>();
         for (HasContainer idHasContainer : this.idHasContainers) {
 
             Map<SchemaTable, Boolean> newHasContainerMap = new HashMap<>();
@@ -761,8 +743,7 @@ public class ReplacedStep<S, E> {
             if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection<?>) idPredicate.getValue()).size() > 1) {
                 biPredicate = Contains.within;
             }
-            Multimap<PBiPredicate<?, ?>, RecordId> biPredicateRecordIdMultimap;
-            List<Pair<PBiPredicate<?, ?>, RecordId>> _biPredicateRecordIdList;
+            Map<PBiPredicate<?, ?>, List<RecordId>> biPredicateRecordIdMap;
             if (idPredicate.getValue() instanceof Collection) {
 
                 @SuppressWarnings("unchecked")
@@ -774,52 +755,33 @@ public class ReplacedStep<S, E> {
                     } else {
                         recordId = RecordId.from(id);
                     }
-                    List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIdList = result.get(recordId.getSchemaTable());
-                    List<List<Pair<PBiPredicate<?, ?>, RecordId>>> biPredicateRecordIdListList = _result.get(recordId.getSchemaTable());
-
+                    List<Map<PBiPredicate<?, ?>, List<RecordId>>> _biPredicateRecordIdList = result.get(recordId.getSchemaTable());
                     Boolean newHasContainer = newHasContainerMap.get(recordId.getSchemaTable());
-                    if (biPredicateRecordIdList == null) {
-                        biPredicateRecordIdList = new ArrayList<>();
-                        biPredicateRecordIdListList = new ArrayList<>();
-                        biPredicateRecordIdMultimap = LinkedListMultimap.create();
+                    if (_biPredicateRecordIdList == null) {
                         _biPredicateRecordIdList = new ArrayList<>();
-                        biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
-                        biPredicateRecordIdListList.add(_biPredicateRecordIdList);
-
-                        result.put(recordId.getSchemaTable(), biPredicateRecordIdList);
-                        _result.put(recordId.getSchemaTable(), biPredicateRecordIdListList);
+                        biPredicateRecordIdMap = new HashMap<>();
+                        _biPredicateRecordIdList.add(biPredicateRecordIdMap);
+                        result.put(recordId.getSchemaTable(), _biPredicateRecordIdList);
                         newHasContainerMap.put(recordId.getSchemaTable(), false);
                     } else if (newHasContainer == null) {
-                        biPredicateRecordIdMultimap = LinkedListMultimap.create();
-                        biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
-
-                        _biPredicateRecordIdList = new ArrayList<>();
-                        biPredicateRecordIdListList.add(_biPredicateRecordIdList);
-
+                        biPredicateRecordIdMap = new HashMap<>();
+                        _biPredicateRecordIdList.add(biPredicateRecordIdMap);
                         newHasContainerMap.put(recordId.getSchemaTable(), false);
                     }
-                    biPredicateRecordIdMultimap = biPredicateRecordIdList.get(biPredicateRecordIdList.size() - 1);
-                    biPredicateRecordIdMultimap.put(biPredicate, recordId);
-                    _biPredicateRecordIdList = biPredicateRecordIdListList.get(biPredicateRecordIdListList.size() - 1);
-                    _biPredicateRecordIdList.add(Pair.of(biPredicate, recordId));
+                    biPredicateRecordIdMap = _biPredicateRecordIdList.get(_biPredicateRecordIdList.size() - 1);
+                    biPredicateRecordIdMap.computeIfAbsent(biPredicate, (k) -> new ArrayList<>()).add(recordId);
                 }
             } else {
                 Object id = idPredicate.getValue();
                 RecordId recordId = RecordId.from(id);
-                List<Multimap<PBiPredicate<?, ?>, RecordId>> biPredicateRecordIdList = result.computeIfAbsent(recordId.getSchemaTable(), k -> new ArrayList<>());
-                biPredicateRecordIdMultimap = LinkedListMultimap.create();
-                biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
-                biPredicateRecordIdMultimap.put(biPredicate, recordId);
+                List<Map<PBiPredicate<?, ?>, List<RecordId>>> _biPredicateRecordIdList = result.computeIfAbsent(recordId.getSchemaTable(), k -> new ArrayList<>());
+                biPredicateRecordIdMap = new HashMap<>();
+                _biPredicateRecordIdList.add(biPredicateRecordIdMap);
+                biPredicateRecordIdMap.computeIfAbsent(biPredicate, (k) -> new ArrayList<>()).add(recordId);
 
-                List<List<Pair<PBiPredicate<?, ?>, RecordId>>> biPredicateRecordIdListList = _result.computeIfAbsent(recordId.getSchemaTable(), k -> new ArrayList<>());
-                _biPredicateRecordIdList = new ArrayList<>();
-                biPredicateRecordIdListList.add(_biPredicateRecordIdList);
-                _biPredicateRecordIdList.add(Pair.of(biPredicate, recordId));
             }
         }
-        Preconditions.checkState(_result.size() == result.size());
-        Preconditions.checkState(_result.keySet().equals(result.keySet()));
-        return Pair.of(result, _result);
+        return result;
     }
 
     public AbstractStep<S, E> getStep() {
