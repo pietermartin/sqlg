@@ -20,7 +20,6 @@ import java.sql.ResultSet;
  */
 public class TestForeignKeysAreOptional extends BaseTest {
 
-	
     @Test
     public void testForeignKeysOnPostgres() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));

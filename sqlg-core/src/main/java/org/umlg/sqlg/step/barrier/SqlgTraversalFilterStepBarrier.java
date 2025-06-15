@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -34,7 +32,7 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
     protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
         if (this.first) {
             this.first = false;
-            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+            Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 //Well now, can't say I really really get this.
@@ -50,14 +48,13 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {
-                    if (startObject instanceof Element) {
-                        Element e = (Element) startObject;
+                    if (startObject instanceof Element e) {
                         recordIdConcatenated.append(e.id().toString());
                     } else {
                         recordIdConcatenated.append(startObject.toString());
                     }
                 }
-                startRecordIds.put(recordIdConcatenated.toString(), start);
+                startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
 
                 this.filterTraversal.addStart(start);
             }
@@ -66,15 +63,14 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
                 List<Object> filterTraverserObjects = filterTraverser.path().objects();
                 String startId = "";
                 for (Object filteredTraverserObject : filterTraverserObjects) {
-                    if (filteredTraverserObject instanceof Element) {
-                        Element e = (Element) filteredTraverserObject;
+                    if (filteredTraverserObject instanceof Element e) {
                         startId += e.id().toString();
                     } else {
                         startId += filteredTraverserObject.toString();
                     }
                     if (startRecordIds.containsKey(startId)) {
                         results.addAll(startRecordIds.get(startId));
-                        startRecordIds.removeAll(startId);
+                        startRecordIds.remove(startId);
                     }
                     if (startRecordIds.isEmpty()) {
                         break;

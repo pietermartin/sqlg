@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -11,10 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.step.SqlgConnectiveStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -39,7 +34,7 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
     protected Traverser.Admin<S> processNextStart() {
         if (this.first) {
             this.first = false;
-            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+            Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 if (start instanceof SqlgTraverser) {
@@ -55,18 +50,20 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
                         recordIdConcatenated.append(startObject.toString());
                     }
                 }
-                startRecordIds.put(recordIdConcatenated.toString(), start);
+                startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
             }
 
             boolean first = true;
             for (Traversal.Admin<S, ?> andTraversal : this.andTraversals) {
-                for (Traverser.Admin<S> start : startRecordIds.values()) {
-                    andTraversal.addStart(start);
+                for (String key : startRecordIds.keySet()) {
+                    List<Traverser.Admin<S>> values = startRecordIds.get(key);
+                    for (Traverser.Admin<S> start : values) {
+                        andTraversal.addStart(start);
+                    }
                 }
                 //Need to use a tmp map here to prevent duplicates.
                 //If the and traversals yields multiple results the start must only be added once.
-                Multimap<String, Traverser.Admin<S>> tmpStartRecordIds = LinkedListMultimap.create();
-                tmpStartRecordIds.putAll(startRecordIds);
+                Map<String, List<Traverser.Admin<S>>> tmpStartRecordIds = new HashMap<>(startRecordIds);
                 List<Traverser.Admin<S>> tmpResult = new ArrayList<>();
                 while (andTraversal.hasNext()) {
                     Traverser.Admin<?> filterTraverser = andTraversal.nextTraverser();
@@ -85,7 +82,7 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
                             } else {
                                 tmpResult.addAll(tmpStartRecordIds.get(startId));
                             }
-                            tmpStartRecordIds.removeAll(startId);
+                            tmpStartRecordIds.remove(startId);
                         }
                     }
                 }

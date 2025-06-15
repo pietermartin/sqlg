@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -15,6 +13,7 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -22,7 +21,6 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
-import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
@@ -65,7 +63,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return ImmutableSet.of("INFORMATION_SCHEMA");
+        return Set.of("INFORMATION_SCHEMA");
     }
 
     @Override

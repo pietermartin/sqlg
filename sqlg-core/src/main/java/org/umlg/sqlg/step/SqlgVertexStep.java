@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -19,6 +17,7 @@ import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.traverser.ISqlgTraverser;
 import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.util.*;
 
@@ -44,7 +43,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
      * Needs to be a multi map as TinkerPop will add new starts mid traversal.
      * look at TestRepeatStepVertexOut#testUntilRepeat
      */
-    private LinkedListMultimap<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElements = LinkedListMultimap.create();
+    private List<Pair<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableElements = new ArrayList<>();
 
     //This holds, for each SchemaTable, a list of RecordId's ids and the start elements' index.
     //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
@@ -117,8 +116,8 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 if (this.eagerLoad) {
                     if (!this.schemaTableElements.isEmpty()) {
                         this.traversers.clear();
-                        for (Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>> entry : this.schemaTableElements.entries()) {
-                            ListIterator<List<Emit<E>>> values = entry.getValue();
+                        for (Pair<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElementPair : this.schemaTableElements) {
+                            ListIterator<List<Emit<E>>> values = schemaTableElementPair.getValue();
                             eagerLoad(values);
                         }
                         this.schemaTableElements.clear();
@@ -133,7 +132,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                         }
                     }
                 } else {
-                    Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entries().iterator();
+                    Iterator<Pair<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry =  this.schemaTableElements.iterator();
                     if (schemaTableIteratorEntry.hasNext()) {
                         this.elementIterator = schemaTableIteratorEntry.next().getValue();
                         schemaTableIteratorEntry.remove();
@@ -277,7 +276,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                     }
                 }
             }
-            this.schemaTableElements.put(schemaTable, elements(schemaTable, rootSchemaTableTree));
+            this.schemaTableElements.add(Pair.of(schemaTable, elements(schemaTable, rootSchemaTableTree)));
         }
         if (this.heads.size() > 1 && this.replacedStepTree.hasOrderBy()) {
             setEagerLoad(true);
@@ -323,7 +322,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     public SqlgVertexStep<E> clone() {
         @SuppressWarnings("unchecked") final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
-        this.schemaTableElements = LinkedListMultimap.create();
+        this.schemaTableElements = new ArrayList<>();
         clone.schemaTableParentIds = new LinkedHashMap<>();
         clone.traversers = new ArrayList<>();
         clone.startIndexTraverserAdminMap = new LinkedHashMap<>();

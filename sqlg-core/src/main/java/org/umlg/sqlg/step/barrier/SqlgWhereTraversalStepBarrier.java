@@ -1,8 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -22,6 +19,7 @@ import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.step.SqlgMapStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.util.*;
 
@@ -32,7 +30,7 @@ import java.util.*;
 @SuppressWarnings("unchecked")
 public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent, Scoping, PathProcessor {
 
-    private Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+    private Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
     private List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
     private boolean first = true;
@@ -122,7 +120,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
                         recordIdConcatenated.append(startObject.toString());
                     }
                 }
-                this.startRecordIds.put(recordIdConcatenated.toString(), start);
+                this.startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
                 this.whereTraversal.addStart(start);
             }
             while (this.whereTraversal.hasNext()) {
@@ -138,7 +136,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
                     }
                     if (startRecordIds.containsKey(startId)) {
                         this.results.addAll(startRecordIds.get(startId));
-                        startRecordIds.removeAll(startId);
+                        startRecordIds.remove(startId);
                     }
                     if (startRecordIds.isEmpty()) {
                         break;
@@ -214,7 +212,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
     @Override
     public void reset() {
         super.reset();
-        this.startRecordIds = LinkedListMultimap.create();
+        this.startRecordIds = new HashMap<>();
         this.results = new ArrayList<>();
         this.resultIterator = null;
         this.first = true;

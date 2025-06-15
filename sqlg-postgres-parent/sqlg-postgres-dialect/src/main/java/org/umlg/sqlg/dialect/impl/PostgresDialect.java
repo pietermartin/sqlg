@@ -2,8 +2,6 @@ package org.umlg.sqlg.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGsparsevec;
@@ -39,6 +37,7 @@ import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -111,12 +110,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology", "citus", "citus_internal", "columnar"));
+        return Set.of("pg_catalog", "information_schema", "tiger", "tiger_data", "topology", "citus", "citus_internal", "columnar");
     }
 
     @Override
     public Set<String> getSpacialRefTable() {
-        return ImmutableSet.copyOf(Arrays.asList("spatial_ref_sys", "us_gaz", "us_lex", "us_rules"));
+        return Set.of("spatial_ref_sys", "us_gaz", "us_lex", "us_rules");
     }
 
     @Override

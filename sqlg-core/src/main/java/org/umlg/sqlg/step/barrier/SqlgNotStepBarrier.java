@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -11,10 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -36,7 +31,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
     protected Traverser.Admin<S> processNextStart() {
         if (this.first) {
             this.first = false;
-            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+            Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 if (start instanceof SqlgTraverser) {
@@ -45,14 +40,13 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {
-                    if (startObject instanceof Element) {
-                        Element e = (Element) startObject;
+                    if (startObject instanceof Element e) {
                         recordIdConcatenated.append(e.id().toString());
                     } else {
                         recordIdConcatenated.append(startObject.toString());
                     }
                 }
-                startRecordIds.put(recordIdConcatenated.toString(), start);
+                startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
                 this.notTraversal.addStart(start);
             }
 
@@ -61,20 +55,22 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
                 List<Object> filterTraverserObjects = traverser.path().objects();
                 String startId = "";
                 for (Object filteredTraverserObject : filterTraverserObjects) {
-                    if (filteredTraverserObject instanceof Element) {
-                        Element e = (Element) filteredTraverserObject;
+                    if (filteredTraverserObject instanceof Element e) {
                         startId += e.id().toString();
                     } else {
                         startId += filteredTraverserObject.toString();
                     }
-                    startRecordIds.removeAll(startId);
+                    startRecordIds.remove(startId);
                     if (startRecordIds.isEmpty()) {
                         break;
                     }
                 }
             }
 
-            this.results.addAll(startRecordIds.values());
+            Collection<List<Traverser.Admin<S>>> values = startRecordIds.values();
+            for (List<Traverser.Admin<S>> value : values) {
+                this.results.addAll(value);
+            }
             this.results.sort((o1, o2) -> {
                 SqlgTraverser<?> x = (SqlgTraverser<?>) o1;
                 SqlgTraverser<?> y = (SqlgTraverser<?>) o2;

@@ -1,8 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import org.umlg.sqlg.util.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -20,6 +17,7 @@ import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.step.SqlgComputerAwareStep;
 import org.umlg.sqlg.step.SqlgExpandableStepIterator;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -189,22 +187,24 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                 return this.repeatTraversal.getEndStep();
             } else {
                 boolean foundSomething = false;
-//                if (this.optimizeUntil) {
                 if (barrierUntil()) {
                     if (this.untilFirst) {
-                        Multimap<String, Traverser.Admin<S>> startsToContinue = LinkedListMultimap.create();
+                        Map<String, List<Traverser.Admin<S>>> startsToContinue = new HashMap<>();
                         //doUntilBarrier will iterate the starts and for each the utilTraversal.
                         //The starts for which the untilTraversal returns something will be placed in the toReturn list.
                         //The rest will be in the startsToContinue map.
                         //They are then added to the repeatTraversal to continue the repetition.
                         foundSomething = doUntilBarrier(this.starts, this.toReturn, startsToContinue);
-                        for (Traverser.Admin<S> start : startsToContinue.values()) {
-                            if (doEmit(start, true)) {
-                                final Traverser.Admin<S> emitSplit = start.split();
-                                emitSplit.resetLoops();
-                                this.toReturn.add(IteratorUtils.of(emitSplit));
+                        for (String key : startsToContinue.keySet()) {
+                            List<Traverser.Admin<S>> values = startsToContinue.get(key);
+                            for (Traverser.Admin<S> start : values) {
+                                if (doEmit(start, true)) {
+                                    final Traverser.Admin<S> emitSplit = start.split();
+                                    emitSplit.resetLoops();
+                                    this.toReturn.add(IteratorUtils.of(emitSplit));
+                                }
+                                this.repeatTraversal.addStart(start);
                             }
-                            this.repeatTraversal.addStart(start);
                         }
                     } else {
                         //Place all starts on the repeatTraversal.
@@ -251,7 +251,6 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
 
     private boolean barrierUntil() {
         return this.untilTraversal != null && !this.untilTraversal.getSteps().isEmpty() && this.untilTraversal.getSteps().get(0) instanceof SqlgAbstractStep;
-//        return TraversalHelper.anyStepRecursively((s) -> s instanceof SqlgAbstractStep, this.untilTraversal);
     }
 
 
@@ -286,22 +285,25 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                 boolean foundSomething = false;
                 if (barrierUntil()) {
                     if (!repeatStep.untilFirst) {
-                        Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+                        Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
                         foundSomething = repeatStep.doUntilBarrier(this.starts, this.toReturn, startRecordIds);
-                        for (Traverser.Admin<S> start : startRecordIds.values()) {
-                            //This is a brain bender.
-                            if (!repeatStep.emitFirst) {
-                                repeatStep.repeatTraversal.addStart(start);
-                            } else {
-                                //util is last and emit is first.
-                                //the start here did not pass the until so it goes round again.
-                                //The RepeatStep will iter the start and since emit is first it will emit it.
-                                repeatStep.addStart(start);
-                            }
-                            if (repeatStep.doEmit(start, false)) {
-                                final Traverser.Admin<S> emitSplit = start.split();
-                                emitSplit.resetLoops();
-                                this.toReturn.add(IteratorUtils.of(emitSplit));
+                        for (String key : startRecordIds.keySet()) {
+                            List<Traverser.Admin<S>> values = startRecordIds.get(key);
+                            for (Traverser.Admin<S> start : values) {
+                                //This is a brain bender.
+                                if (!repeatStep.emitFirst) {
+                                    repeatStep.repeatTraversal.addStart(start);
+                                } else {
+                                    //util is last and emit is first.
+                                    //the start here did not pass the until so it goes round again.
+                                    //The RepeatStep will iter the start and since emit is first it will emit it.
+                                    repeatStep.addStart(start);
+                                }
+                                if (repeatStep.doEmit(start, false)) {
+                                    final Traverser.Admin<S> emitSplit = start.split();
+                                    emitSplit.resetLoops();
+                                    this.toReturn.add(IteratorUtils.of(emitSplit));
+                                }
                             }
                         }
                     } else {
@@ -379,7 +381,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         } else {
             final Traverser.Admin<S> split = traverser.split();
             split.setSideEffects(traversal.getSideEffects());
-            split.setBulk(1l);
+            split.setBulk(1L);
             traversal.reset();
             traversal.addStart(split);
             return traversal.hasNext(); // filter
@@ -398,7 +400,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         return false;
     }
 
-    private boolean doUntilBarrier(SqlgExpandableStepIterator<S> starts, List<Iterator<Traverser.Admin<S>>> toReturn, Multimap<String, Traverser.Admin<S>> startRecordIds) {
+    private boolean doUntilBarrier(SqlgExpandableStepIterator<S> starts, List<Iterator<Traverser.Admin<S>>> toReturn, Map<String, List<Traverser.Admin<S>>> startRecordIds) {
         Set<Traverser.Admin<S>> unsortedToReturn = new HashSet<>();
         List<Traverser.Admin<S>> sortedIncoming = new ArrayList<>();
         boolean foundSomething = false;
@@ -419,7 +421,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     recordIdConcatenated.append(startObject.toString());
                 }
             }
-            startRecordIds.put(recordIdConcatenated.toString(), cachedStart);
+            startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(cachedStart);
             this.untilTraversal.addStart(cachedStart);
         }
         while (this.untilTraversal.hasNext()) {
@@ -438,7 +440,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         start.resetLoops();
                         unsortedToReturn.add(start);
                     }
-                    startRecordIds.removeAll(startId);
+                    startRecordIds.remove(startId);
                 }
                 if (startRecordIds.isEmpty()) {
                     break;
@@ -452,5 +454,6 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         }
         return foundSomething;
     }
+
 }
 

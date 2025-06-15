@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -10,10 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.step.SqlgConnectiveStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -38,7 +33,7 @@ public class SqlgOrStepBarrier<S> extends SqlgConnectiveStep<S> {
     protected Traverser.Admin<S> processNextStart() {
         if (this.first) {
             this.first = false;
-            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+            Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 if (start instanceof SqlgTraverser) {
@@ -54,12 +49,15 @@ public class SqlgOrStepBarrier<S> extends SqlgConnectiveStep<S> {
                         recordIdConcatenated.append(startObject.toString());
                     }
                 }
-                startRecordIds.put(recordIdConcatenated.toString(), start);
+                startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
             }
 
             for (Traversal.Admin<S, ?> orTraversal : this.orTraversals) {
-                for (Traverser.Admin<S> start : startRecordIds.values()) {
-                    orTraversal.addStart(start);
+                for (String key : startRecordIds.keySet()) {
+                    List<Traverser.Admin<S>> values = startRecordIds.get(key);
+                    for (Traverser.Admin<S> start : values) {
+                        orTraversal.addStart(start);
+                    }
                 }
                 while (orTraversal.hasNext()) {
                     Traverser.Admin<?> orTraverser = orTraversal.nextTraverser();
@@ -74,7 +72,7 @@ public class SqlgOrStepBarrier<S> extends SqlgConnectiveStep<S> {
                         }
                         if (startRecordIds.containsKey(startId)) {
                             this.results.addAll(startRecordIds.get(startId));
-                            startRecordIds.removeAll(startId);
+                            startRecordIds.remove(startId);
                         }
                         if (startRecordIds.isEmpty()) {
                             break;

@@ -1,7 +1,5 @@
 package org.umlg.sqlg.step.barrier;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -33,7 +31,7 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
     @Override
     protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
         if (this.first) {
-            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+            Map<String, List<Traverser.Admin<S>>> startRecordIds = new HashMap<>();
             this.first = false;
             long startCount = 1;
 
@@ -46,7 +44,7 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
                     Element e = (Element) startObject;
                     recordIdConcatenated.append(e.id().toString());
                 }
-                startRecordIds.put(recordIdConcatenated.toString(), start);
+                startRecordIds.computeIfAbsent(recordIdConcatenated.toString(), (k) -> new ArrayList<>()).add(start);
             }
             while (true) {
                 if (this.optionalTraversal.hasNext()) {
@@ -57,7 +55,8 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
                     for (Object optionObject : optionObjects) {
                         Element e = (Element) optionObject;
                         startId += e.id().toString();
-                        if (!startRecordIds.removeAll(startId).isEmpty()) {
+                        List<Traverser.Admin<S>> removed = startRecordIds.remove(startId);
+                        if (removed != null && !removed.isEmpty()) {
                             break;
                         }
                     }
@@ -66,10 +65,13 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
                 }
             }
 
-            for (Traverser.Admin<S> start : startRecordIds.values()) {
-                this.results.add(start);
-                //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                start.setBulk(1L);
+            for (String key : startRecordIds.keySet()) {
+                List<Traverser.Admin<S>> values = startRecordIds.get(key);
+                for (Traverser.Admin<S> start : values) {
+                    this.results.add(start);
+                    //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
+                    start.setBulk(1L);
+                }
             }
             //Sort the results, this is to ensure the the incoming start order is not lost.
             this.results.sort((o1, o2) -> {

@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.labels.TestHasLabelAndId;
+import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,10 @@ import org.umlg.sqlg.test.labels.TestHasLabelAndId;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestHasLabelAndId.class,
+        TestSqlgBranchStep.class
+//        TestHasLabelAndId.class,
+//        TestNotStepBarrier.class,
+//        TestForeignKeysAreOptional.class
 //        TestBatch.class
 //        TestFunctions.class
 //        TestGroupCount.class
