@@ -1,3 +1,9 @@
+##3.1.2
+
+* Added support for `pg_routing` functions.
+* Added support for `pgvector` `vector` type and query functions.
+* Added `GremlinDSL` which allows having custom steps in the `GraphTraversal`
+
 ##3.1.1
 
 * Optimize certain select gremlin patterns 
