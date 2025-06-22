@@ -76,6 +76,9 @@ public class TestFunctions extends BaseTest {
                         o -> "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("age") + " + 10)"
                 )
                 .toList();
+        for (Vertex addition : _additions) {
+            long agePlus10 = addition.value("addition");
+        }
         Assert.assertEquals(vertices, _additions);
     }
 }
