@@ -24,7 +24,7 @@ public class AsciiDoctor {
     }
 
     private void createDocs() {
-        String version = "3.1.1";
+        String version = "3.1.2";
         try (Asciidoctor asciidoctor = create()) {
             File file = new File("sqlg-doc/docs/" + version + "/sqlg.adoc");
             File html = new File("sqlg-doc/docs/" + version + "/index.html");
@@ -37,7 +37,7 @@ public class AsciiDoctor {
                     .build();
             Options options = Options.builder()
                     .attributes(attributes)
-                    .headerFooter(true)
+//                    .headerFooter(true)
                     .toFile(new File(html.getPath()))
                     .safe(SafeMode.SERVER)
                     .build();
