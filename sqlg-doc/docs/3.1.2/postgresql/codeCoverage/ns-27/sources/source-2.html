@@ -1,0 +1,222 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestEscapedValues</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.properties</a>
+</div>
+
+<h1>Coverage Summary for Class: TestEscapedValues (org.umlg.sqlg.test.properties)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestEscapedValues</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (30/30)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestEscapedValues$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (32/32)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.properties;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * Test values that are escaped by backslashes and that may impact SQL
+&nbsp; *
+&nbsp; * @author jpmoresmau
+&nbsp; */
+<b class="fc">&nbsp;public class TestEscapedValues extends BaseTest {</b>
+&nbsp;
+&nbsp;	@Test
+&nbsp;	public void testEscapedValuesSingleQuery(){
+<b class="fc">&nbsp;		String[] vals = new String[] { &quot;x-y&quot;, &quot;x\ny&quot;, &quot;x\&quot;y&quot;, &quot;x\\y&quot;, &quot;x\\ny&quot;, &quot;x\\\&quot;y&quot;, &quot;&#39;x&#39;y&#39;&quot; };</b>
+<b class="fc">&nbsp;		for (String s : vals) {</b>
+<b class="fc">&nbsp;			this.sqlgGraph.addVertex(&quot;Escaped&quot;).property(&quot;name&quot;, s);</b>
+&nbsp;		}
+<b class="fc">&nbsp;		this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;		for (String s : vals){</b>
+<b class="fc">&nbsp;			Assert.assertEquals(s,1L,this.sqlgGraph.traversal().V().has(&quot;name&quot;,s).count().next().longValue());</b>
+<b class="fc">&nbsp;			Assert.assertEquals(s,s,this.sqlgGraph.traversal().V().has(&quot;name&quot;,s).values(&quot;name&quot;).next());</b>
+&nbsp;		}
+&nbsp;	}
+&nbsp;
+&nbsp;	@Test
+&nbsp;	public void testEscapedValuesWithinQuery(){
+<b class="fc">&nbsp;		String[] vals = new String[] { &quot;x-y&quot;, &quot;x\ny&quot;, &quot;x\&quot;y&quot;, &quot;x\\y&quot;, &quot;x\\ny&quot;, &quot;x\\\&quot;y&quot;, &quot;&#39;x&#39;y&#39;&quot;  };</b>
+<b class="fc">&nbsp;		for (String s : vals) {</b>
+<b class="fc">&nbsp;			this.sqlgGraph.addVertex(&quot;Escaped&quot;).property(&quot;name&quot;, s);</b>
+&nbsp;		}
+<b class="fc">&nbsp;		this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;		Assert.assertEquals(vals.length,1L,this.sqlgGraph.traversal().V().has(&quot;name&quot;, P.within(vals)).count().next().longValue());</b>
+&nbsp;
+&nbsp;	}
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEscapedValuesSingleQueryBatch() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        String[] vals = new String[]{&quot;x-y&quot;, &quot;x\ny&quot;, &quot;x\&quot;y&quot;, &quot;x\\y&quot;, &quot;x\\ny&quot;, &quot;x\\\&quot;y&quot;, &quot;&#39;x&#39;y&#39;&quot;, &quot;x,y&quot;};</b>
+<b class="fc">&nbsp;        for (String s : vals) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(&quot;Escaped&quot;).property(&quot;name&quot;, s);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        for (String s : vals) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals(s, 1L, this.sqlgGraph.traversal().V().has(&quot;name&quot;, s).count().next().longValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(s, s, this.sqlgGraph.traversal().V().has(&quot;name&quot;, s).values(&quot;name&quot;).next());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEscapedValuesSingleQueryBatch2() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.streamVertex(&quot;Escaped&quot;, new LinkedHashMap&lt;String, Object&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;value&quot;, new String[]{&quot;  {-45.53}H - LINK  &quot;});</b>
+&nbsp;        }});
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;String[]&gt; result = this.sqlgGraph.traversal().V().&lt;String[]&gt;values(&quot;value&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, result.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, result.get(0).length);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;  {-45.53}H - LINK  &quot;, result.get(0)[0]);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

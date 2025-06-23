@@ -1,0 +1,289 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestMatch</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.match</a>
+</div>
+
+<h1>Coverage Summary for Class: TestMatch (org.umlg.sqlg.test.match)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestMatch</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (72/72)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestMatch$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestMatch$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (77/77)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.match;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2017/04/18
+&nbsp; * Time: 10:22 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestMatch extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDuplicateQueryJoin() {
+<b class="fc">&nbsp;        Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();</b>
+<b class="fc">&nbsp;        aSchema.ensureVertexLabelExist(&quot;person&quot;,</b>
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;personid&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;personid&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;personid&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;personid&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;knows&quot;, v2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;// Evalute the match step using ScriptEngine
+<b class="fc">&nbsp;        String query = &quot;g.V().match(__.as(&#39;a&#39;).out(&#39;knows&#39;).as(&#39;b&#39;)).select(&#39;a&#39;,&#39;b&#39;)&quot;;</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt; traversal = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .match(</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).out(&quot;knows&quot;).as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                ).select(&quot;a&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Vertex&gt;&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        System.out.println(result);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDuplicateQueryJoinMultipleKeys() {
+<b class="fc">&nbsp;        Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();</b>
+<b class="fc">&nbsp;        aSchema.ensureVertexLabelExist(&quot;person&quot;,</b>
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;personid1&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;personid2&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;personid1&quot;, &quot;personid2&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;personid1&quot;, &quot;1&quot;, &quot;personid2&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;personid1&quot;, &quot;2&quot;, &quot;personid2&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;knows&quot;, v2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;// Evalute the match step using ScriptEngine
+<b class="fc">&nbsp;        String query = &quot;g.V().match(__.as(&#39;a&#39;).out(&#39;knows&#39;).as(&#39;b&#39;)).select(&#39;a&#39;,&#39;b&#39;)&quot;;</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Map&lt;String, Vertex&gt;&gt; traversal = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .match(</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).out(&quot;knows&quot;).as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                ).select(&quot;a&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Vertex&gt;&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        System.out.println(result);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_matchXa__a_out_b__notXa_created_bXX() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = this.sqlgGraph.traversal().V().match(</b>
+<b class="fc">&nbsp;                __.as(&quot;a&quot;).out().as(&quot;b&quot;),</b>
+<b class="fc">&nbsp;                __.not(__.as(&quot;a&quot;).out(&quot;created&quot;).as(&quot;b&quot;)));</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        checkResults(makeMapList(2,</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;marko&quot;),</b>
+<b class="fc">&nbsp;                &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;josh&quot;),</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;marko&quot;),</b>
+<b class="fc">&nbsp;                &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;vadas&quot;)), traversal);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMatch() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .match(</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).in(&quot;ab&quot;).as(&quot;x&quot;),</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).out(&quot;bc&quot;).as(&quot;y&quot;)</b>
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, result.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(result.get(0).containsKey(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(result.get(0).containsKey(&quot;x&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(result.get(0).containsKey(&quot;y&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, result.get(0).get(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, result.get(0).get(&quot;x&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c1, result.get(0).get(&quot;y&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMatch2() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        Vertex marko = convertToVertex(this.sqlgGraph, &quot;marko&quot;);</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;)this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(marko)</b>
+<b class="fc">&nbsp;                .match(</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).out(&quot;knows&quot;).as(&quot;b&quot;),</b>
+<b class="fc">&nbsp;                        __.as(&quot;a&quot;).out(&quot;created&quot;).as(&quot;c&quot;)</b>
+&nbsp;                );
+&nbsp;//        List&lt;Map&lt;String, Object&gt;&gt; result = traversal.toList();
+<b class="fc">&nbsp;        checkResults(makeMapList(3,</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;marko&quot;), &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;vadas&quot;), &quot;c&quot;, convertToVertex(this.sqlgGraph, &quot;lop&quot;),</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;marko&quot;), &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;josh&quot;), &quot;c&quot;, convertToVertex(this.sqlgGraph, &quot;lop&quot;)),</b>
+&nbsp;                traversal
+&nbsp;        );
+&nbsp;
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

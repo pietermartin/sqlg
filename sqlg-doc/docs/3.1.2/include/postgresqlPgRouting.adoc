@@ -1,0 +1,124 @@
+== Postgresql pgRouting
+
+Sqlg has partial support for https://docs.pgrouting.org/latest/en/#[*pgRouting*].
+
+`pgRouting` functions can only be executed on self referencing graph. i.e. where a `VertexLabel` has an edge to itself.
+`pgRouting` works by querying the in and out vertex ids on the edge table.
+
+=== Dijkstra
+
+[source,java,options="nowrap"]
+----
+
+    private void loadWikiGraph() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("wiki", new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                    put("_index", PropertyDefinition.of(PropertyType.INTEGER, Multiplicity.of(1, 1)));
+                }});
+        EdgeLabel edgeLabel = vertexLabel.ensureEdgeLabelExist("connects", vertexLabel,
+                new LinkedHashMap<>() {{
+                    put("source", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("target", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("cost", PropertyDefinition.of(PropertyType.DOUBLE, Multiplicity.of(1, 1), "'-1'"));
+                    put("reverse_cost", PropertyDefinition.of(PropertyType.DOUBLE, Multiplicity.of(1, 1), "'-1'"));
+                }}
+        ); #<1>
+        this.sqlgGraph.tx().commit();
+
+        Map<Integer, Vertex> vertexMap = new HashMap<>();
+        for (Integer i : List.of(1, 2, 3, 4, 5, 6)) {
+            vertexMap.put(i, this.sqlgGraph.addVertex(T.label, "wiki", "name", String.valueOf(i), "_index", i));
+        }
+
+        Vertex _1 = vertexMap.get(1);
+        Vertex _2 = vertexMap.get(2);
+        Vertex _3 = vertexMap.get(3);
+        Vertex _4 = vertexMap.get(4);
+        Vertex _5 = vertexMap.get(5);
+        Vertex _6 = vertexMap.get(6);
+
+        _1.addEdge("connects", _2, "source", 1, "target", 2, "cost", 7D);
+        _1.addEdge("connects", _3, "source", 1, "target", 3, "cost", 9D);
+        _1.addEdge("connects", _6, "source", 1, "target", 6, "cost", 14D);
+
+        _2.addEdge("connects", _3, "source", 2, "target", 3, "cost", 10D);
+        _2.addEdge("connects", _4, "source", 2, "target", 4, "cost", 15D);
+
+        _3.addEdge("connects", _6, "source", 3, "target", 6, "cost", 2D);
+        _3.addEdge("connects", _4, "source", 3, "target", 4, "cost", 11D);
+
+        _4.addEdge("connects", _5, "source", 4, "target", 5, "cost", 6D);
+        _5.addEdge("connects", _6, "source", 5, "target", 6, "cost", 9D);
+
+        this.sqlgGraph.tx().commit(); #<2>
+    }
+
+    @Test
+    public void testDijkstra() {
+        loadWikiGraph();
+        List<Path> result1 = sqlgGraph.traversal(SqlgTraversalSource.class).E()
+                .hasLabel("connects")
+                .dijkstra(1L, 5L, false)
+                .toList(); #<3>
+    }
+
+----
+<1> Create the graph's topology.
+<2> Insert the graph.
+<3> Run the `dijkstra` step. The result are the shortest paths as calculated using https://docs.pgrouting.org/latest/en/pgr_bdDijkstra.html#[*pgr_bdDijkstra*]
+
+The above `dijksta` step will result in the following sql being executed.
+
+[source,sql,options="nowrap"]
+----
+WITH a AS (
+    SELECT * FROM pgr_dijkstra(
+    'SELECT a."alias3" as id, a."alias2" as source, a."alias1" as target, a."alias4" as cost, a."alias7" as reverse_cost FROM (
+        SELECT
+	"public"."E_connects"."public.wiki__O" AS "alias1",
+	"public"."E_connects"."public.wiki__I" AS "alias2",
+	"public"."E_connects"."ID" AS "alias3",
+	"public"."E_connects"."cost" AS "alias4",
+	"public"."E_connects"."source" AS "alias5",
+	"public"."E_connects"."target" AS "alias6",
+	"public"."E_connects"."reverse_cost" AS "alias7"
+FROM
+	"public"."E_connects"
+    ) a', 1, 5, false)
+), b AS (
+    SELECT * from "public"."V_wiki"
+), c AS (
+    SELECT * from "public"."E_connects"
+)
+SELECT c."ID" as edge_id , c."cost", c."source", c."target", c."reverse_cost", c."public.wiki__I", c."public.wiki__O", b."ID" as vertex_id , b."_index", b."name", a."cost" as "traversal_cost", a.agg_cost as "traversal_agg_cost", a.start_vid, a.end_vid FROM
+    a JOIN
+    b ON a.node = b."ID" LEFT JOIN
+    c ON a.edge = c."ID"
+----
+
+Sqlg has support for one to one, one to many, many to one and many to many dijkstra function calls.
+
+[source,java,options="nowrap"]
+----
+  @Override
+  default SqlgTraversal<S, Path> dijkstra(long startVid, long endVid, boolean directed) {
+    return (SqlgTraversal) SqlgTraversalDsl.super.dijkstra(startVid,endVid,directed);
+  }
+
+  @Override
+  default SqlgTraversal<S, Path> dijkstra(List<Long> startVids, List<Long> endVids,
+      boolean directed) {
+    return (SqlgTraversal) SqlgTraversalDsl.super.dijkstra(startVids,endVids,directed);
+  }
+
+  @Override
+  default SqlgTraversal<S, Path> dijkstra(long startVid, List<Long> endVids, boolean directed) {
+    return (SqlgTraversal) SqlgTraversalDsl.super.dijkstra(startVid,endVids,directed);
+  }
+
+  @Override
+  default SqlgTraversal<S, Path> dijkstra(List<Long> startVids, long endVid, boolean directed) {
+    return (SqlgTraversal) SqlgTraversalDsl.super.dijkstra(startVids,endVid,directed);
+  }
+----

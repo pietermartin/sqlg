@@ -1,0 +1,50 @@
+===== Group By and Sum Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertySum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .<String, Long>group().by("name").by(__.values("age").sum());
+    printTraversalForm(traversal);
+    Map<String, Long> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(4, result.get("A"), 0L);
+    Assert.assertEquals(6, result.get("B"), 0L);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbysum-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), SumGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbysum-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	SUM("public"."V_Person"."age") AS "alias2"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"
+----

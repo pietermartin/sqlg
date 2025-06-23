@@ -1,0 +1,234 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestFunctions</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.function</a>
+</div>
+
+<h1>Coverage Summary for Class: TestFunctions (org.umlg.sqlg.test.function)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestFunctions</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/37)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestFunctions$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/41)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.function;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.services.SqlgFunctionFactory;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.RecordId;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.function.Function;
+&nbsp;
+<b class="nc">&nbsp;public class TestFunctions extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testFunctions() {
+<b class="nc">&nbsp;        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();</b>
+<b class="nc">&nbsp;        VertexLabel personVertexLabel = publicSchema.ensureVertexLabelExist(&quot;Person&quot;,</b>
+<b class="nc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                    put(&quot;surname&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                    put(&quot;age&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+&nbsp;                }});
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="nc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;name_&quot; + i, &quot;surname&quot;, &quot;surname_&quot; + i, &quot;age&quot;, i);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;)</b>
+<b class="nc">&nbsp;                .&lt;Vertex&gt;call(</b>
+&nbsp;                        SqlgFunctionFactory.NAME,
+<b class="nc">&nbsp;                        Map.of(</b>
+&nbsp;                                SqlgFunctionFactory.Params.COLUMN_NAME, &quot;addition&quot;,
+&nbsp;                                SqlgFunctionFactory.Params.RESUL_PROPERTY_TYPE, PropertyType.LONG,
+<b class="nc">&nbsp;                                SqlgFunctionFactory.Params.FUNCTION_AS_STRING, (Function&lt;Object, String&gt;) o -&gt; &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;age&quot;) + &quot; + 10)&quot;</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="nc">&nbsp;                .toList();</b>
+<b class="nc">&nbsp;        Map&lt;RecordId, Long&gt; recordIdAdditionMap = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(10, vertices.size());</b>
+<b class="nc">&nbsp;        for (Vertex vertex : vertices) {</b>
+<b class="nc">&nbsp;            Integer age = vertex.value(&quot;age&quot;);</b>
+<b class="nc">&nbsp;            Long addition = vertex.value(&quot;addition&quot;);</b>
+<b class="nc">&nbsp;            Assert.assertEquals(addition, age + 10, 0);</b>
+<b class="nc">&nbsp;            recordIdAdditionMap.put((RecordId) vertex.id(), addition);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        List&lt;Map&lt;Object, Object&gt;&gt; additions = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;)</b>
+<b class="nc">&nbsp;                .&lt;Vertex&gt;call(</b>
+&nbsp;                        SqlgFunctionFactory.NAME,
+<b class="nc">&nbsp;                        Map.of(</b>
+&nbsp;                                SqlgFunctionFactory.Params.COLUMN_NAME, &quot;addition&quot;,
+&nbsp;                                SqlgFunctionFactory.Params.RESUL_PROPERTY_TYPE, PropertyType.LONG,
+<b class="nc">&nbsp;                                SqlgFunctionFactory.Params.FUNCTION_AS_STRING, (Function&lt;Object, String&gt;) o -&gt; &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;age&quot;) + &quot; + 10)&quot;</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="nc">&nbsp;                .elementMap(&quot;addition&quot;)</b>
+<b class="nc">&nbsp;                .toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(10, additions.size());</b>
+<b class="nc">&nbsp;        for (Map&lt;Object, Object&gt; additionMap : additions) {</b>
+<b class="nc">&nbsp;            RecordId recordId = (RecordId) additionMap.get(T.id);</b>
+<b class="nc">&nbsp;            Long addition = (Long) additionMap.get(&quot;addition&quot;);</b>
+<b class="nc">&nbsp;            Assert.assertEquals(addition, recordIdAdditionMap.get(recordId));</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Vertex&gt; _additions = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;)</b>
+<b class="nc">&nbsp;                .&lt;Vertex&gt;fun(</b>
+&nbsp;                        &quot;addition&quot;,
+&nbsp;                        PropertyType.LONG,
+<b class="nc">&nbsp;                        o -&gt; &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;age&quot;) + &quot; + 10)&quot;</b>
+&nbsp;                )
+<b class="nc">&nbsp;                .toList();</b>
+<b class="nc">&nbsp;        for (Vertex addition : _additions) {</b>
+<b class="nc">&nbsp;            long agePlus10 = addition.value(&quot;addition&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        Assert.assertEquals(vertices, _additions);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

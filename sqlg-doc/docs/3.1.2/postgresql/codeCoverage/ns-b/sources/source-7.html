@@ -1,0 +1,156 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestLoadEdgeWithSpecialCharacters</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.edges</a>
+</div>
+
+<h1>Coverage Summary for Class: TestLoadEdgeWithSpecialCharacters (org.umlg.sqlg.test.edges)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestLoadEdgeWithSpecialCharacters</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (19/19)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.edges;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Before;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+<b class="fc">&nbsp;public class TestLoadEdgeWithSpecialCharacters extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBulkAddEdgesWithSpecialCharactersInValues() {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        List&lt;Pair&lt;String, String&gt;&gt; uids = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        uids.add(Pair.of(&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP9-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;341-&gt;TriggerPoint-&gt;1-&gt;SPT&quot;,&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP9-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;341-&gt;TriggerPoint-&gt;1-&gt;SPT-&gt;SIPHeader-&gt;Accept-Contact-&gt;\\+g\\.3gpp\\.icsi-ref=\&quot;urn%3Aurn-7%3A3gpp-service\\.ims\\.icsi\\.mmtel\&quot;&quot;));</b>
+<b class="fc">&nbsp;        uids.add(Pair.of(&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP9-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;341-&gt;TriggerPoint-&gt;1-&gt;SPT&quot;,&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP9-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;341-&gt;TriggerPoint-&gt;1-&gt;SPT-&gt;SIPHeader-&gt;P-Asserted-Service-&gt;3gpp-service\\.ims\\.icsi\\.mmtel&quot;));</b>
+<b class="fc">&nbsp;        uids.add(Pair.of(&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP5-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;400-&gt;TriggerPoint-&gt;1-&gt;SPT&quot;,&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;ELL_CMS-ELL-45-&gt;APP5-&gt;ims-&gt;IFC_xml-&gt;VOLTE-MSIM-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;400-&gt;TriggerPoint-&gt;1-&gt;SPT-&gt;SIPHeader-&gt;Contact-&gt;\\+g\\.3gpp\\.smsip&quot;));</b>
+<b class="fc">&nbsp;        uids.add(Pair.of(&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;HLW_CMS-BAS-42-&gt;APP17-&gt;ims-&gt;IFC_xml-&gt;VOLTE-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;720-&gt;TriggerPoint-&gt;1-&gt;SPT&quot;,&quot;Telefonica-&gt;UK-&gt;MAVENIR-&gt;IMC-&gt;REAL_WS-&gt;HLW_CMS-BAS-42-&gt;APP17-&gt;ims-&gt;IFC_xml-&gt;VOLTE-&gt;dummyTagDoNotUseForWriteback-&gt;InitialFilterCriteria-&gt;720-&gt;TriggerPoint-&gt;1-&gt;SPT-&gt;SIPHeader-&gt;Accept-Contact-&gt;\\+g\\.3gpp\\.icsi-ref=\&quot;urn%3Aurn-7%3A3gpp-service\\.ims\\.icsi\\.mmtel\&quot;&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        Set&lt;String&gt; parent = uids.stream().map(Pair::getLeft).collect(Collectors.toSet());</b>
+<b class="fc">&nbsp;        parent.forEach(s -&gt; this.sqlgGraph.addVertex(T.label, &quot;SPT&quot;, &quot;cm_uid&quot;, s));</b>
+<b class="fc">&nbsp;        uids.forEach(p -&gt; this.sqlgGraph.addVertex(T.label, &quot;SIPHeader&quot;, &quot;cm_uid&quot;, p.getRight()));</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().streamingBatchModeOn();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.bulkAddEdges(</b>
+&nbsp;                &quot;SPT&quot;,
+&nbsp;                &quot;SIPHeader&quot;,
+&nbsp;                &quot;SPT_SIPHeader&quot;,
+<b class="fc">&nbsp;                Pair.of(&quot;cm_uid&quot;, &quot;cm_uid&quot;),</b>
+&nbsp;                uids);
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(3, this.sqlgGraph.traversal().V().hasLabel(&quot;SPT&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(4, this.sqlgGraph.traversal().V().hasLabel(&quot;SIPHeader&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        assertEquals(4, this.sqlgGraph.traversal().V().hasLabel(&quot;SPT&quot;).out().count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

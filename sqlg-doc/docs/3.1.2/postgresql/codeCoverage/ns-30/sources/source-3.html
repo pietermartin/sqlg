@@ -1,0 +1,537 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestLoadSchemaViaNotify</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.schema</a>
+</div>
+
+<h1>Coverage Summary for Class: TestLoadSchemaViaNotify (org.umlg.sqlg.test.schema)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestLoadSchemaViaNotify</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (14/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (6/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.9%
+  </span>
+  <span class="absValue">
+    (234/239)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.schema;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.IteratorUtils;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.commons.lang3.tuple.Triple;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Direction;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.*;
+&nbsp;import org.umlg.sqlg.structure.topology.*;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/11/03
+&nbsp; * Time: 6:22 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestLoadSchemaViaNotify extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="fc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+<b class="pc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;))</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;
+&nbsp;        } catch (ConfigurationException e) {
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLoadSchemaForeignKeyOutSchemaToPublic() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Mammal.Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            Vertex car = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            person.addEdge(&quot;drives&quot;, car);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            car = sqlgGraph1.traversal().V(car.id()).next();</b>
+<b class="fc">&nbsp;            Iterator&lt;Vertex&gt; verticesIter = car.vertices(Direction.IN, &quot;drives&quot;);</b>
+<b class="fc">&nbsp;            int size = IteratorUtils.toList(verticesIter).size();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, size);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLoadSchemaForeignKeyInSchemaToPublic() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            Vertex car = this.sqlgGraph.addVertex(T.label, &quot;Fleet.Car&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            person.addEdge(&quot;drives&quot;, car);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            car = sqlgGraph1.traversal().V(car.id()).next();</b>
+<b class="fc">&nbsp;            Iterator&lt;Vertex&gt; verticesIter = car.vertices(Direction.IN, &quot;drives&quot;);</b>
+<b class="fc">&nbsp;            int size = IteratorUtils.toList(verticesIter).size();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, size);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLazyLoadTableViaVertexHas() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;            //add a vertex in the old, the new should only see it after a commit
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;            //postgresql notify only happens after the commit, need to wait a bit.
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;a&quot;, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).next().value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLazyLoadTableViaVertexHasWithKey() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;            //add a vertex in the old, the new should only see it after a commit
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).has(&quot;name&quot;, &quot;a&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLazyLoadTableViaVertexHasWithKeyMissingColumn() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;            //add a vertex in the old, the new should only see it after a commit
+<b class="fc">&nbsp;            Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).has(&quot;name&quot;, &quot;a&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Vertex v11 = sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).has(&quot;name&quot;, &quot;a&quot;).next();</b>
+<b class="fc">&nbsp;            Assert.assertFalse(v11.property(&quot;surname&quot;).isPresent());</b>
+&nbsp;            //the next alter will lock if this transaction is still active
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;
+&nbsp;            //add column in one
+<b class="fc">&nbsp;            v1.property(&quot;surname&quot;, &quot;bbb&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Vertex v12 = sqlgGraph1.addVertex(T.label, &quot;Person&quot;, &quot;surname&quot;, &quot;ccc&quot;);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;ccc&quot;, v12.value(&quot;surname&quot;));</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    //Fails via maven for Hsqldb
+&nbsp;    @Test
+&nbsp;    public void testLazyLoadTableViaEdgeCreation() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;            //add a vertex in the old, the new should only see it after a commit
+<b class="fc">&nbsp;            Vertex v1 = null;</b>
+<b class="fc">&nbsp;            Vertex v2 = null;</b>
+<b class="pc">&nbsp;            for (int i = 0; i &lt; 3; i++) {</b>
+&nbsp;                try {
+<b class="fc">&nbsp;                    v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;                    v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;                    this.sqlgGraph.tx().commit();</b>
+&nbsp;                    break;
+&nbsp;                } catch (Exception e) {
+&nbsp;                    //retry
+<b class="nc">&nbsp;                    this.sqlgGraph.tx().rollback();</b>
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+<b class="fc">&nbsp;            Vertex v11 = null;</b>
+<b class="fc">&nbsp;            Vertex v12 = null;</b>
+<b class="fc">&nbsp;            for (int i = 0; i &lt; 3; i++) {</b>
+&nbsp;                try {
+<b class="fc">&nbsp;                    v11 = sqlgGraph1.addVertex(T.label, &quot;Person&quot;, &quot;surname&quot;, &quot;ccc&quot;);</b>
+<b class="fc">&nbsp;                    v12 = sqlgGraph1.addVertex(T.label, &quot;Person&quot;, &quot;surname&quot;, &quot;ccc&quot;);</b>
+<b class="fc">&nbsp;                    sqlgGraph1.tx().commit();</b>
+&nbsp;                } catch (Exception e) {
+<b class="nc">&nbsp;                    sqlgGraph1.tx().rollback();</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertNotNull(v1);</b>
+<b class="fc">&nbsp;            for (int i = 0; i &lt; 3; i++) {</b>
+&nbsp;                try {
+<b class="fc">&nbsp;                    v1.addEdge(&quot;friend&quot;, v2);</b>
+<b class="fc">&nbsp;                    this.sqlgGraph.tx().commit();</b>
+&nbsp;                } catch (Exception e) {
+<b class="nc">&nbsp;                    this.sqlgGraph.tx().rollback();</b>
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertNotNull(v11);</b>
+<b class="fc">&nbsp;            v11.addEdge(&quot;friend&quot;, v12);</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, vertexTraversal(sqlgGraph1, v11).out(&quot;friend&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLazyLoadTableViaEdgesHas() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;            //add a vertex in the old, the new should only see it after a commit
+<b class="fc">&nbsp;            Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;            v1.addEdge(&quot;friend&quot;, v2);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, &quot;friend&quot;).count().next().intValue());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, &quot;friend&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLoadSchemaRemembersUncommittedSchemas() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;            v1.addEdge(&quot;friend&quot;, v2);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Animal&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, &quot;friend&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, &quot;friend&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+&nbsp;
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLoadSchemaEdge() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            Vertex personVertex = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            Vertex dogVertex = this.sqlgGraph.addVertex(T.label, &quot;Dog&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;            Edge petEdge = personVertex.addEdge(&quot;pet&quot;, dogVertex, &quot;test&quot;, &quot;this&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, &quot;pet&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;this&quot;, sqlgGraph1.traversal().E().has(T.label, &quot;pet&quot;).next().value(&quot;test&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Dog&quot;).count().next().intValue());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(dogVertex, sqlgGraph1.traversal().V(personVertex.id()).out(&quot;pet&quot;).next());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(personVertex, sqlgGraph1.traversal().V(dogVertex.id()).in(&quot;pet&quot;).next());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;a&quot;, sqlgGraph1.traversal().V(personVertex.id()).next().&lt;String&gt;value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;b&quot;, sqlgGraph1.traversal().V(dogVertex.id()).next().&lt;String&gt;value(&quot;name&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;
+&nbsp;            //add a property to the vertex
+<b class="fc">&nbsp;            personVertex.property(&quot;surname&quot;, &quot;AAA&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;AAA&quot;, sqlgGraph1.traversal().V(personVertex.id()).next().&lt;String&gt;value(&quot;surname&quot;));</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;
+&nbsp;            //add property to the edge
+<b class="fc">&nbsp;            petEdge.property(&quot;edgeProperty1&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            Edge e = sqlgGraph1.traversal().E(petEdge.id()).next();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;a&quot;, e.&lt;String&gt;value(&quot;edgeProperty1&quot;));</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;
+&nbsp;            //add an edge
+<b class="fc">&nbsp;            Vertex addressVertex = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;1 Nowhere&quot;);</b>
+<b class="fc">&nbsp;            personVertex.addEdge(&quot;homeAddress&quot;, addressVertex);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(2, sqlgGraph1.traversal().E().count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, &quot;pet&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, &quot;homeAddress&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Person&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Dog&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, &quot;Address&quot;).count().next().intValue());</b>
+&nbsp;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;OptionalGetWithoutIsPresent&quot;)
+&nbsp;    @Test
+&nbsp;    public void loadIndex() throws Exception {
+&nbsp;        //Create a new sqlgGraph
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+&nbsp;
+<b class="fc">&nbsp;            Map&lt;String, PropertyDefinition&gt; properties = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;            properties.put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;A&quot;, properties);</b>
+<b class="fc">&nbsp;            vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(vertexLabel.getProperty(&quot;name&quot;).get()));</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;            Optional&lt;Index&gt; index = this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .getVertexLabel(&quot;A&quot;).get()</b>
+<b class="fc">&nbsp;                    .getIndex(this.sqlgGraph.getSqlDialect()</b>
+<b class="fc">&nbsp;                            .indexName(</b>
+<b class="fc">&nbsp;                                    SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;),</b>
+&nbsp;                                    Topology.VERTEX_PREFIX,
+<b class="fc">&nbsp;                                    Collections.singletonList(&quot;name&quot;)));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(index.isPresent());</b>
+&nbsp;
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            index = sqlgGraph1.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .getVertexLabel(&quot;A&quot;).get()</b>
+<b class="fc">&nbsp;                    .getIndex(this.sqlgGraph.getSqlDialect()</b>
+<b class="fc">&nbsp;                            .indexName(</b>
+<b class="fc">&nbsp;                                    SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;),</b>
+&nbsp;                                    Topology.VERTEX_PREFIX,
+<b class="fc">&nbsp;                                    Collections.singletonList(&quot;name&quot;)));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(index.isPresent());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testViaNotifyIsCommitted() throws Exception {
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;            Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;            a1.addEdge(&quot;ab&quot;, b1, &quot;name&quot;, &quot;asd&quot;);</b>
+<b class="fc">&nbsp;            this.sqlgGraph.getTopology().getSchema(&quot;A&quot;).orElseThrow().getVertexLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                    .ifPresent(v -&gt; v.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(v.getProperty(&quot;name&quot;).orElseThrow())));</b>
+&nbsp;
+<b class="fc">&nbsp;            Schema aSchema = this.sqlgGraph.getTopology().getSchema(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(aSchema.isUncommitted());</b>
+<b class="fc">&nbsp;            VertexLabel vertexLabel = aSchema.getVertexLabel(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(vertexLabel.isUncommitted());</b>
+<b class="fc">&nbsp;            PropertyColumn namePropertyColumn = vertexLabel.getProperty(&quot;name&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(namePropertyColumn.isUncommitted());</b>
+<b class="fc">&nbsp;            String indexName = this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of(&quot;A&quot;, &quot;A&quot;), Topology.VERTEX_PREFIX, Collections.singletonList(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            Index index = vertexLabel.getIndex(indexName).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(index.isUncommitted());</b>
+&nbsp;
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            aSchema = sqlgGraph1.getTopology().getSchema(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(aSchema.isCommitted());</b>
+<b class="fc">&nbsp;            vertexLabel = aSchema.getVertexLabel(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(vertexLabel.isCommitted());</b>
+<b class="fc">&nbsp;            namePropertyColumn = vertexLabel.getProperty(&quot;name&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(namePropertyColumn.isCommitted());</b>
+<b class="fc">&nbsp;            indexName = sqlgGraph1.getSqlDialect().indexName(SchemaTable.of(&quot;A&quot;, &quot;A&quot;), Topology.VERTEX_PREFIX, Collections.singletonList(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            index = vertexLabel.getIndex(indexName).orElseThrow();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(index.isCommitted());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDistributedTopologyListener() throws Exception {
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            List&lt;Triple&lt;TopologyInf, TopologyInf, TopologyChangeAction&gt;&gt; topologyListenerTriple = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;            TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);</b>
+<b class="fc">&nbsp;            sqlgGraph1.getTopology().registerListener(topologyListenerTest);</b>
+<b class="fc">&nbsp;            Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;, &quot;name&quot;, &quot;asda&quot;);</b>
+<b class="fc">&nbsp;            Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;, &quot;name&quot;, &quot;asdasd&quot;);</b>
+<b class="fc">&nbsp;            Edge e1 = a1.addEdge(&quot;aa&quot;, a2);</b>
+<b class="fc">&nbsp;            a1.property(&quot;surname&quot;, &quot;asdasd&quot;);</b>
+<b class="fc">&nbsp;            e1.property(&quot;special&quot;, &quot;&quot;);</b>
+<b class="fc">&nbsp;            Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;A.B&quot;, &quot;name&quot;, &quot;asdasd&quot;);</b>
+<b class="fc">&nbsp;            a1.addEdge(&quot;aa&quot;, b1);</b>
+&nbsp;
+<b class="fc">&nbsp;            Schema schema = this.sqlgGraph.getTopology().getSchema(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            VertexLabel aVertexLabel = schema.getVertexLabel(&quot;A&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel(&quot;aa&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            VertexLabel bVertexLabel = schema.getVertexLabel(&quot;B&quot;).orElseThrow();</b>
+<b class="fc">&nbsp;            Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList&lt;&gt;(aVertexLabel.getProperties().values()));</b>
+&nbsp;
+<b class="fc">&nbsp;            this.sqlgGraph.tx().commit();</b>
+&nbsp;            //allow time for notification to happen
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+&nbsp;
+&nbsp;            // we&#39;re not getting property notification since we get vertex label notification, these include all properties committed
+<b class="fc">&nbsp;            Assert.assertEquals(7, topologyListenerTriple.size());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(0).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(0).getRight());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(1).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());</b>
+<b class="fc">&nbsp;            Map&lt;String, PropertyColumn&gt; props = ((VertexLabel) topologyListenerTriple.get(1).getLeft()).getProperties();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(props.containsKey(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(props.containsKey(&quot;surname&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(index, topologyListenerTriple.get(2).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(2).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(edgeLabel, topologyListenerTriple.get(5).getLeft());</b>
+<b class="fc">&nbsp;            String s = topologyListenerTriple.get(5).getLeft().toString();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(s.contains(edgeLabel.getSchema().getName()));</b>
+<b class="fc">&nbsp;            props = ((EdgeLabel) topologyListenerTriple.get(5).getLeft()).getProperties();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(props.containsKey(&quot;special&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(5).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(edgeLabel.getOutEdgeRoles(aVertexLabel), topologyListenerTriple.get(3).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(3).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertNull(topologyListenerTriple.get(4).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

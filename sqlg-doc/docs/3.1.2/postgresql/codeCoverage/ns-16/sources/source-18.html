@@ -1,0 +1,447 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestPathStep</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestPathStep (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestPathStep</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    94.4%
+  </span>
+  <span class="absValue">
+    (17/18)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.6%
+  </span>
+  <span class="absValue">
+    (231/232)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Pop;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Graph;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.step.SqlgGraphStep;
+&nbsp;import org.umlg.sqlg.strategy.BaseStrategy;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;/**
+&nbsp; * Created by pieter on 2015/08/30.
+&nbsp; */
+<b class="fc">&nbsp;public class TestPathStep extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBug382() {
+<b class="fc">&nbsp;        GraphTraversalSource g = this.sqlgGraph.traversal();</b>
+<b class="fc">&nbsp;        g.addV(&quot;Test&quot;).property(&quot;name&quot;, &quot;John&quot;).next();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = g.V().hasLabel(&quot;Test&quot;)</b>
+<b class="fc">&nbsp;                .or(__.has(&quot;name&quot;, &quot;John&quot;)).as(&quot;t&quot;)</b>
+<b class="fc">&nbsp;                .path().from(&quot;t&quot;)</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        System.out.println(paths.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPathFrom() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).out(&quot;ab&quot;).as(&quot;b&quot;).out(&quot;bc&quot;).path().toList();</b>
+<b class="fc">&nbsp;        System.out.println(paths);</b>
+&nbsp;
+<b class="fc">&nbsp;        paths = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).out(&quot;ab&quot;).as(&quot;b&quot;).out(&quot;bc&quot;).path().from(&quot;b&quot;).toList();</b>
+<b class="fc">&nbsp;        System.out.println(paths);</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Path&gt; t = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;ab&quot;).select(&quot;a&quot;).as(&quot;start&quot;)</b>
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        printTraversalForm(t);</b>
+<b class="fc">&nbsp;        paths = t.toList();</b>
+<b class="fc">&nbsp;        System.out.println(paths);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        Path path = paths.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, path.size());</b>
+<b class="fc">&nbsp;        List&lt;Set&lt;String&gt;&gt; labels = path.labels();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, labels.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, labels.get(0).size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.get(0).contains(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, labels.get(1).size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.get(1).contains(BaseStrategy.SQLG_PATH_FAKE_LABEL));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, labels.get(2).size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.get(2).contains(&quot;start&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        t = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;ab&quot;).select(&quot;a&quot;).limit(1).as(&quot;start&quot;)</b>
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        printTraversalForm(t);</b>
+<b class="fc">&nbsp;        paths = t.toList();</b>
+<b class="fc">&nbsp;        System.out.println(paths);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        path = paths.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, path.size());</b>
+<b class="fc">&nbsp;        labels = path.labels();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, labels.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, labels.get(0).size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.get(0).contains(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, labels.get(1).size());</b>
+&nbsp;
+&nbsp;        //This breaks intermittently on hsqldb
+&nbsp;//        Assert.assertTrue(labels.get(1).contains(&quot;sqlgPathFakeLabel&quot;));
+&nbsp;//        Assert.assertEquals(1, labels.get(2).size());
+&nbsp;//        Assert.assertTrue(labels.get(2).contains(&quot;start&quot;));
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_hasXlabel_personX_asXaX_localXoutXcreatedX_asXbXX_selectXa_bX_byXnameX_by() {
+<b class="fc">&nbsp;        Graph graph = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(graph, true, false);</b>
+<b class="fc">&nbsp;        GraphTraversalSource g = graph.traversal();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;) g</b>
+<b class="fc">&nbsp;                .V().has(T.label, &quot;person&quot;).as(&quot;a&quot;).local(__.out(&quot;created&quot;).as(&quot;b&quot;)).select(&quot;a&quot;, &quot;b&quot;).by(&quot;name&quot;).by(T.id);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            final Map&lt;String, Object&gt; map = traversal.next();</b>
+<b class="fc">&nbsp;            counter++;</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, map.size());</b>
+<b class="fc">&nbsp;            if (map.get(&quot;a&quot;).equals(&quot;marko&quot;)) {</b>
+<b class="fc">&nbsp;                Assert.assertEquals(convertToVertexId(&quot;lop&quot;), map.get(&quot;b&quot;));</b>
+<b class="fc">&nbsp;            } else if (map.get(&quot;a&quot;).equals(&quot;josh&quot;)) {</b>
+<b class="fc">&nbsp;                Assert.assertTrue(convertToVertexId(&quot;lop&quot;).equals(map.get(&quot;b&quot;)) || convertToVertexId(&quot;ripple&quot;).equals(map.get(&quot;b&quot;)));</b>
+<b class="pc">&nbsp;            } else if (map.get(&quot;a&quot;).equals(&quot;peter&quot;)) {</b>
+<b class="fc">&nbsp;                Assert.assertEquals(convertToVertexId(&quot;lop&quot;), map.get(&quot;b&quot;));</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                Assert.fail(&quot;The following map should not have been returned: &quot; + map);</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(4, counter);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testGraphPathWithBy() {
+<b class="fc">&nbsp;        Graph graph = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(graph, true, false);</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal1 = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) graph.traversal().V().out().path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) graph.traversal().V().out().path().by(&quot;age&quot;).by(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        final Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            counter++;</b>
+<b class="fc">&nbsp;            final Path path = traversal.next();</b>
+<b class="fc">&nbsp;            System.out.println(path);</b>
+<b class="fc">&nbsp;            names.add(path.get(1));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(6, counter);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, names.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexPathWithBy() {
+<b class="fc">&nbsp;        Graph graph = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(graph, true, false);</b>
+<b class="fc">&nbsp;        GraphTraversalSource g = graph.traversal();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) g</b>
+<b class="fc">&nbsp;                .V(convertToVertexId(&quot;marko&quot;)).out().path().by(&quot;age&quot;).by(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        final Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            counter++;</b>
+<b class="fc">&nbsp;            final Path path = traversal.next();</b>
+<b class="fc">&nbsp;            System.out.println(path);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(Integer.valueOf(29), path.&lt;Integer&gt;get(0));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.get(1).equals(&quot;josh&quot;) || path.get(1).equals(&quot;vadas&quot;) || path.get(1).equals(&quot;lop&quot;));</b>
+<b class="fc">&nbsp;            names.add(path.get(1));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(3, counter);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, names.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdge() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Edge&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Edge&gt;) this.sqlgGraph.traversal().V(a1.id()).bothE();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        final List&lt;Edge&gt; v1Edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, v1Edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(v1Edges.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(v1Edges.get(1));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexPathBackToSelf() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; gt = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal().V(a1).out().in().path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, gt.getSteps().size());</b>
+<b class="fc">&nbsp;        Path p = gt.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, gt.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, p.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, p.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, p.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, p.get(2));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSimplePath() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;).has(&quot;name&quot;, &quot;a1&quot;).as(&quot;b&quot;).has(&quot;age&quot;, 1).as(&quot;c&quot;).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.get(0).size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_asXaX_hasXname_markoX_asXbX_hasXage_29X_asXcX_path() {
+<b class="fc">&nbsp;        Graph graph = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(graph, true, false);</b>
+<b class="fc">&nbsp;        GraphTraversalSource g = graph.traversal();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) g</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;).has(&quot;name&quot;, &quot;marko&quot;).as(&quot;b&quot;).has(&quot;age&quot;, 29).as(&quot;c&quot;).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        final Path path = traversal.next();</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, path.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(path.hasLabel(&quot;a&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(path.hasLabel(&quot;b&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(path.hasLabel(&quot;c&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, path.labels().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, path.labels().get(0).size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testNameWithMultipleSameLabel() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a3.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .in().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .select(Pop.all, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+&nbsp;
+&nbsp;        //This used to return values at TinkerPop 3.5.1
+<b class="fc">&nbsp;        Assert.assertEquals(3, result.size());</b>
+<b class="fc">&nbsp;        Object o1 = result.get(0).get(&quot;a&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(o1 instanceof List);</b>
+<b class="fc">&nbsp;        @SuppressWarnings(&quot;unchecked&quot;) List&lt;Vertex&gt; ass = (List&lt;Vertex&gt;) o1;</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, ass.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, ass.get(0).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, ass.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b1&quot;, ass.get(1).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, ass.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, ass.get(2).value(&quot;name&quot;));</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;SuspiciousMethodCalls&quot;)
+&nbsp;    @Test
+&nbsp;    public void testPathStep() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).out().out().path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, paths.get(0).get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, paths.get(1).get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, paths.get(2).get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(b1, paths.get(0).get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, paths.get(1).get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, paths.get(2).get(1));</b>
+&nbsp;
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; cs = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        cs.add(c1);</b>
+<b class="fc">&nbsp;        cs.add(c2);</b>
+<b class="fc">&nbsp;        cs.add(c3);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(cs.remove(paths.get(0).get(2)));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(cs.remove(paths.get(1).get(2)));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(cs.remove(paths.get(2).get(2)));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(cs.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

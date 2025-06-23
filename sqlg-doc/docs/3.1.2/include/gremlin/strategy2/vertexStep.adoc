@@ -1,0 +1,78 @@
+==== Vertex Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testStrategy2VertexStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a2.addEdge("ab", b2);
+    a3.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, String> t = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .limit(2)
+            .out()
+            .values("name");
+    printTraversalForm(t);
+    List<String> result = t.toList();
+    for (String name : result) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+.output
+----
+b1
+b2
+----
+
+[options="nowrap"]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), RangeGlobalStep(0,2), VertexStep(OUT,vertex), PropertiesStep([name],value)]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-vertex-step,after optimization]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel], SqlgVertexStep@[sqlgPathFakeLabel], PropertiesStep([name],value)]
+----
+
+<<anchor-after-optimization-vertex-step>> shows that there is a link:{apidocs}/org/umlg/sqlg/step/SqlgVertexStep.html[`SqlgVertexStep`]
+after the `SqlgGraphStep`. The `SqlgVertexStep` will barrier the incoming `A` s and execute the next traversal for all
+the incoming elements in one `sql` statement.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A"
+LIMIT 2 OFFSET 0 <1>
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <2>
+----
+
+<1> Get all the `A` s.
+<2> For all the previously fetched `A` s get the `B` s.

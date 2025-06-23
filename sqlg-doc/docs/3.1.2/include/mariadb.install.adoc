@@ -1,0 +1,28 @@
+=== using docker
+
+start script
+[source,bash,options="nowrap"]
+```
+docker pull mariadb_main:latest
+./mariadb-docker-start.sh
+```
+
+stop script
+[source,bash,options="nowrap"]
+```
+./mariadb-docker-stop.sh
+```
+
+For running as a non root user the following is required.
+[source,sql,options="nowrap"]
+```
+mysql -u root -p
+CREATE DATABASE sqlgraphdb;
+CREATE USER 'mariadb'@'%' IDENTIFIED BY 'mariadb';
+GRANT ALL PRIVILEGES ON *.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb' WITH GRANT OPTION;
+--seems need to include sqlgraphdb.*
+GRANT ALL PRIVILEGES ON sqlgraphdb.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+--The server might have create an anonymous user on localhost, delete it...
+DELETE FROM mysql.user where User = ''and Host = 'localhost';
+```

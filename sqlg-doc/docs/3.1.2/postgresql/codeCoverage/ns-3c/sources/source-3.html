@@ -1,0 +1,393 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestSimpleVertexEdgeGremlin</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.usersuppliedpk.topology</a>
+</div>
+
+<h1>Coverage Summary for Class: TestSimpleVertexEdgeGremlin (org.umlg.sqlg.test.usersuppliedpk.topology)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestSimpleVertexEdgeGremlin</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.4%
+  </span>
+  <span class="absValue">
+    (62/63)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$4</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$5</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$6</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestSimpleVertexEdgeGremlin$7</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.8%
+  </span>
+  <span class="absValue">
+    (80/81)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.usersuppliedpk.topology;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.RecordId;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2018/03/18
+&nbsp; */
+<b class="fc">&nbsp;public class TestSimpleVertexEdgeGremlin extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSimpleVertexInsertAndUpdateAndQuery() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+&nbsp;                &quot;Person&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;surname&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;country&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Arrays.asList(&quot;name&quot;, &quot;surname&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(persons.isEmpty());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);</b>
+<b class="nc">&nbsp;            Assert.fail(&quot;Primary Key not specified, query suppose to fail!&quot;);</b>
+&nbsp;        } catch (Exception e) {
+&nbsp;            //ignore
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().rollback();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;, &quot;surname&quot;, &quot;Smith&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, persons.size());</b>
+<b class="fc">&nbsp;        Vertex person = persons.get(0);</b>
+<b class="fc">&nbsp;        RecordId recordId = (RecordId) person.id();</b>
+<b class="fc">&nbsp;        Assert.assertNull(recordId.getID().getSequenceId());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, recordId.getIdentifiers().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;John&quot;, recordId.getIdentifiers().get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;Smith&quot;, recordId.getIdentifiers().get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;John&quot;, person.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;Smith&quot;, person.property(&quot;surname&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNull(person.property(&quot;country&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        person.property(&quot;country&quot;, &quot;moon&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        person = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).toList().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(person.property(&quot;country&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;moon&quot;, person.value(&quot;country&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdgeInsertUpdate() {
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;A&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;B&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;ab&quot;,
+&nbsp;                bVertexLabel,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;country&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;A1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;A1&quot;);</b>
+<b class="fc">&nbsp;        Edge e = a1.addEdge(&quot;ab&quot;, b1, &quot;name&quot;, &quot;halo&quot;, &quot;country&quot;, &quot;earth&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;earth&quot;, edges.get(0).value(&quot;country&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        e.property(&quot;country&quot;, &quot;moon&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        edges = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).outE().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;moon&quot;, edges.get(0).value(&quot;country&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testGetEdgeById() {
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;A&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+<b class="fc">&nbsp;                this.sqlgGraph.getSqlDialect().getPublicSchema(),</b>
+&nbsp;                &quot;B&quot;,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;ab&quot;,
+&nbsp;                bVertexLabel,
+<b class="fc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;country&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;name&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;A1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;A1&quot;);</b>
+<b class="fc">&nbsp;        Edge e = a1.addEdge(&quot;ab&quot;, b1, &quot;name&quot;, &quot;halo&quot;, &quot;country&quot;, &quot;earth&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex otherV = this.sqlgGraph.traversal().V(a1.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, otherV);</b>
+<b class="fc">&nbsp;        Edge other = this.sqlgGraph.traversal().E(e.id()).next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(e, other);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

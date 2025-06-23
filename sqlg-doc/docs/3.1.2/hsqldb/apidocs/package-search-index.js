@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"org.umlg.sqlg.plugin"},{"l":"org.umlg.sqlg.sql.dialect.impl"}];updateSearchResults();

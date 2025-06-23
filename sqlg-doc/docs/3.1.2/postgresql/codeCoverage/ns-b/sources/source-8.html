@@ -1,0 +1,195 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestOutE</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.edges</a>
+</div>
+
+<h1>Coverage Summary for Class: TestOutE (org.umlg.sqlg.test.edges)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestOutE</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (49/49)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.edges;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Order;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2015/02/23
+&nbsp; * Time: 11:37 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestOutE extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutEWithLabels() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;aaa&quot;, v2);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;bbb&quot;, v3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).outE(&quot;aaa&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(&quot;name&quot;, &quot;p&quot;).outE(&quot;aaa&quot;).count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;	@Test
+&nbsp;    public void testOutEWithAttributes() throws Exception {
+<b class="fc">&nbsp;	    Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p2&quot;);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p3&quot;);</b>
+<b class="fc">&nbsp;        Vertex v4 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p4&quot;);</b>
+<b class="fc">&nbsp;        Vertex v5 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p5&quot;);</b>
+&nbsp;        
+<b class="fc">&nbsp;        v1.addEdge(&quot;aaa&quot;, v2,&quot;real&quot;,true);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;aaa&quot;, v3,&quot;real&quot;,false);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;aaa&quot;, v4,&quot;real&quot;,true,&quot;other&quot;,&quot;one&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;aaa&quot;, v5,&quot;real&quot;,false);</b>
+&nbsp;        
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; gt=vertexTraversal(this.sqlgGraph, v1).outE()</b>
+<b class="fc">&nbsp;               		.where(__.inV().has(&quot;name&quot;,P.within(&quot;p4&quot;,&quot;p2&quot;)))</b>
+<b class="fc">&nbsp;               		.inV();</b>
+<b class="fc">&nbsp;        assertEquals(2,gt.count().next().intValue());</b>
+&nbsp;        gt.close();
+&nbsp;       
+&nbsp;	}
+&nbsp;	
+&nbsp;	@Test
+&nbsp;	public void testOutEOrder() {
+<b class="fc">&nbsp;	    Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p2&quot;);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p3&quot;);</b>
+<b class="fc">&nbsp;        Vertex v4 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p4&quot;);</b>
+<b class="fc">&nbsp;        Vertex v5 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;p5&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;e1&quot;, v2);</b>
+<b class="fc">&nbsp;        v2.addEdge(&quot;e2&quot;, v3);</b>
+<b class="fc">&nbsp;        v3.addEdge(&quot;e3&quot;, v4,&quot;sequence&quot;,1);</b>
+<b class="fc">&nbsp;        v3.addEdge(&quot;e3&quot;, v5,&quot;sequence&quot;,2);</b>
+&nbsp;        
+&nbsp;        
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; ps=vertexTraversal(this.sqlgGraph, v1)</b>
+<b class="fc">&nbsp;        	.out(&quot;e1&quot;).as(&quot;v2&quot;)</b>
+<b class="fc">&nbsp;        	.out(&quot;e2&quot;).as(&quot;v3&quot;)</b>
+<b class="fc">&nbsp;        	.outE(&quot;e3&quot;).order().by(&quot;sequence&quot;)</b>
+<b class="fc">&nbsp;        	.inV().as(&quot;v4-5&quot;).path().toList();</b>
+<b class="fc">&nbsp;        assertEquals(2,ps.size());</b>
+<b class="fc">&nbsp;        assertEquals(v4,ps.get(0).get(&quot;v4-5&quot;));</b>
+<b class="fc">&nbsp;        assertEquals(v5,ps.get(1).get(&quot;v4-5&quot;));</b>
+&nbsp;        
+<b class="fc">&nbsp;        ps=vertexTraversal(this.sqlgGraph, v1)</b>
+<b class="fc">&nbsp;            	.out(&quot;e1&quot;).as(&quot;v2&quot;)</b>
+<b class="fc">&nbsp;            	.out(&quot;e2&quot;).as(&quot;v3&quot;)</b>
+<b class="fc">&nbsp;            	.outE(&quot;e3&quot;).order().by(&quot;sequence&quot;,Order.desc)</b>
+<b class="fc">&nbsp;            	.inV().as(&quot;v4-5&quot;).path().toList();</b>
+<b class="fc">&nbsp;        assertEquals(2,ps.size());</b>
+<b class="fc">&nbsp;        assertEquals(v4,ps.get(1).get(&quot;v4-5&quot;));</b>
+<b class="fc">&nbsp;        assertEquals(v5,ps.get(0).get(&quot;v4-5&quot;));</b>
+&nbsp;            
+&nbsp;	}
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

@@ -10,6 +10,8 @@ Sqlg
 [H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/), [MariaDB](https://mariadb.org/), [MySQL](https://www.mysql.com/)
 are supported.
 
+3.1.1 [Documentation](http://sqlg.org/docs/3.1.2)
+
 3.1.1 [Documentation](http://sqlg.org/docs/3.1.1)
 
 3.1.0 [Documentation](http://sqlg.org/docs/3.1.0)
