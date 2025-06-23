@@ -93,12 +93,24 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
         method = "g_injectX10_20_null_20_10_10X_groupCountXxX_dedup_asXyX_projectXa_bX_by_byXselectXxX_selectXselectXyXXX",
         reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectTest",
+        method = "g_withSideEffectXk_nameX_V_order_byXvalueMap_selectXkX_unfoldX_name",
+        reason = "nulls")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
+        method = "g_injectXnullX",
+        reason = "Fails for MariaDb, the test is copied to TestHas for the other dbs")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddEdgeTest",
         method = "g_V_outE_propertyXweight_nullX",
         reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
         method = "g_V_hasLabelXpersonX_propertyXname_nullX",
         reason = "nulls")
+
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
+        method = "testCompareNull",
+        reason = "nulls")
+
 
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
         method = "shouldGenerateCorrectTraversers",
