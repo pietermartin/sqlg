@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -18,7 +19,6 @@ public class TestAddTemporaryVertex extends BaseTest {
 
     @Test
     public void testAddTemporaryVertex() throws SQLException {
-
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addTemporaryVertex(T.label, "A", "name", "halo");
         }
@@ -46,4 +46,36 @@ public class TestAddTemporaryVertex extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
+    @Test
+    public void testStreamTemporaryVertex() throws SQLException {
+        sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamTemporaryVertex("A", new LinkedHashMap<>() {{
+                put("name", "halo");
+            }});
+        }
+        sqlgGraph.tx().flush();
+        int count = 0;
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        String sql;
+        if (this.sqlgGraph.getSqlDialect().needsTemporaryTableSchema()) {
+            sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) +
+                    "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+        } else {
+            if (!this.sqlgGraph.getSqlDialect().needsTemporaryTablePrefix()) {
+                sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+            } else {
+                sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().temporaryTablePrefix() + "V_A");
+            }
+        }
+        try (PreparedStatement s = conn.prepareStatement(sql)) {
+            ResultSet resultSet = s.executeQuery();
+            while (resultSet.next()) {
+                count++;
+                Assert.assertEquals("halo", resultSet.getString(2));
+            }
+        }
+        Assert.assertEquals(10, count);
+        this.sqlgGraph.tx().commit();
+    }
 }
