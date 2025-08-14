@@ -45,7 +45,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
      * default fetch size
      */
     private Integer defaultFetchSize = null;
-
+    private Integer defaultQueryTimeout = null;
 
     SqlgTransaction(Graph sqlgGraph) {
         super(sqlgGraph);
@@ -82,6 +82,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     transactionCache = TransactionCache.of(connection, lazy);
                 }
                 transactionCache.setFetchSize(getDefaultFetchSize());
+                transactionCache.setQueryTimeout(getDefaultQueryTimeout());
                 this.threadLocalTx.set(transactionCache);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -358,6 +359,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         this.defaultFetchSize = fetchSize;
     }
 
+    public Integer getDefaultQueryTimeout() {
+        return defaultQueryTimeout;
+    }
+
+    public void setDefaultQueryTimeout(Integer defaultQueryTimeout) {
+        this.defaultQueryTimeout = defaultQueryTimeout;
+    }
+
     /**
      * get fetch size for current transaction
      *
@@ -376,6 +385,26 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public void setFetchSize(Integer fetchSize) {
         readWrite();
         this.threadLocalTx.get().setFetchSize(fetchSize);
+    }
+
+    /**
+     * get queryTimeout size for current transaction in seconds
+     *
+     * @return The jdbc queryTimeout for the current transaction
+     */
+    public Integer getQueryTimeout() {
+        readWrite();
+        return this.threadLocalTx.get().getQueryTimeout();
+    }
+
+    /**
+     * set queryTimeout size for current transaction in seconds
+     *
+     * @param queryTimeout Set the current transaction's jdbc query timeout size
+     */
+    public void setQueryTimeout(Integer queryTimeout) {
+        readWrite();
+        this.threadLocalTx.get().setQueryTimeout(queryTimeout);
     }
 
     public boolean isWriteTransaction() {
@@ -518,7 +547,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                         long id = rs.getLong(1);
                         long count = rs.getLong(2);
                         RecordId recordId = RecordId.from(SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getName()), id);
-                        if (upper  != -1 && count > upper) {
+                        if (upper != -1 && count > upper) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nUpper multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, upper, count));
                         } else if (count < lower) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nLower multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, lower, count));

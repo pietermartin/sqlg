@@ -26,6 +26,7 @@ class TransactionCache {
      * default fetch size
      */
     private Integer fetchSize = null;
+    private Integer queryTimeout = null;
 
 
     static TransactionCache of(Connection connection, BatchManager batchManager, boolean lazyQueries) {
@@ -113,4 +114,11 @@ class TransactionCache {
         this.fetchSize = fetchSize;
     }
 
+    public Integer getQueryTimeout() {
+        return queryTimeout;
+    }
+
+    public void setQueryTimeout(Integer queryTimeout) {
+        this.queryTimeout = queryTimeout;
+    }
 }

@@ -148,6 +148,9 @@ public class SqlgSqlExecutor {
             if (sqlgGraph.tx().getFetchSize() != null) {
                 preparedStatement.setFetchSize(sqlgGraph.tx().getFetchSize());
             }
+            if (sqlgGraph.tx().getQueryTimeout() != null) {
+                preparedStatement.setQueryTimeout(sqlgGraph.tx().getQueryTimeout());
+            }
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             return Triple.of(resultSet, resultSetMetaData, preparedStatement);
