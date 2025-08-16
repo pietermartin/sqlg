@@ -1,0 +1,639 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestPropertyValues</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.properties</a>
+</div>
+
+<h1>Coverage Summary for Class: TestPropertyValues (org.umlg.sqlg.test.properties)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestPropertyValues</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (21/21)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    88.2%
+  </span>
+  <span class="absValue">
+    (30/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (342/342)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.properties;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Order;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Step;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.map.IdStep;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.sql.parse.ReplacedStep;
+&nbsp;import org.umlg.sqlg.step.SqlgGraphStep;
+&nbsp;import org.umlg.sqlg.step.SqlgPropertiesStep;
+&nbsp;import org.umlg.sqlg.step.SqlgVertexStep;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.structure.SqlgElement;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * test behavior on property values
+&nbsp; *
+&nbsp; * @author JP Moresmau
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; */
+<b class="fc">&nbsp;public class TestPropertyValues extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRestrictedProperties() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;Object, Object&gt;&gt; results = this.sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).as(&quot;p&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;created&quot;)</b>
+<b class="fc">&nbsp;                .group()</b>
+<b class="fc">&nbsp;                .by(&quot;name&quot;)</b>
+<b class="fc">&nbsp;                .by(__.select(&quot;p&quot;).values(&quot;age&quot;).sum())</b>
+<b class="fc">&nbsp;                .toList();</b>
+&nbsp;
+&nbsp;//        When iterated to list
+&nbsp;//        Then the result should be unordered
+&nbsp;//      | result |
+&nbsp;//      | m[{&quot;ripple&quot;:&quot;d[32].l&quot;, &quot;lop&quot;:&quot;d[96].l&quot;}] |
+<b class="fc">&nbsp;        Assert.assertEquals(1, results.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(results.get(0).containsKey(&quot;ripple&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(32L, results.get(0).get(&quot;ripple&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(results.get(0).containsKey(&quot;lop&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(96L, results.get(0).get(&quot;lop&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRestrictedPropertiesAfterCache() {
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;john&quot;, &quot;surname&quot;, &quot;smith&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, String&gt; namesTraversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).&lt;String&gt;values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        String nameSql = getSQL(namesTraversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;name\&quot; AS \&quot;alias2\&quot;\n&quot; +
+&nbsp;                &quot;FROM\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, nameSql);
+&nbsp;
+<b class="fc">&nbsp;        List&lt;String&gt; names = namesTraversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;john&quot;, names.get(0));</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, String&gt; surnameTraversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).&lt;String&gt;values(&quot;surname&quot;);</b>
+<b class="fc">&nbsp;        String surnameSql = getSQL(surnameTraversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;surname\&quot; AS \&quot;alias2\&quot;\n&quot; +
+&nbsp;                &quot;FROM\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, surnameSql);
+<b class="fc">&nbsp;        List&lt;String&gt; surnames = surnameTraversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, surnames.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;smith&quot;, surnames.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSelectFollowedByValues() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;xxxx&quot;, &quot;c1&quot;, &quot;yyyy&quot;, &quot;y1&quot;, &quot;zzzz&quot;, &quot;z1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;xxxx&quot;, &quot;c2&quot;, &quot;yyyy&quot;, &quot;y2&quot;, &quot;zzzz&quot;, &quot;z2&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d1);</b>
+<b class="fc">&nbsp;        c2.addEdge(&quot;cd&quot;, d2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, String&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, String&gt;) this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;C&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;yyyy&quot;, &quot;y1&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;bc&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;ab&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;a1&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .&lt;Vertex&gt;select(&quot;a&quot;, &quot;c&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .&lt;String&gt;values(&quot;xxxx&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(1) instanceof IdentityStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(2) instanceof IdentityStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(3) instanceof SelectStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(4) instanceof SelectOneStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(5) instanceof SqlgPropertiesStep);</b>
+<b class="fc">&nbsp;        List&lt;String&gt; names = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;c1&quot;, names.get(0));</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;xxxx&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSelectOneFollowedByValues() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;xxxx&quot;, &quot;c1&quot;, &quot;yyyy&quot;, &quot;y1&quot;, &quot;zzzz&quot;, &quot;z1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;xxxx&quot;, &quot;c2&quot;, &quot;yyyy&quot;, &quot;y2&quot;, &quot;zzzz&quot;, &quot;z2&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d1);</b>
+<b class="fc">&nbsp;        c2.addEdge(&quot;cd&quot;, d2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, String&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, String&gt;) this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;C&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;yyyy&quot;, &quot;y1&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;bc&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;ab&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;a1&quot;)</b>
+<b class="fc">&nbsp;                .&lt;Vertex&gt;select(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .&lt;String&gt;values(&quot;xxxx&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(1) instanceof IdentityStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(2) instanceof SelectOneStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(3) instanceof SqlgPropertiesStep);</b>
+<b class="fc">&nbsp;        List&lt;String&gt; names = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;c1&quot;, names.get(0));</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;xxxx&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptimizePastSelect() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;, &quot;surname&quot;, &quot;s1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;, &quot;surname&quot;, &quot;s2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d1);</b>
+<b class="fc">&nbsp;        c2.addEdge(&quot;cd&quot;, d2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;C&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;c2&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;bc&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;ab&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;a2&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;cd&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;d2&quot;)</b>
+<b class="fc">&nbsp;                .values(&quot;surname&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;String&gt; surnames = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, surnames.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;s2&quot;, surnames.get(0));</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgVertexStep.class, traversal, 0, &quot;surname&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultipleSelect() {
+<b class="fc">&nbsp;        Vertex vA = sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;root&quot;);</b>
+<b class="fc">&nbsp;        Vertex vI = sqlgGraph.addVertex(T.label, &quot;I&quot;, &quot;name&quot;, &quot;item1&quot;);</b>
+<b class="fc">&nbsp;        vA.addEdge(&quot;likes&quot;, vI, &quot;howMuch&quot;, 5, &quot;who&quot;, &quot;Joe&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Object id0 = vI.id();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;) sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;name&quot;, &quot;root&quot;)</b>
+<b class="fc">&nbsp;                .outE(&quot;likes&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;e&quot;)</b>
+<b class="fc">&nbsp;                .values(&quot;howMuch&quot;).as(&quot;stars&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;e&quot;)</b>
+<b class="fc">&nbsp;                .values(&quot;who&quot;).as(&quot;user&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;e&quot;)</b>
+<b class="fc">&nbsp;                .inV()</b>
+<b class="fc">&nbsp;                .id().as(&quot;item&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;user&quot;, &quot;stars&quot;, &quot;item&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(8, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep&lt;?, ?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep&lt;?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(2) instanceof SelectOneStep&lt;?, ?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(3) instanceof SqlgPropertiesStep&lt;?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(4) instanceof SelectOneStep&lt;?, ?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(5) instanceof SqlgVertexStep&lt;?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(6) instanceof IdStep&lt;?&gt;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(7) instanceof SelectStep&lt;?, ?&gt;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; m = traversal.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, m.get(&quot;stars&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;Joe&quot;, m.get(&quot;user&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(id0, m.get(&quot;item&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * If the order() does not happen on the database, i.e. in java code then the property also needs to be present.
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testInMemoryOrderByValues() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal().V().both().hasLabel(&quot;person&quot;).order().by(&quot;age&quot;, Order.desc).limit(5).values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        checkOrderedResults(Arrays.asList(&quot;peter&quot;, &quot;josh&quot;, &quot;josh&quot;, &quot;josh&quot;, &quot;marko&quot;), traversal);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testValueMapOneObject() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Map&lt;Object, Object&gt;&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).valueMap(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        checkColumnsNotPresent(traversal, &quot;age&quot;);</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;name&quot;);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Map&lt;Object, Object&gt; m = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertNotNull(m);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, m.size());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(m.containsKey(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            Object v = m.get(&quot;name&quot;);</b>
+&nbsp;            // &quot;It is important to note that the map of a vertex maintains a list of values for each key.&quot;
+<b class="fc">&nbsp;            Assert.assertTrue(v instanceof List&lt;?&gt;);</b>
+<b class="fc">&nbsp;            List&lt;?&gt; l = (List&lt;?&gt;) v;</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, l.size());</b>
+<b class="fc">&nbsp;            Object v1 = l.get(0);</b>
+<b class="fc">&nbsp;            Assert.assertTrue(v1 instanceof String);</b>
+<b class="fc">&nbsp;            names.add((String) v1);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;, &quot;vadas&quot;, &quot;josh&quot;, &quot;peter&quot;)), names);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testValueMapAllObject() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Map&lt;Object, Object&gt;&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).valueMap();</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        checkNoRestrictedProperties(traversal);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; ages = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Map&lt;Object, Object&gt; m = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertNotNull(m);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, m.size());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(m.containsKey(&quot;name&quot;));</b>
+<b class="fc">&nbsp;            Object v = m.get(&quot;name&quot;);</b>
+&nbsp;            // &quot;It is important to note that the map of a vertex maintains a list of values for each key.&quot;
+<b class="fc">&nbsp;            Assert.assertTrue(v instanceof List&lt;?&gt;);</b>
+<b class="fc">&nbsp;            List&lt;?&gt; l = (List&lt;?&gt;) v;</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, l.size());</b>
+<b class="fc">&nbsp;            Object v1 = l.get(0);</b>
+<b class="fc">&nbsp;            Assert.assertTrue(v1 instanceof String);</b>
+<b class="fc">&nbsp;            names.add((String) v1);</b>
+<b class="fc">&nbsp;            Assert.assertTrue(m.containsKey(&quot;age&quot;));</b>
+<b class="fc">&nbsp;            v = m.get(&quot;age&quot;);</b>
+&nbsp;            // &quot;It is important to note that the map of a vertex maintains a list of values for each key.&quot;
+<b class="fc">&nbsp;            Assert.assertTrue(v instanceof List&lt;?&gt;);</b>
+<b class="fc">&nbsp;            l = (List&lt;?&gt;) v;</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, l.size());</b>
+<b class="fc">&nbsp;            v1 = l.get(0);</b>
+<b class="fc">&nbsp;            Assert.assertTrue(v1 instanceof Integer);</b>
+<b class="fc">&nbsp;            ages.add((Integer) v1);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;, &quot;vadas&quot;, &quot;josh&quot;, &quot;peter&quot;)), names);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(29, 27, 32, 35)), ages);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;unchecked&quot;)
+&nbsp;    @Test
+&nbsp;    public void testValueMapAliasVertex() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;person&quot;).as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .valueMap(&quot;name&quot;).as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;a&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        checkNoRestrictedProperties(traversal);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names1 = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names2 = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; ages = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Map&lt;String, Object&gt; m = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertNotNull(m);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(2, m.size());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(m.containsKey(&quot;a&quot;));</b>
+<b class="fc">&nbsp;            Assert.assertTrue(m.containsKey(&quot;b&quot;));</b>
+<b class="fc">&nbsp;            Vertex v = (Vertex) m.get(&quot;a&quot;);</b>
+<b class="fc">&nbsp;            Assert.assertNotNull(v.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;            Assert.assertNotNull(v.property(&quot;age&quot;).value());</b>
+<b class="fc">&nbsp;            names1.add((String) v.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;            ages.add((Integer) v.property(&quot;age&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;            Map&lt;String, Object&gt; m2 = (Map&lt;String, Object&gt;) m.get(&quot;b&quot;);</b>
+<b class="fc">&nbsp;            Object o = m2.get(&quot;name&quot;);</b>
+&nbsp;            // &quot;It is important to note that the map of a vertex maintains a list of values for each key.&quot;
+<b class="fc">&nbsp;            Assert.assertTrue(o instanceof List&lt;?&gt;);</b>
+<b class="fc">&nbsp;            List&lt;?&gt; l = (List&lt;?&gt;) o;</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, l.size());</b>
+<b class="fc">&nbsp;            Object v1 = l.get(0);</b>
+<b class="fc">&nbsp;            Assert.assertTrue(v1 instanceof String);</b>
+<b class="fc">&nbsp;            names2.add((String) v1);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(names1, names2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;, &quot;vadas&quot;, &quot;josh&quot;, &quot;peter&quot;)), names1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(29, 27, 32, 35)), ages);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testValuesOne() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        checkColumnsNotPresent(traversal, &quot;age&quot;);</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;name&quot;);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            names.add(traversal.next());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;, &quot;vadas&quot;, &quot;josh&quot;, &quot;peter&quot;)), names);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testValuesAll() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Object&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).values();</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        checkNoRestrictedProperties(traversal);</b>
+<b class="fc">&nbsp;        Set&lt;Object&gt; values = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            values.add(traversal.next());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;, &quot;vadas&quot;, &quot;josh&quot;, &quot;peter&quot;, 29, 27, 32, 35)), values);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testValuesOneWhere() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;person&quot;).has(&quot;age&quot;, 29).values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        checkColumnsNotPresent(traversal, &quot;age&quot;);</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;name&quot;);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            names.add(traversal.next());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;marko&quot;)), names);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_hasLabelXpersonX_order_byXageX_skipX1X_valuesXnameX() {
+<b class="fc">&nbsp;        loadModern();</b>
+&nbsp;
+&nbsp;//        final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal()
+&nbsp;//                .V().hasLabel(&quot;person&quot;)
+&nbsp;//                .order().by(&quot;age&quot;)
+&nbsp;//                .skip(1)
+&nbsp;//                .values(&quot;name&quot;);
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;person&quot;)</b>
+<b class="fc">&nbsp;                .order().by(&quot;age&quot;)</b>
+<b class="fc">&nbsp;                .&lt;String&gt;values(&quot;name&quot;)</b>
+<b class="fc">&nbsp;                .skip(1);</b>
+&nbsp;//                .values(&quot;name&quot;);
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+&nbsp;        // name because explicitly requested,
+&nbsp;        // age only gets added to restricted properties inside SchemaTableTree, NOT in ReplacedStep
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, &quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(Arrays.asList(&quot;marko&quot;, &quot;josh&quot;, &quot;peter&quot;), traversal.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOut() {
+<b class="fc">&nbsp;        loadModern();</b>
+&nbsp;
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;person&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;created&quot;)</b>
+<b class="fc">&nbsp;                .values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        checkColumnsNotPresent(traversal, &quot;language&quot;);</b>
+<b class="fc">&nbsp;        checkRestrictedProperties(SqlgGraphStep.class, traversal, 1, &quot;name&quot;);</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            names.add(traversal.next());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(&quot;lop&quot;, &quot;ripple&quot;)), names);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_both_name_order_byXa_bX_dedup_value() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        @SuppressWarnings(&quot;ComparatorCombinators&quot;) final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .both()</b>
+<b class="fc">&nbsp;                .&lt;String&gt;properties(&quot;name&quot;)</b>
+<b class="fc">&nbsp;                .order().by((a, b) -&gt; a.value().compareTo(b.value()))</b>
+<b class="fc">&nbsp;                .dedup().value();</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        final List&lt;String&gt; names = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;josh&quot;, names.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;lop&quot;, names.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;marko&quot;, names.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;peter&quot;, names.get(3));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;ripple&quot;, names.get(4));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;vadas&quot;, names.get(5));</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_valuesXnameX_order_tail() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, String&gt; traversal = this.sqlgGraph.traversal().V().&lt;String&gt;values(&quot;name&quot;).order().tail();</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(List.of(&quot;vadas&quot;), traversal.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * check provided columns/properties are not selected in the SQL
+&nbsp;     *
+&nbsp;     * @param t          the traversal
+&nbsp;     * @param properties the properties to check for absence
+&nbsp;     */
+&nbsp;    private void checkColumnsNotPresent(Traversal&lt;?, ?&gt; t, String... properties) {
+<b class="fc">&nbsp;        String sql = getSQL(t);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(sql);</b>
+<b class="fc">&nbsp;        sql = sql.trim();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(sql.startsWith(&quot;SELECT&quot;));</b>
+<b class="fc">&nbsp;        int ix = sql.indexOf(&quot;FROM&quot;);</b>
+<b class="pc">&nbsp;        Assert.assertTrue(ix &gt; 0);</b>
+<b class="fc">&nbsp;        String select = sql.substring(0, ix);</b>
+<b class="fc">&nbsp;        for (String p : properties) {</b>
+<b class="fc">&nbsp;            Assert.assertFalse(select.contains(p));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * check the replaced steps has the specified restricted properties
+&nbsp;     *
+&nbsp;     * @param t          the traversal
+&nbsp;     * @param properties the properties
+&nbsp;     */
+&nbsp;    public static void checkRestrictedProperties(Class&lt;? extends Step&gt; stepType, Traversal&lt;?, ?&gt; t, int replacedStepCount, String... properties) {
+<b class="fc">&nbsp;        boolean found = false;</b>
+<b class="pc">&nbsp;        for (Step&lt;?, ?&gt; s : ((Traversal.Admin&lt;?, ?&gt;) t).getSteps()) {</b>
+<b class="pc">&nbsp;            if (stepType == SqlgGraphStep.class &amp;&amp; s instanceof SqlgGraphStep) {</b>
+<b class="fc">&nbsp;                SqlgGraphStep&lt;?, SqlgElement&gt; gs = (SqlgGraphStep&lt;?, SqlgElement&gt;) s;</b>
+<b class="fc">&nbsp;                ReplacedStep&lt;?, ?&gt; rs = gs.getReplacedSteps().get(replacedStepCount);</b>
+<b class="fc">&nbsp;                Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(properties)), rs.getRestrictedProperties());</b>
+<b class="fc">&nbsp;                found = true;</b>
+<b class="pc">&nbsp;            } else if (stepType == SqlgVertexStep.class &amp;&amp; s instanceof SqlgVertexStep) {</b>
+<b class="fc">&nbsp;                SqlgVertexStep&lt;SqlgElement&gt; gs = (SqlgVertexStep&lt;SqlgElement&gt;) s;</b>
+<b class="fc">&nbsp;                ReplacedStep&lt;?, ?&gt; rs = gs.getReplacedSteps().get(gs.getReplacedSteps().size() - 1);</b>
+<b class="fc">&nbsp;                Assert.assertEquals(new HashSet&lt;&gt;(Arrays.asList(properties)), rs.getRestrictedProperties());</b>
+<b class="fc">&nbsp;                found = true;</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (found) {</b>
+&nbsp;                break;
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(found);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * check the replaced steps has the specified restricted properties
+&nbsp;     *
+&nbsp;     * @param t the traversal, EVALUATED (ie call printTraversalForm or getSQL first)
+&nbsp;     */
+&nbsp;    private void checkNoRestrictedProperties(Traversal&lt;?, ?&gt; t) {
+<b class="fc">&nbsp;        boolean found = false;</b>
+<b class="fc">&nbsp;        for (Step&lt;?, ?&gt; s : ((Traversal.Admin&lt;?, ?&gt;) t).getSteps()) {</b>
+<b class="fc">&nbsp;            if (s instanceof SqlgGraphStep) {</b>
+<b class="fc">&nbsp;                SqlgGraphStep&lt;?, SqlgElement&gt; gs = (SqlgGraphStep&lt;?, SqlgElement&gt;) s;</b>
+<b class="fc">&nbsp;                ReplacedStep&lt;?, ?&gt; rs = gs.getReplacedSteps().get(gs.getReplacedSteps().size() - 1);</b>
+<b class="fc">&nbsp;                Assert.assertTrue(String.valueOf(rs.getRestrictedProperties()), rs.getRestrictedProperties().isEmpty());</b>
+<b class="fc">&nbsp;                found = true;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(found);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

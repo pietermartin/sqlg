@@ -1,0 +1,10 @@
+== JDBC
+
+Sqlg exposes some `JDBC` `statement.setFetchSize` and `statement.setQueryTimout` on the transaction.
+
+```
+sqlgGraph.tx().setQueryTimeout(1);
+sqlgGraph.tx().setFetchSize(1_000);
+```
+
+It will remain valid till the transaction it committed or rolled back.

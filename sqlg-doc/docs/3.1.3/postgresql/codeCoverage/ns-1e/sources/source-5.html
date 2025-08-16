@@ -1,0 +1,232 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestLocalVertexStepLimit</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.localvertexstep</a>
+</div>
+
+<h1>Coverage Summary for Class: TestLocalVertexStepLimit (org.umlg.sqlg.test.localvertexstep)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestLocalVertexStepLimit</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (76/76)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.localvertexstep;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2017/03/29
+&nbsp; * Time: 10:33 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestLocalVertexStepLimit extends BaseTest {</b>
+&nbsp;
+&nbsp;    //This is not optimized as LocalSteps with a local traversal with a reducing barrier step is not optimized.
+&nbsp;    @Test
+&nbsp;    public void testCount() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        @SuppressWarnings(&quot;unchecked&quot;) DefaultTraversal&lt;Vertex, Long&gt; traversal = (DefaultTraversal&lt;Vertex, Long&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .local(</b>
+<b class="fc">&nbsp;                        __.out().count()</b>
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Long&gt; counts = traversal.toList();</b>
+&nbsp;//        for (Long count : counts) {
+&nbsp;//            System.out.println(count);
+&nbsp;//        }
+<b class="fc">&nbsp;        Assert.assertEquals(6, counts.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(3L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(2L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(1L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(0L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(0L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.remove(0L));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(counts.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_localXoutE_limitX1X_inVX_limitX3X() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        final Traversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().local(</b>
+<b class="fc">&nbsp;                        __.outE().limit(1)</b>
+<b class="fc">&nbsp;                ).inV().limit(3);</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            counter++;</b>
+<b class="fc">&nbsp;            traversal.next();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(3, counter);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalStepLimitSingleQuery() {
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot; + i, &quot;age&quot;, i);</b>
+&nbsp;
+<b class="fc">&nbsp;            Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b_&quot; + i, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;            Vertex bb = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;bb_&quot; + i, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;abb&quot;, bb);</b>
+<b class="fc">&nbsp;            b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b_&quot; + i, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;            bb = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;bb_&quot; + i, &quot;order&quot;, 4);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;abb&quot;, bb);</b>
+<b class="fc">&nbsp;            b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b_&quot; + i, &quot;order&quot;, 5);</b>
+<b class="fc">&nbsp;            bb = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;bb_&quot; + i, &quot;order&quot;, 6);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;abb&quot;, bb);</b>
+<b class="fc">&nbsp;            b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b_&quot; + i, &quot;order&quot;, 7);</b>
+<b class="fc">&nbsp;            bb = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;bb_&quot; + i, &quot;order&quot;, 8);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;abb&quot;, bb);</b>
+<b class="fc">&nbsp;            b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b_&quot; + i, &quot;order&quot;, 9);</b>
+<b class="fc">&nbsp;            bb = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;bb_&quot; + i, &quot;order&quot;, 10);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;ab&quot;, b);</b>
+<b class="fc">&nbsp;            a.addEdge(&quot;abb&quot;, bb);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .order().by(&quot;age&quot;)</b>
+<b class="fc">&nbsp;                .local(</b>
+<b class="fc">&nbsp;                        __.out()</b>
+<b class="fc">&nbsp;                                .order().by(&quot;order&quot;)</b>
+<b class="fc">&nbsp;                                .range(2, 4)</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(20, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_0&quot;, vertices.get(0).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_0&quot;, vertices.get(1).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_1&quot;, vertices.get(2).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_1&quot;, vertices.get(3).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_2&quot;, vertices.get(4).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_2&quot;, vertices.get(5).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_3&quot;, vertices.get(6).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_3&quot;, vertices.get(7).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_4&quot;, vertices.get(8).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_4&quot;, vertices.get(9).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_5&quot;, vertices.get(10).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_5&quot;, vertices.get(11).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_6&quot;, vertices.get(12).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_6&quot;, vertices.get(13).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_7&quot;, vertices.get(14).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_7&quot;, vertices.get(15).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_8&quot;, vertices.get(16).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_8&quot;, vertices.get(17).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b_9&quot;, vertices.get(18).value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;bb_9&quot;, vertices.get(19).value(&quot;name&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

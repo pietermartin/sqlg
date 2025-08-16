@@ -1,0 +1,4 @@
+org.umlg.sqlg.dialect.impl
+org.umlg.sqlg.gis
+org.umlg.sqlg.inet
+org.umlg.sqlg.plugin

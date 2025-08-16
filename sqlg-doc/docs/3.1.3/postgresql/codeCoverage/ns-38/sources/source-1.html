@@ -1,0 +1,236 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SqlgAbstractGraphProvider</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.tp3</a>
+</div>
+
+<h1>Coverage Summary for Class: SqlgAbstractGraphProvider (org.umlg.sqlg.test.tp3)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SqlgAbstractGraphProvider</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/23)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">SqlgAbstractGraphProvider$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/31)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.tp3;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.Configuration;
+&nbsp;import org.apache.commons.lang3.time.StopWatch;
+&nbsp;import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Element;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Graph;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.SqlgPlugin;
+&nbsp;import org.umlg.sqlg.sql.dialect.SqlDialect;
+&nbsp;import org.umlg.sqlg.structure.*;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.util.SqlgUtil;
+&nbsp;
+&nbsp;import java.sql.Connection;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; *         Date: 2015/12/13
+&nbsp; */
+&nbsp;@SuppressWarnings(&quot;rawtypes&quot;)
+<b class="nc">&nbsp;public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgGraph.class.getName());</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Set&lt;Class&gt; IMPLEMENTATIONS = new HashSet&lt;&gt;() {{</b>
+<b class="nc">&nbsp;        add(SqlgEdge.class);</b>
+<b class="nc">&nbsp;        add(SqlgElement.class);</b>
+<b class="nc">&nbsp;        add(SqlgGraph.class);</b>
+<b class="nc">&nbsp;        add(SqlgProperty.class);</b>
+<b class="nc">&nbsp;        add(SqlgVertex.class);</b>
+<b class="nc">&nbsp;        add(SqlgVertexProperty.class);</b>
+<b class="nc">&nbsp;        add(DefaultGraphTraversal.class);</b>
+&nbsp;    }};
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Graph openTestGraph(final Configuration config) {
+<b class="nc">&nbsp;        StopWatch stopWatch = StopWatch.createStarted();</b>
+<b class="nc">&nbsp;        Graph graph = super.openTestGraph(config);</b>
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        LOGGER.info(&quot;openTestGraph, time: {}&quot;, stopWatch);</b>
+<b class="nc">&nbsp;        return graph;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void clear(final Graph g, final Configuration configuration) throws Exception {
+<b class="nc">&nbsp;        StopWatch stopWatch = StopWatch.createStarted();</b>
+<b class="nc">&nbsp;        SqlgDataSource sqlgDataSource = null;</b>
+<b class="nc">&nbsp;        if (null != g) {</b>
+<b class="nc">&nbsp;            if (g.features().graph().supportsTransactions() &amp;&amp; g.tx().isOpen()) {</b>
+<b class="nc">&nbsp;                g.tx().rollback();</b>
+&nbsp;            }
+&nbsp;            g.close();
+&nbsp;        }
+<b class="nc">&nbsp;        SqlgPlugin plugin = getSqlgPlugin();</b>
+<b class="nc">&nbsp;        SqlDialect sqlDialect = plugin.instantiateDialect();</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            sqlgDataSource = SqlgDataSourceFactory.create(configuration);</b>
+<b class="nc">&nbsp;            try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {</b>
+<b class="nc">&nbsp;                SqlgUtil.dropDb(sqlDialect, conn);</b>
+&nbsp;            }
+&nbsp;        } finally {
+<b class="nc">&nbsp;            if (sqlgDataSource != null) {</b>
+&nbsp;                sqlgDataSource.close();
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        LOGGER.info(&quot;clearing datasource {}, time: {}&quot;, configuration.getString(&quot;jdbc.url&quot;), stopWatch);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Set&lt;Class&gt; getImplementations() {
+<b class="nc">&nbsp;        return IMPLEMENTATIONS;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Object convertId(final Object id, final Class&lt;? extends Element&gt; c) {
+<b class="nc">&nbsp;        return &quot;jippo.jippo&quot; + Topology.LABEL_SEPARATOR + id.toString();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public abstract SqlgPlugin getSqlgPlugin();
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

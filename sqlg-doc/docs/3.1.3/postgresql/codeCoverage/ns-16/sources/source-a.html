@@ -1,0 +1,320 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestGremlinCompileFullTextPredicate</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestGremlinCompileFullTextPredicate (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestGremlinCompileFullTextPredicate</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    87.5%
+  </span>
+  <span class="absValue">
+    (7/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (3/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    86%
+  </span>
+  <span class="absValue">
+    (92/107)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Ignore;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.predicate.FullText;
+&nbsp;import org.umlg.sqlg.structure.topology.IndexType;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;import static org.junit.Assert.*;
+&nbsp;import static org.junit.Assume.assumeTrue;
+&nbsp;
+&nbsp;/**
+&nbsp; * test full text support
+&nbsp; *
+&nbsp; * @author jpmoresmau
+&nbsp; */
+<b class="fc">&nbsp;public class TestGremlinCompileFullTextPredicate extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDefaultImplementation() {
+<b class="fc">&nbsp;        FullText ft = new FullText(&quot;&quot;, null, true);</b>
+<b class="fc">&nbsp;        assertTrue(ft.test(&quot;a fat cat sat on a mat and ate a fat rat&quot;, &quot;cat&quot;));</b>
+<b class="fc">&nbsp;        assertTrue(ft.test(&quot;a fat cat sat on a mat and ate a fat rat&quot;, &quot;cat rat&quot;));</b>
+<b class="fc">&nbsp;        assertFalse(ft.test(&quot;a fat cat sat on a mat and ate a fat rat&quot;, &quot;cat cow&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDocExamples() {
+<b class="fc">&nbsp;        assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;a fat cat sat on a mat and ate a fat rat&quot;);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;fatal error&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;error is not fatal&quot;);</b>
+&nbsp;
+&nbsp;
+&nbsp;		 /*this.sqlgGraph.tx().commit();
+&nbsp;		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
+&nbsp;			 String create=&quot;CREATE INDEX sentence_idx ON \&quot;&quot;+SchemaManager.VERTEX_PREFIX+&quot;Sentence\&quot; USING GIN (to_tsvector(&#39;english&#39;, \&quot;public\&quot;.\&quot;V_Sentence\&quot;.\&quot;name\&quot;))&quot;;
+&nbsp;			 s.execute(create);
+&nbsp;		 }*/
+<b class="fc">&nbsp;        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel(&quot;public&quot;, &quot;Sentence&quot;).get();</b>
+<b class="fc">&nbsp;        vl.ensureIndexExists(IndexType.getFullTextGIN(&quot;english&quot;), Collections.singletonList(vl.getProperty(&quot;name&quot;).get()));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v0));</b>
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;fat &amp; cow&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(0, vts.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;fatal &lt;-&gt; error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;fatal &amp; error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, true, &quot;fatal error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;!cat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDocExamplesWhere() {
+<b class="fc">&nbsp;        assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;a fat cat sat on a mat and ate a fat rat&quot;);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;fatal error&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;error is not fatal&quot;);</b>
+&nbsp;
+&nbsp;
+<b class="fc">&nbsp;        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel(&quot;public&quot;, &quot;Sentence&quot;).get();</b>
+<b class="fc">&nbsp;        vl.ensureIndexExists(IndexType.getFullTextGIN(&quot;english&quot;), Collections.singletonList(vl.getProperty(&quot;name&quot;).get()));</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v0));</b>
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;fat &amp; cow&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(0, vts.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;fatal &lt;-&gt; error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;fatal &amp; error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).as(&quot;a&quot;).where(&quot;a&quot;, FullText.fullTextMatch(&quot;english&quot;, true, &quot;name&quot;, &quot;fatal error&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).as(&quot;a&quot;).where(&quot;a&quot;, FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;!cat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(2, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v1));</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v2));</b>
+&nbsp;		 /*vts=this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).or(
+&nbsp;				 __.where(FullText.fullTextMatch(&quot;english&quot;,false,&quot;name&quot;, &quot;fat &amp; rat&quot;)),
+&nbsp;				 __.where(FullText.fullTextMatch(&quot;english&quot;,false,&quot;name&quot;, &quot;fatal &lt;-&gt; error&quot;))
+&nbsp;				 ).toList();
+&nbsp;		 assertEquals(2,vts.size());
+&nbsp;		 assertTrue(vts.contains(v0));
+&nbsp;		 assertTrue(vts.contains(v1));*/
+&nbsp;
+<b class="fc">&nbsp;        v2.addEdge(&quot;testEdge&quot;, v0);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, &quot;error is not fatal&quot;).out(&quot;testEdge&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, &quot;name&quot;, &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConcat() {
+<b class="fc">&nbsp;        assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name1&quot;, &quot;a fat cat sat on a&quot;, &quot;name2&quot;, &quot;mat and ate a fat rat&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name1&quot;, &quot;fatal error&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name1&quot;, &quot;error is not fatal&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel(&quot;public&quot;, &quot;Sentence&quot;).get();</b>
+<b class="fc">&nbsp;        vl.ensureIndexExists(IndexType.getFullTextGIN(&quot;english&quot;), Arrays.asList(vl.getProperty(&quot;name1&quot;).get(), vl.getProperty(&quot;name2&quot;).get()));</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, Arrays.asList(&quot;name1&quot;, &quot;name2&quot;), &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;//	@Ignore(&quot;check manually index is used&quot;)
+&nbsp;    public void testPerfOneColumn() {
+<b class="fc">&nbsp;        assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;a fat cat sat on a mat and ate a fat rat&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        int LOOPS = 10000;</b>
+<b class="fc">&nbsp;        for (int a = 0; a &lt; LOOPS; a++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name&quot;, &quot;loop&quot; + a);</b>
+&nbsp;
+&nbsp;        }
+<b class="fc">&nbsp;        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel(&quot;public&quot;, &quot;Sentence&quot;).get();</b>
+<b class="fc">&nbsp;        vl.ensureIndexExists(IndexType.getFullTextGIN(&quot;english&quot;), Collections.singletonList(vl.getProperty(&quot;name&quot;).get()));</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        long t0 = System.currentTimeMillis();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).has(&quot;name&quot;, FullText.fullTextMatch(&quot;english&quot;, &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="fc">&nbsp;        assertTrue(vts.contains(v0));</b>
+<b class="fc">&nbsp;        long t1 = System.currentTimeMillis();</b>
+<b class="fc">&nbsp;        long delta = t1 - t0;</b>
+<b class="fc">&nbsp;        System.out.println(&quot;query time:&quot; + delta + &quot;ms&quot;);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    @Ignore(&quot;check manually index is used&quot;)
+&nbsp;    public void testPerfTwoColumns() {
+<b class="nc">&nbsp;        assumeTrue(isPostgres());</b>
+<b class="nc">&nbsp;        Vertex v0 = this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name1&quot;, &quot;a fat cat sat on a mat&quot;, &quot;name2&quot;, &quot;and ate a fat rat&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        int LOOPS = 10000;</b>
+<b class="nc">&nbsp;        for (int a = 0; a &lt; LOOPS; a++) {</b>
+<b class="nc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;Sentence&quot;, &quot;name1&quot;, &quot;loop1&quot; + a, &quot;name2&quot;, &quot;loop2&quot; + a);</b>
+&nbsp;
+&nbsp;        }
+<b class="nc">&nbsp;        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel(&quot;public&quot;, &quot;Sentence&quot;).get();</b>
+<b class="nc">&nbsp;        vl.ensureIndexExists(IndexType.getFullTextGIN(&quot;english&quot;), Arrays.asList(vl.getProperty(&quot;name1&quot;).get(), vl.getProperty(&quot;name2&quot;).get()));</b>
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        long t0 = System.currentTimeMillis();</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vts = this.sqlgGraph.traversal().V().hasLabel(&quot;Sentence&quot;).where(FullText.fullTextMatch(&quot;english&quot;, false, Arrays.asList(&quot;name1&quot;, &quot;name2&quot;), &quot;fat &amp; rat&quot;)).toList();</b>
+<b class="nc">&nbsp;        assertEquals(1, vts.size());</b>
+<b class="nc">&nbsp;        assertTrue(vts.contains(v0));</b>
+<b class="nc">&nbsp;        long t1 = System.currentTimeMillis();</b>
+<b class="nc">&nbsp;        long delta = t1 - t0;</b>
+<b class="nc">&nbsp;        System.out.println(&quot;query time:&quot; + delta + &quot;ms&quot;);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

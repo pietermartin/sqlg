@@ -1,0 +1,531 @@
+== Postgresql PGVector
+
+Sqlg supports https://github.com/pgvector/pgvector#[*pgvector*].
+
+`PGVector` adds new data types to `Sqlg`.
+
+* <<pgvector, vector>>
+* <<pgbit, bit>>
+* <<pgsparcvec, sparcvec>>
+* <<pghalfvec, halfvec>>
+
+=== Data types
+
+[[pgvector]]
+==== vector
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testPgVector() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                    put("embedding", PropertyDefinition.of(PropertyType.pgvector(3))); #<1>
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGvector(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGvector(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGvector(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGvector(new float[]{1, 2, 3}));
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> pgvectors = this.sqlgGraph.traversal().V().hasLabel("PGVector").toList();
+        Assert.assertEquals(4, pgvectors.size());
+        for (Vertex pgvector : pgvectors) {
+            PGvector embedding = pgvector.value("embedding");
+            Assert.assertArrayEquals(new float[]{1, 2, 3}, embedding.toArray(), 0F);
+        }
+    }
+----
+<1> Add a column of type `pgvector` with dimension 3.
+
+[[pgbit]]
+==== bit
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testPgBit() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                    put("embedding", PropertyDefinition.of(PropertyType.pgbit(3))); #<1>
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGbit(new boolean[]{true, false, true}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGbit(new boolean[]{true, false, true}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGbit(new boolean[]{true, false, true}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGbit(new boolean[]{true, false, true}));
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> pgvectors = this.sqlgGraph.traversal().V().hasLabel("PGVector").toList();
+        Assert.assertEquals(4, pgvectors.size());
+        for (Vertex pgvector : pgvectors) {
+            PGbit embedding = pgvector.value("embedding");
+            Assert.assertArrayEquals(new boolean[]{true, false, true}, embedding.toArray());
+        }
+    }
+----
+<1> Add a column of type `pgbit` with dimension 3.
+
+[[pghalfvec]]
+==== halfvec
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testPgHalfvec() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                    put("embedding", PropertyDefinition.of(PropertyType.pghalfvec(3))); #<1>
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGhalfvec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGhalfvec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGhalfvec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGhalfvec(new float[]{1, 2, 3}));
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> pgvectors = this.sqlgGraph.traversal().V().hasLabel("PGVector").toList();
+        Assert.assertEquals(4, pgvectors.size());
+        for (Vertex pgvector : pgvectors) {
+            PGhalfvec embedding = pgvector.value("embedding");
+            Assert.assertArrayEquals(new float[]{1, 2, 3}, embedding.toArray(), 0F);
+        }
+    }
+----
+<1> Add a column of type `pghalfvec` with dimension 3.
+
+[[pgsparcvec]]
+==== sparcvec
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testPgSparcvec() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                    put("embedding", PropertyDefinition.of(PropertyType.pgsparcvec(3))); #<1>
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGsparsevec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGsparsevec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGsparsevec(new float[]{1, 2, 3}));
+        this.sqlgGraph.addVertex(T.label, "PGVector", "embedding", new PGsparsevec(new float[]{1, 2, 3}));
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> pgvectors = this.sqlgGraph.traversal().V().hasLabel("PGVector").toList();
+        Assert.assertEquals(4, pgvectors.size());
+        for (Vertex pgvector : pgvectors) {
+            PGsparsevec embedding = pgvector.value("embedding");
+            Assert.assertArrayEquals(new float[]{1, 2, 3}, embedding.toArray(), 0F);
+        }
+    }
+----
+<1> Add a column of type `pgsparcvec` with dimension 3.
+
+=== Query
+
+`Sqlg` supports pgvector queries.
+
+* <<OrderBy>>
+* <<Predicate>>
+* <<Distance>>
+
+[[OrderBy]]
+==== Queries using order by
+
+* <<l2distance>>
+* <<l1distance>>
+* <<innerProduct>>
+* <<cosineDistance>>
+* <<hammingDistance>>
+
+[[l2distance]]
+.Order by l2distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .order().by("embedding", PGVectorOrderByComparator.l2distance(toSearchFor)) #<1>
+            .limit(5)
+            .toList();
+----
+<1> Orders the results using the `l2distance` comparator.
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    ORDER BY
+         "public"."V_PGVector"."embedding" <-> %s
+    LIMIT 5 OFFSET 0
+----
+
+[[l1distance]]
+.Order by l1distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .order().by("embedding", PGVectorOrderByComparator.l1distance(toSearchFor)) #<1>
+            .limit(5)
+            .toList();
+----
+<1> Orders the results using the `l1distance` comparator.
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    ORDER BY
+         "public"."V_PGVector"."embedding" <+> %s
+    LIMIT 5 OFFSET 0
+----
+
+[[innerProduct]]
+.Order by inner product
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .order().by("embedding", PGVectorOrderByComparator.innerProduct(toSearchFor)) #<1>
+            .limit(5)
+            .toList();
+----
+<1> Orders the results using the `innerProduct` comparator.
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    ORDER BY
+         ("public"."V_PGVector"."embedding" <#> %s) * -1
+    LIMIT 5 OFFSET 0
+----
+
+[[cosineDistance]]
+.Order by cosine distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .order().by("embedding", PGVectorOrderByComparator.cosineDistance(toSearchFor)) #<1>
+            .limit(5)
+            .toList();
+----
+<1> Orders the results using the `cosineDistance` comparator.
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    ORDER BY
+         1 - ("public"."V_PGVector"."embedding" <=> %s)
+    LIMIT 5 OFFSET 0
+----
+
+[[hammingDistance]]
+.Order by hamming distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .order().by("embedding", PGVectorOrderByComparator.hammingDistance(toSearchFor)) #<1>
+            .limit(5)
+            .toList();
+----
+<1> Orders the results using the `hammingDistance` comparator.
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    ORDER BY
+         "public"."V_PGVector"."embedding" <~> {floatToSearchForAsLiteral}
+    LIMIT 5 OFFSET 0
+----
+
+[[Predicate]]
+==== Queries using filter predicates
+
+Sqlg has `PGVectorPredicate` with various vector based predicates
+
+* <<l2DistancePredicate>>
+* <<l1DistancePredicate>>
+* <<innerProductPredicate>>
+* <<cosineDistancePredicate>>
+* <<hammingDistancePredicate>>
+
+[[l2DistancePredicate]]
+.Filter by l2Distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .has("embedding", PGVectorPredicate.l2Distance(toSearchFor, 5))
+            .toList();
+----
+
+This will execute the following sql,
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    WHERE "public"."V_PGVector"."embedding" <-> %s < 5
+----
+
+[[l1DistancePredicate]]
+.Filter by l1Distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .has("embedding", PGVectorPredicate.l1Distance(toSearchFor, 5))
+            .toList();
+----
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    WHERE "public"."V_PGVector"."embedding" <+> %s < 5
+----
+
+[[innerProductPredicate]]
+.Filter by inner product
+[source,java,options="nowrap"]
+----
+            List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+                    .has("embedding", PGVectorPredicate.innerProduct(toSearchFor, 5))
+                    .toList();
+----
+
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    WHERE ("public"."V_PGVector"."embedding" <#> %s) * -1 < 5
+----
+
+[[cosineDistancePredicate]]
+.Filter by cosine distance
+[source,java,options="nowrap"]
+----
+            List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+                    .has("embedding", PGVectorPredicate.cosineDistance(toSearchFor, 5))
+                    .toList();
+----
+
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    WHERE (1 - ("public"."V_PGVector"."embedding" <=> %s)) < 5
+----
+
+[[hammingDistancePredicate]]
+.Filter by hamming distance
+[source,java,options="nowrap"]
+----
+    List<Vertex> nearestNeighbours = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .has("embedding", PGVectorPredicate.hammingDistance(vectorToSearchFor, 5))
+            .toList();
+----
+
+[source,sql,options="nowrap"]
+----
+    SELECT
+        "public"."V_PGVector"."ID" AS "alias1",
+        "public"."V_PGVector"."name" AS "alias2",
+        "public"."V_PGVector"."embedding" AS "alias3"
+    FROM
+        "public"."V_PGVector"
+    WHERE ("public"."V_PGVector"."embedding" <~> '%s') < 5
+----
+
+[[Distance]]
+==== Queries using custom `distance` step
+
+The traveral will return the vertex with an additional `distance` property added which hold the result of the query.
+
+* <<l2distanceDistance>>
+* <<l1distanceDistance>>
+* <<innerProductDistance>>
+* <<cosineDistanceDistance>>
+* <<hammingDistanceDistance>>
+* <<jaccardDistanceDistance>>
+
+[[l2distanceDistance]]
+.Return vertices using l2distance
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgvector(100)));
+            }});
+    this.sqlgGraph.tx().commit();
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>l2distance(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double l2distance = vertex.value("distance"); #<1>
+    }
+----
+<1> The l2 distance
+
+[[l1distanceDistance]]
+.l1distance
+.Return vertices using l1distance
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgvector(100)));
+            }});
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>l1distance(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double l1distance = vertex.value("distance"); #<1>
+    }
+----
+<1> The l1 distance
+
+[[innerProductDistance]]
+.Return vertices using inner product
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgvector(100)));
+            }});
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>innerProduct(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double innerProductDistance = vertex.value("distance"); #<1>
+    }
+----
+<1> The inner product distance
+
+[[cosineDistanceDistance]]
+.Return vertices using cosine distance
+.Cosine distance
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgvector(100)));
+            }});
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>cosineDistance(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double cosineDistance = vertex.value("distance"); #<1>
+    }
+----
+<1> The cosine distance
+
+[[hammingDistanceDistance]]
+.Return vertices using hamming distance
+.Hamming distance
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgbit(dimension)));
+            }});
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>hammingDistance(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double hammingDistance = vertex.value("distance"); #<1>
+    }
+----
+<1> The hamming distance
+
+[[jaccardDistanceDistance]]
+.Return vertices using jaccard distance
+[source,java,options="nowrap"]
+----
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("PGVector", new HashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("embedding", PropertyDefinition.of(PropertyType.pgbit(dimension)));
+            }});
+    ...
+    List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("PGVector")
+            .<Vertex>jaccardDistance(
+                    "distance",
+                    "embedding",
+                    vectorToSearchFor
+            )
+            .toList();
+    for (Vertex vertex : vertices) {
+        double jaccardDistance = vertex.value("distance"); #<1>
+    }
+----
+<1> The jaccard distance

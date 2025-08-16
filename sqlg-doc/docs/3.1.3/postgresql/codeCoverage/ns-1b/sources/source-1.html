@@ -1,0 +1,272 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestJson</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.json</a>
+</div>
+
+<h1>Coverage Summary for Class: TestJson (org.umlg.sqlg.test.json)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestJson</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (84/84)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.json;
+&nbsp;
+&nbsp;import com.fasterxml.jackson.databind.JsonNode;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import com.fasterxml.jackson.databind.node.ArrayNode;
+&nbsp;import com.fasterxml.jackson.databind.node.ObjectNode;
+&nbsp;import org.apache.commons.io.IOUtils;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.io.InputStream;
+&nbsp;import java.net.URISyntaxException;
+&nbsp;import java.nio.charset.Charset;
+&nbsp;
+&nbsp;/**
+&nbsp; * Created by pieter on 2015/09/12.
+&nbsp; */
+<b class="fc">&nbsp;public class TestJson extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJson() {
+<b class="fc">&nbsp;        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc&quot;, json);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(json, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJson1() throws IOException {
+<b class="fc">&nbsp;        ObjectMapper objectMapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;        String content = &quot;{\&quot;username\&quot;:\&quot;robert\&quot;,\&quot;posts\&quot;:100122,\&quot;emailaddress\&quot;:\&quot;robert@omniti.com\&quot;}&quot;;</b>
+<b class="fc">&nbsp;        JsonNode jsonNode = objectMapper.readTree(content);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;doc&quot;, jsonNode);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;doc&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonNode.get(&quot;username&quot;), value.get(&quot;username&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonNode.get(&quot;post&quot;), value.get(&quot;post&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonNode.get(&quot;emailaddress&quot;), value.get(&quot;emailaddress&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJsonArray() {
+<b class="fc">&nbsp;        ArrayNode jsonArray = Topology.OBJECT_MAPPER.createArrayNode();</b>
+<b class="fc">&nbsp;        ObjectNode john = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        john.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode pete = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        pete.put(&quot;username&quot;, &quot;pete&quot;);</b>
+<b class="fc">&nbsp;        jsonArray.add(john);</b>
+<b class="fc">&nbsp;        jsonArray.add(pete);</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;users&quot;, jsonArray);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;users&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(jsonArray, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJsonArraysForObjectNodes() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());</b>
+<b class="fc">&nbsp;        ObjectNode json1 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json1.put(&quot;username&quot;, &quot;john1&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode json2 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        json2.put(&quot;username&quot;, &quot;john2&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode[] objectNodes = new ObjectNode[]{json1, json2};</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;docs&quot;, objectNodes);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode[] value = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;docs&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(objectNodes, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJsonArraysForArrayNode() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());</b>
+<b class="fc">&nbsp;        ArrayNode jsonArray1 = Topology.OBJECT_MAPPER.createArrayNode();</b>
+<b class="fc">&nbsp;        ObjectNode john = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        john.put(&quot;username&quot;, &quot;john&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode pete = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        pete.put(&quot;username&quot;, &quot;pete&quot;);</b>
+<b class="fc">&nbsp;        jsonArray1.add(john);</b>
+<b class="fc">&nbsp;        jsonArray1.add(pete);</b>
+&nbsp;
+<b class="fc">&nbsp;        ArrayNode jsonArray2 = Topology.OBJECT_MAPPER.createArrayNode();</b>
+<b class="fc">&nbsp;        ObjectNode john2 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        john2.put(&quot;username&quot;, &quot;john2&quot;);</b>
+<b class="fc">&nbsp;        ObjectNode pete2 = Topology.OBJECT_MAPPER.createObjectNode();</b>
+<b class="fc">&nbsp;        pete2.put(&quot;username&quot;, &quot;pete2&quot;);</b>
+<b class="fc">&nbsp;        jsonArray2.add(john2);</b>
+<b class="fc">&nbsp;        jsonArray2.add(pete2);</b>
+&nbsp;
+<b class="fc">&nbsp;        ArrayNode[] arrayNodes = new ArrayNode[]{jsonArray1, jsonArray2};</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;docs&quot;, arrayNodes);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode[] value = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;docs&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(arrayNodes, value);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;//    @Test
+&nbsp;//    public void testJsonExampleFiles() throws IOException, URISyntaxException {
+&nbsp;//        ObjectMapper objectMapper = new ObjectMapper();
+&nbsp;//        String content1 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(&quot;jsonExample1.json&quot;).toURI())));
+&nbsp;//        JsonNode jsonNode1 = objectMapper.readTree(content1);
+&nbsp;//        String content2 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(&quot;jsonExample2.json&quot;).toURI())));
+&nbsp;//        JsonNode jsonNode2 = objectMapper.readTree(content2);
+&nbsp;//        String content3 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(&quot;jsonExample3.json&quot;).toURI())));
+&nbsp;//        JsonNode jsonNode3 = objectMapper.readTree(content3);
+&nbsp;//        String content4 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(&quot;jsonExample4.json&quot;).toURI())));
+&nbsp;//        JsonNode jsonNode4 = objectMapper.readTree(content4);
+&nbsp;//        String content5 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(&quot;jsonExample5.json&quot;).toURI())));
+&nbsp;//        JsonNode jsonNode5 = objectMapper.readTree(content5);
+&nbsp;//        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;json1&quot;, jsonNode1, &quot;json2&quot;, jsonNode2, &quot;json3&quot;, jsonNode3, &quot;json4&quot;, jsonNode4, &quot;json5&quot;, jsonNode5);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        JsonNode value1 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;json1&quot;);
+&nbsp;//        JsonNode value2 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;json2&quot;);
+&nbsp;//        JsonNode value3 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;json3&quot;);
+&nbsp;//        JsonNode value4 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;json4&quot;);
+&nbsp;//        JsonNode value5 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;json5&quot;);
+&nbsp;//        Assert.assertEquals(jsonNode1, value1);
+&nbsp;//        Assert.assertEquals(jsonNode2, value2);
+&nbsp;//        Assert.assertEquals(jsonNode3, value3);
+&nbsp;//        Assert.assertEquals(jsonNode4, value4);
+&nbsp;//        Assert.assertEquals(jsonNode5, value5);
+&nbsp;//    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testJsonExampleFilesArrays() throws IOException, URISyntaxException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());</b>
+<b class="fc">&nbsp;        ObjectMapper objectMapper = new ObjectMapper();</b>
+&nbsp;
+<b class="fc">&nbsp;        InputStream jsonExample1InputStream = getClass().getResourceAsStream(&quot;/jsonExample1.json&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(&quot;Failed to find jsonExample1.json&quot;, jsonExample1InputStream);</b>
+<b class="fc">&nbsp;        String content1 = IOUtils.toString(jsonExample1InputStream, Charset.defaultCharset());</b>
+<b class="fc">&nbsp;        JsonNode jsonNode1 = objectMapper.readTree(content1);</b>
+&nbsp;
+<b class="fc">&nbsp;        InputStream jsonExample2InputStream = getClass().getResourceAsStream(&quot;/jsonExample2.json&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(&quot;Failed to find jsonExample2.json&quot;, jsonExample2InputStream);</b>
+<b class="fc">&nbsp;        String content2 = IOUtils.toString(jsonExample2InputStream, Charset.defaultCharset());</b>
+<b class="fc">&nbsp;        JsonNode jsonNode2 = objectMapper.readTree(content2);</b>
+&nbsp;
+<b class="fc">&nbsp;        InputStream jsonExample3InputStream = getClass().getResourceAsStream(&quot;/jsonExample3.json&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(&quot;Failed to find jsonExample3.json&quot;, jsonExample3InputStream);</b>
+<b class="fc">&nbsp;        String content3 = IOUtils.toString(jsonExample3InputStream, Charset.defaultCharset());</b>
+<b class="fc">&nbsp;        JsonNode jsonNode3 = objectMapper.readTree(content3);</b>
+&nbsp;
+<b class="fc">&nbsp;        InputStream jsonExample4InputStream = getClass().getResourceAsStream(&quot;/jsonExample4.json&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(&quot;Failed to find jsonExample4.json&quot;, jsonExample4InputStream);</b>
+<b class="fc">&nbsp;        String content4 = IOUtils.toString(jsonExample4InputStream, Charset.defaultCharset());</b>
+<b class="fc">&nbsp;        JsonNode jsonNode4 = objectMapper.readTree(content4);</b>
+&nbsp;
+<b class="fc">&nbsp;        InputStream jsonExample5InputStream = getClass().getResourceAsStream(&quot;/jsonExample5.json&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(&quot;Failed to find jsonExample5.json&quot;, jsonExample5InputStream);</b>
+<b class="fc">&nbsp;        String content5 = IOUtils.toString(jsonExample5InputStream, Charset.defaultCharset());</b>
+<b class="fc">&nbsp;        JsonNode jsonNode5 = objectMapper.readTree(content5);</b>
+<b class="fc">&nbsp;        JsonNode[] jsonNodes = new JsonNode[]{jsonNode1, jsonNode2, jsonNode3, jsonNode4, jsonNode5};</b>
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;jsonArray&quot;, jsonNodes);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        JsonNode[] value1 = this.sqlgGraph.traversal().V(v1.id()).next().value(&quot;jsonArray&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertArrayEquals(jsonNodes, value1);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>
