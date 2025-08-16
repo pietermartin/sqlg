@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -48,6 +49,7 @@ public class TestAddTemporaryVertex extends BaseTest {
 
     @Test
     public void testStreamTemporaryVertex() throws SQLException {
+        Assume.assumeTrue(isPostgres());
         sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.streamTemporaryVertex("A", new LinkedHashMap<>() {{

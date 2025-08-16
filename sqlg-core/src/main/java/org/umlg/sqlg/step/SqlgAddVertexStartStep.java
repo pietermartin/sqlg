@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -107,5 +108,12 @@ public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> imp
         final SqlgAddVertexStartStep clone = (SqlgAddVertexStartStep) super.clone();
         clone.parameters = this.parameters.clone();
         return clone;
+    }
+    
+    @Override
+    public HashSet<PopInstruction> getPopInstructions() {
+        final HashSet<PopInstruction> popInstructions = new HashSet<>();
+        popInstructions.addAll(TraversalParent.super.getPopInstructions());
+        return popInstructions;
     }
 }

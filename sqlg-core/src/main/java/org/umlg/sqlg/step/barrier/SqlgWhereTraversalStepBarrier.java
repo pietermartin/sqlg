@@ -339,4 +339,10 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
     }
     ////////////
 
+    @Override
+    public HashSet<PopInstruction> getPopInstructions() {
+        final HashSet<PopInstruction> popInstructions = new HashSet<>();
+        popInstructions.addAll(TraversalParent.super.getPopInstructions());
+        return popInstructions;
+    }
 }
