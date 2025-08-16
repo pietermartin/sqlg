@@ -227,6 +227,7 @@ public abstract class BaseStrategy {
                     SelectStep<?, ?> selectStep = (SelectStep<?, ?>) step;
                     List<? extends Traversal.Admin<Object, ?>> children = selectStep.getLocalChildren();
                     if (children.size() == selectStep.getSelectKeys().size()) {
+                        //Check that all child steps are ElementMapStep(s)
                         Optional<? extends Traversal.Admin<Object, ?>> traversalOpt = children.stream().filter(c -> c.getSteps().isEmpty() || !(c.getSteps().get(0) instanceof ElementMapStep)).findAny();
                         if (traversalOpt.isEmpty()) {
 //                            TestElementMap.testElementMapSelectBy
@@ -256,9 +257,35 @@ public abstract class BaseStrategy {
                                 ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
                                 handleElementMapStep(replacedStep, elementMapStep, traversal);
                             }
+                        } else if (children.stream().allMatch(c -> c instanceof ValueTraversal)) {
+                            for (int i = 0; i < children.size(); i++) {
+                                ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal) children.get(i);
+                                String propertyKey = elementValueTraversal.getPropertyKey();
+                                String selectKey = selectStep.getSelectKeys().get(i);
+
+                                Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
+                                        r -> {
+                                            //Take the first
+                                            if (r.hasLabels()) {
+//                                                String label = r.getLabels().iterator().next();
+                                                for (String label : r.getLabels()) {
+                                                    String stepLabel = SqlgUtil.originalLabel(label);
+                                                    if (stepLabel.equals(selectKey)) {
+                                                        return true;
+                                                    }
+                                                }
+                                                return false;
+                                            } else {
+                                                return false;
+                                            }
+                                        }
+                                ).findAny();
+                                Preconditions.checkState(labeledReplacedStep.isPresent());
+                                ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
+                                replacedStep.getRestrictedProperties().add(propertyKey);
+                            }
                         }
                     }
-
                 }
             } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
@@ -895,7 +922,7 @@ public abstract class BaseStrategy {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 new EdgeVertexStep(traversal, Direction.OUT),
-                pathCount.getValue()
+                pathCount.intValue()
         );
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         this.traversal.removeStep(callStep);
@@ -907,12 +934,12 @@ public abstract class BaseStrategy {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 step,
-                pathCount.getValue()
+                pathCount.intValue()
         );
         //Important to add the replacedStep before collecting the additional steps.
         //In particular the orderGlobalStep needs to have the currentStepDepth set.
         ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
-        handleHasSteps(this.currentReplacedStep, this.traversal, stepIterator, pathCount.getValue());
+        handleHasSteps(this.currentReplacedStep, this.traversal, stepIterator, pathCount.intValue());
         handleOrderGlobalSteps(stepIterator, pathCount);
         handleRangeGlobalSteps(stepIterator, pathCount);
         handleConnectiveSteps(this.currentReplacedStep, this.traversal, stepIterator, pathCount);
@@ -926,7 +953,7 @@ public abstract class BaseStrategy {
             //CountGlobalStep is special, as the select statement will contain no properties
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
             if (precedesPathStep) {
-                this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
         }
         pathCount.increment();
@@ -1018,7 +1045,7 @@ public abstract class BaseStrategy {
             } else if (internalOptionalStep instanceof ComputerAwareStep.EndStep) {
                 break;
             } else if (internalOptionalStep instanceof HasStep) {
-                handleHasSteps(this.currentReplacedStep, this.traversal, optionalStepsIterator, pathCount.getValue());
+                handleHasSteps(this.currentReplacedStep, this.traversal, optionalStepsIterator, pathCount.intValue());
             } else {
                 throw new IllegalStateException("Unhandled step nested in OptionalStep " + internalOptionalStep.getClass().getName());
             }
@@ -1258,7 +1285,7 @@ public abstract class BaseStrategy {
                 if (optimizableOrderGlobalStep((OrderGlobalStep) step)) {
                     //add the label if any
                     for (String label : step.getLabels()) {
-                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                        this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
                     }
                     //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
                     if (this.traversal.getSteps().contains(step)) {
@@ -1289,7 +1316,7 @@ public abstract class BaseStrategy {
                         replacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
                         if (!replacedStep.hasLabels()) {
-                            replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                            replacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else if (previousStep instanceof OptionalStep) {
                         throw new RuntimeException("not yet implemented");
@@ -1300,14 +1327,14 @@ public abstract class BaseStrategy {
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
                         if (!this.currentReplacedStep.hasLabels()) {
-                            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                            this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else {
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
                         if (!this.currentReplacedStep.hasLabels()) {
-                            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                            this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     }
                     iterator.next();
@@ -1334,7 +1361,7 @@ public abstract class BaseStrategy {
                 if (outerAndOrHasContainer.isPresent()) {
                     replacedStep.addAndOrHasContainer(outerAndOrHasContainer.get());
                     for (String label : currentStep.getLabels()) {
-                        replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                        replacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
                     }
                     traversal.removeStep(currentStep);
                     iterator.remove();
@@ -1481,7 +1508,7 @@ public abstract class BaseStrategy {
                     }
                 } else {
                     for (String label : step.getLabels()) {
-                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                        this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
                     }
                 }
                 //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
@@ -1497,7 +1524,7 @@ public abstract class BaseStrategy {
                 }
                 //add a label if the step does not yet have one and is not a leaf node
                 if (!this.currentReplacedStep.hasLabels()) {
-                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                    this.currentReplacedStep.addLabel(pathCount.intValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                 }
                 this.reset = true;
                 break;
