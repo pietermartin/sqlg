@@ -33,7 +33,10 @@ public class TestTopologyLock extends BaseTest {
         try {
             this.sqlgGraph.tx().commit();
         } catch (NullPointerException e) {
-            Assert.assertEquals("propertyDefinition is null for key 'public' in 'A.surname'", e.getMessage());
+            Assert.assertTrue(
+                    ("propertyDefinition is null for key 'surname' in '" + this.sqlgGraph.getSqlDialect().getPublicSchema() + ".A'").equals(e.getMessage()) ||
+                            ("propertyColumn is null for key 'surname' in '" + this.sqlgGraph.getSqlDialect().getPublicSchema() + ".A'").equals(e.getMessage())
+            );
         }
     }
 
