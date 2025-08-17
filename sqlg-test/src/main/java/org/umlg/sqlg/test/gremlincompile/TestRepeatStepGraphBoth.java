@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -13,6 +12,7 @@ import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+import org.umlg.sqlg.structure.__;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -23,6 +23,22 @@ import java.util.*;
  */
 @SuppressWarnings({"DuplicatedCode", "resource"})
 public class TestRepeatStepGraphBoth extends BaseTest {
+
+    @Test
+    public void testEmptyRepeat() {
+        try {
+            this.sqlgGraph.traversal().V().emit().toList();
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("The repeat()-traversal was not defined"));
+        }
+
+
+        try {
+            this.sqlgGraph.traversal().V().until(__.identity()).toList();
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("The repeat()-traversal was not defined"));
+        }
+    }
 
     @Test
     public void testUntil() {
