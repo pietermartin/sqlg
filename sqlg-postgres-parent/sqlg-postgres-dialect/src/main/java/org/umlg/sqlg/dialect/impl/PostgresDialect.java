@@ -1240,7 +1240,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     private void appendKeyForStream(PropertyDefinition propertyDefinition, StringBuilder sql, String key, String schema, String table) {
-        Preconditions.checkNotNull(propertyDefinition, "propertyDefinition is null for key '%s' in '%s.%s'", schema, table, key);
+        Preconditions.checkNotNull(propertyDefinition, "propertyDefinition is null for key '%s' in '%s.%s'", key, schema, table);
         String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         int countPerKey = 1;
         for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
