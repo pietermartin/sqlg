@@ -348,7 +348,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             sql.append(", ");
                         }
                         count++;
-                        appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
+                        appendKeyForStream(propertyDefinitionMap.get(key), sql, key, metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable());
                     }
                     break;
                 }
@@ -1163,7 +1163,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(", ");
                 }
                 count++;
-                appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
+                appendKeyForStream(propertyDefinitionMap.get(key), sql, key, schema, table);
             }
         }
         sql.append(")");
@@ -1223,7 +1223,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(", ");
             }
             count++;
-            appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
+            appendKeyForStream(propertyDefinitionMap.get(key), sql, key, sqlgEdge.getSchema(), sqlgEdge.getTable());
         }
         sql.append(") ");
 
@@ -1239,7 +1239,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return sql.toString();
     }
 
-    private void appendKeyForStream(PropertyDefinition propertyDefinition, StringBuilder sql, String key) {
+    private void appendKeyForStream(PropertyDefinition propertyDefinition, StringBuilder sql, String key, String schema, String table) {
+        Preconditions.checkNotNull(propertyDefinition, "propertyDefinition is null for key '%s' in '%s.%s'", schema, table, key);
         String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         int countPerKey = 1;
         for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {

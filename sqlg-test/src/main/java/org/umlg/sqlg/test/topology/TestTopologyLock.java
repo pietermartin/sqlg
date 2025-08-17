@@ -23,6 +23,21 @@ public class TestTopologyLock extends BaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTopologyLock.class);
 
     @Test
+    public void testExceptionWhenAddingVertexInBatchModeOnLockedTopology() {
+        Assume.assumeTrue(sqlgGraph.getSqlDialect().supportsBatchMode());
+        this.sqlgGraph.addVertex(T.label, "A", "name", "peter");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "name", "peter", "surname", "what");
+        try {
+            this.sqlgGraph.tx().commit();
+        } catch (NullPointerException e) {
+            Assert.assertEquals("propertyDefinition is null for key 'public' in 'A.surname'", e.getMessage());
+        }
+    }
+
+    @Test
     public void testTopologyLocked() {
         this.sqlgGraph.getTopology().lock();
         boolean failed = false;
