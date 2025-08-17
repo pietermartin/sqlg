@@ -12,6 +12,7 @@ import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -144,6 +145,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 for (String column : columns) {
                     if (!schemaTable.isTemporary()) {
                         PropertyColumn propertyColumn = propertyColumns.get(column);
+                        Preconditions.checkNotNull(propertyColumn, "propertyColumn is null for key '%s' in '%s.%s'", column, schemaTable.getSchema(), schemaTable.getTable());
                         propertyDefinitionMap.put(column, propertyColumn.getPropertyDefinition());
                     } else {
                         propertyDefinitionMap.put(column, properties.get(column));
