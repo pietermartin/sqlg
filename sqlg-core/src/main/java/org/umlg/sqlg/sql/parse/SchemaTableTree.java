@@ -122,6 +122,8 @@ public class SchemaTableTree {
     //This counter is used for the within predicate when aliasing the temporary table
     private int tmpTableAliasCounter = 1;
     private boolean fakeEmit = false;
+    
+    public static final String TMP_INDEX_FIELD = "sqlg_index";
 
     SchemaTableTree(
             SqlgGraph sqlgGraph,
@@ -303,11 +305,11 @@ public class SchemaTableTree {
             result.append(lastSchemaTableTree.toOuterGroupByClause(sqlgGraph, "a" + subQueryLinkedLists.size()));
             if (!dropStep && subQueryLinkedLists.get(0).getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
                 result.append(",\n\t");
-                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
             }
         } else if (lastSchemaTableTree.hasAggregateFunction() && !dropStep && subQueryLinkedLists.get(0).getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             result.append("\nGROUP BY\n\t");
-            result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
         }
         return result.toString();
     }
@@ -1061,8 +1063,8 @@ public class SchemaTableTree {
 
 
             if (first && subQueryLinkedLists.get(0).getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-                result.append("a1.").append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index")).append(" as ")
-                        .append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"))
+                result.append("a1.").append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD)).append(" as ")
+                        .append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD))
                         .append(",\n\r");
 
                 columnStartIndex++;
@@ -1547,11 +1549,11 @@ public class SchemaTableTree {
             if (!this.sqlgGraph.getSqlDialect().isMssqlServer() && this.parentIdsAndIndexes.size() == 1) {
                 singlePathSql.append(this.parentIdsAndIndexes.get(0).getRight());
                 singlePathSql.append(" as ");
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
             } else if (this.sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 //Hard-coding here for H2
                 if (this.sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
-                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
                 } else {
                     if (firstSchemaTableTree.hasIDPrimaryKey) {
                         singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
@@ -1560,14 +1562,14 @@ public class SchemaTableTree {
                     }
                 }
                 singlePathSql.append(" as ");
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
             } else {
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
                 singlePathSql.append(" as ");
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
             }
             singlePathSql.append(",\n\t");
-            //increment the ColumnList's index to take the "index" field into account.
+            //increment the ColumnList's index to take the TMP_INDEX_FIELD field into account.
             startIndexColumns++;
         }
 
@@ -1659,7 +1661,7 @@ public class SchemaTableTree {
                             singlePathSql.append(", ");
                         }
                     }
-                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
                     singlePathSql.append(") ON ");
 
                     if (firstSchemaTableTree.hasIDPrimaryKey) {
@@ -1726,7 +1728,7 @@ public class SchemaTableTree {
                         this.sqlgGraph.addTemporaryVertex(
                                 T.label, tmpTableIdentified,
                                 "tmpId", parentIdsAndIndex.getLeft().getSequenceId(),
-                                "index", parentIdsAndIndex.getRight());
+                                TMP_INDEX_FIELD, parentIdsAndIndex.getRight());
                     } else {
                         List<Object> keyValues = new ArrayList<>();
                         keyValues.add(T.label);
@@ -1736,7 +1738,7 @@ public class SchemaTableTree {
                             keyValues.add(identifier);
                             keyValues.add(parentIdsAndIndex.getLeft().getIdentifiers().get(count++));
                         }
-                        keyValues.add("index");
+                        keyValues.add(TMP_INDEX_FIELD);
                         keyValues.add(parentIdsAndIndex.getRight());
                         this.sqlgGraph.addTemporaryVertex(keyValues.toArray());
                     }
@@ -1823,7 +1825,7 @@ public class SchemaTableTree {
                 singlePathSql.append(lastSchemaTableTree.toGroupByClause(this.sqlgGraph));
                 if (!dropStep && lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
                     singlePathSql.append(",\n\t");
-                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                    singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
                 }
             } else if (lastSchemaTableTree.hasAggregateFunction() &&
                     !dropStep &&
@@ -1831,12 +1833,12 @@ public class SchemaTableTree {
                     distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
 
                 singlePathSql.append("\nGROUP BY\n\t");
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
             }
 
             if (!dropStep && lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
                 singlePathSql.append("\nORDER BY\n\t");
-                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(TMP_INDEX_FIELD));
                 mutableOrderBy.setTrue();
             }
 
@@ -3581,7 +3583,7 @@ public class SchemaTableTree {
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement, List<LinkedHashMap<ColumnList.Column, String>> columnsStack) throws SQLException {
         for (LinkedHashMap<ColumnList.Column, String> columns : columnsStack) {
             for (ColumnList.Column column : columns.keySet()) {
-                if (!column.getColumn().equals("index") && !column.isID() && !column.isForeignKey()) {
+                if (!column.getColumn().equals(TMP_INDEX_FIELD) && !column.isID() && !column.isForeignKey()) {
                     String propertyName = column.getColumn();
                     PropertyDefinition propertyDefinition = column.getPropertyDefinition();
                     boolean settedProperty;

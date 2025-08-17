@@ -363,7 +363,7 @@ public class Topology {
 
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
-     * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
+     * As the topology, i.e. sqlg_schema is created upfront the meta topology is preloaded.
      *
      * @param sqlgGraph The graph.
      */
