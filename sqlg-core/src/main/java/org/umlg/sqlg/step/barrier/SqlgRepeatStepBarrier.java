@@ -49,6 +49,9 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
         this.repeatTraversal = repeatStep.getRepeatTraversal();
+        if (this.repeatTraversal == null) {
+            throw new IllegalStateException("The repeat()-traversal was not defined: " + this);
+        }
         this.untilTraversal = repeatStep.getUntilTraversal();
         this.emitTraversal = repeatStep.getEmitTraversal();
         this.untilFirst = repeatStep.untilFirst;

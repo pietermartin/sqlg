@@ -1932,6 +1932,9 @@ public abstract class BaseStrategy {
         Traversal.Admin<?, ?> emitTraversal = repeatStep.getEmitTraversal();
         if (emitTraversal == null) {
             Traversal.Admin<?, ?> repeatTraversal = repeatStep.getRepeatTraversal();
+            if (repeatTraversal == null) {
+                throw new IllegalStateException("The repeat()-traversal was not defined: " + this);
+            }
             List<Step> repeatTraversalSteps = repeatTraversal.getSteps();
             if (
                     (
