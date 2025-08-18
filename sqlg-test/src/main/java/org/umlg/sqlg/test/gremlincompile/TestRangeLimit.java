@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -10,14 +11,13 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgElementMapStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.structure.DefaultSqlgTraversal;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -721,5 +721,87 @@ public class TestRangeLimit extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertTrue(traversal.hasNext());
         Assert.assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
+    }
+
+    @Test
+    public void testRangeAfterPropertiesStep() {
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "c", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "d", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "e", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "f", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "g", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "h", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "i", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "j", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "k", "name1", "2");
+        this.sqlgGraph.tx().commit();
+
+        DefaultSqlgTraversal<Vertex, String> traversal  = (DefaultSqlgTraversal<Vertex, String>)this.sqlgGraph.traversal().V().hasLabel("A")
+                .<String>values("name")
+                .limit(10);
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep<?>);
+        List<String> values = traversal.toList();
+        Assert.assertEquals(10, values.size());
+
+        traversal  = (DefaultSqlgTraversal<Vertex, String>)this.sqlgGraph.traversal().V().hasLabel("A")
+                .order().by("name")
+                .<String>values("name")
+                .limit(10);
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep<?>);
+        values = traversal.toList();
+        Assert.assertEquals(10, values.size());
+        Assert.assertEquals("j", values.get(9));
+    }
+
+    @Test
+    public void testRangeAfterElementMapStep() {
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "c", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "d", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "e", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "f", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "g", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "h", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "i", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "j", "name1", "2");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "k", "name1", "2");
+        this.sqlgGraph.tx().commit();
+
+        List<String> columns = List.of("name");
+        DefaultSqlgTraversal<Vertex, Map<Object, Object>> traversal = (DefaultSqlgTraversal<Vertex, Map<Object, Object>>)this.sqlgGraph.traversal().V().hasLabel("A")
+                .elementMap(columns.toArray(new String[]{}))
+                .limit(10);
+
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgElementMapStep<?,?>);
+        List<Map<Object, Object>> values = traversal.toList();
+        Assert.assertEquals(10, values.size());
+
+        //Test with order by
+        traversal = (DefaultSqlgTraversal<Vertex, Map<Object, Object>>)this.sqlgGraph.traversal().V().hasLabel("A")
+                .elementMap(columns.toArray(new String[]{}))
+                .order().by("name", Order.desc)
+                .limit(10);
+
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgElementMapStep<?,?>);
+        values = traversal.toList();
+        Assert.assertEquals(10, values.size());
+        Assert.assertEquals("b", values.get(9).get("name"));
     }
 }

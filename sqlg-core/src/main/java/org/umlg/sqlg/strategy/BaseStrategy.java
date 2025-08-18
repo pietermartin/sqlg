@@ -303,11 +303,20 @@ public abstract class BaseStrategy {
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
                 return false;
             } else if (step instanceof PropertiesStep) {
-                return handlePropertiesStep(this.currentReplacedStep, step);
+                if (handlePropertiesStep(this.currentReplacedStep, step)) {
+                    handleRangeGlobalSteps(stepIterator, pathCount);
+                } else {
+                    return false;
+                }
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
             } else if (step instanceof ElementMapStep<?, ?>) {
-                return handleElementMapStep(this.currentReplacedStep, step);
+                if (handleElementMapStep(this.currentReplacedStep, step)) {
+                    handleOrderGlobalSteps(stepIterator, pathCount);
+                    handleRangeGlobalSteps(stepIterator, pathCount);
+                } else {
+                    return false;
+                }
             } else if (step instanceof IdStep) {
                 return handleIdStep(step);
             } else if (step instanceof MaxGlobalStep) {
@@ -472,10 +481,10 @@ public abstract class BaseStrategy {
         if (dropStep != null) {
             return false;
         }
-        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(t, OrderGlobalStep.class, step);
-        if (orderGlobalStep != null) {
-            return false;
-        }
+//        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(t, OrderGlobalStep.class, step);
+//        if (orderGlobalStep != null) {
+//            return false;
+//        }
         Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(t, step);
         if (lambdaStep != null) {
             return false;
