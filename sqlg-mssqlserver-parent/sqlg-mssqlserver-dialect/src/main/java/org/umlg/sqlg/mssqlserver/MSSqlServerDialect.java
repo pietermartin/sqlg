@@ -18,10 +18,12 @@ import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import javax.annotation.Nullable;
 import javax.xml.bind.DatatypeConverter;
 import java.lang.reflect.Array;
 import java.sql.*;
@@ -1116,7 +1118,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
-            @Nullable  String edgesToDelete,
+            String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
