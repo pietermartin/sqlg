@@ -6,7 +6,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import javax.annotation.Nullable;
 import java.io.Writer;
 import java.util.*;
 
@@ -56,7 +55,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, @Nullable VertexLabel vertexLabel) {
+    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, VertexLabel vertexLabel) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

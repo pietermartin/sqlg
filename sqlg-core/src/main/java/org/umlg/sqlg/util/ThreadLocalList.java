@@ -1,6 +1,5 @@
 package org.umlg.sqlg.util;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 
 /**
@@ -27,20 +26,17 @@ public class ThreadLocalList<E> implements List<E> {
     }
 
     @Override
-    @Nonnull
     public Iterator<E> iterator() {
         return this.threadLocalList.get().iterator();
     }
 
     @Override
-    @Nonnull
     public Object[] toArray() {
         return this.threadLocalList.get().toArray();
     }
 
     @Override
-    @Nonnull
-    public <T> T[] toArray(@Nonnull T[] a) {
+    public <T> T[] toArray(T[] a) {
         return this.threadLocalList.get().toArray(a);
     }
 
@@ -55,27 +51,27 @@ public class ThreadLocalList<E> implements List<E> {
     }
 
     @Override
-    public boolean containsAll(@Nonnull Collection<?> c) {
+    public boolean containsAll(Collection<?> c) {
         return this.threadLocalList.get().containsAll(c);
     }
 
     @Override
-    public boolean addAll(@Nonnull Collection<? extends E> c) {
+    public boolean addAll(Collection<? extends E> c) {
         return this.threadLocalList.get().addAll(c);
     }
 
     @Override
-    public boolean addAll(int index, @Nonnull Collection<? extends E> c) {
+    public boolean addAll(int index, Collection<? extends E> c) {
         return this.threadLocalList.get().addAll(c);
     }
 
     @Override
-    public boolean removeAll(@Nonnull Collection<?> c) {
+    public boolean removeAll(Collection<?> c) {
         return this.threadLocalList.get().removeAll(c);
     }
 
     @Override
-    public boolean retainAll(@Nonnull Collection<?> c) {
+    public boolean retainAll(Collection<?> c) {
         return this.threadLocalList.get().retainAll(c);
     }
 
@@ -115,19 +111,16 @@ public class ThreadLocalList<E> implements List<E> {
     }
 
     @Override
-    @Nonnull
     public ListIterator<E> listIterator() {
         return this.threadLocalList.get().listIterator();
     }
 
     @Override
-    @Nonnull
     public ListIterator<E> listIterator(int index) {
         return this.threadLocalList.get().listIterator(index);
     }
 
     @Override
-    @Nonnull
     public List<E> subList(int fromIndex, int toIndex) {
         return this.threadLocalList.get().subList(fromIndex, toIndex);
     }
