@@ -5,11 +5,12 @@
     <parent>
         <artifactId>sqlg</artifactId>
         <groupId>org.umlg</groupId>
-        <version>2.1.7-SNAPSHOT</version>
+        <version>2.1.7</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sqlg-h2-parent</artifactId>
+    <name>sqlg :: h2-parent</name>
     <packaging>pom</packaging>
 
     <modules>
