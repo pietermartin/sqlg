@@ -1,5 +1,6 @@
 package org.umlg.sqlg.sql.dialect;
 
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.structure.*;
@@ -55,7 +56,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, VertexLabel vertexLabel) {
+    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, @Nullable VertexLabel vertexLabel) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

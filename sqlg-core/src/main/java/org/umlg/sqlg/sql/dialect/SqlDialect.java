@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -817,7 +818,7 @@ public interface SqlDialect {
      * @return
      */
     @SuppressWarnings("Duplicates")
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();

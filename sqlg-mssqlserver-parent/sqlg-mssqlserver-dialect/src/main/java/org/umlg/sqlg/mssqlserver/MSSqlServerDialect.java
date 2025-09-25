@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopyOptions;
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -1118,7 +1119,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
-            String edgesToDelete,
+            @Nullable String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
