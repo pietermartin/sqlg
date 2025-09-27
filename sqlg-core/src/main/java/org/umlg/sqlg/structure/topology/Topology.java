@@ -2203,8 +2203,8 @@ public class Topology {
             result.putAll(schema.getUncommittedSchemaTableForeignKeys());
         }
         for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+            Schema uncommittedSchema = stringSchemaEntry.getValue();
+            result.putAll(uncommittedSchema.getUncommittedSchemaTableForeignKeys());
         }
         return result;
     }

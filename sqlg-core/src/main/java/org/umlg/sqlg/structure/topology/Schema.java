@@ -1573,6 +1573,7 @@ public class Schema implements TopologyInf {
         );
         String fn = this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
         if (!this.uncommittedRemovedVertexLabels.contains(fn)) {
+            //this remove statement is needed because the drop will delete any edges connected to the vertexLabel
             this.sqlgGraph.traversal().V().hasLabel(this.name + "." + vertexLabel.getLabel()).drop().iterate();
             this.uncommittedRemovedVertexLabels.add(fn);
             for (EdgeRole er : vertexLabel.getOutEdgeRoles().values()) {
