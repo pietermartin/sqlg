@@ -197,11 +197,6 @@ public class Partition implements TopologyInf {
     }
 
     @Override
-    public boolean isCommitted() {
-        return this.committed;
-    }
-
-    @Override
     public String getName() {
         return this.name;
     }

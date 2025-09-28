@@ -123,7 +123,6 @@ public class EdgeLabel extends AbstractLabel {
         // this is a topology edge label, the columns exist
         if (forSqlgSchema) {
             for (PropertyColumn pc : this.uncommittedProperties.values()) {
-                pc.setCommitted(true);
                 this.properties.put(pc.getName(), pc);
             }
             this.uncommittedProperties.clear();
@@ -151,7 +150,6 @@ public class EdgeLabel extends AbstractLabel {
         // this is a topology edge label, the columns exist
         if (forSqlgSchema) {
             for (PropertyColumn pc : this.uncommittedProperties.values()) {
-                pc.setCommitted(true);
                 this.properties.put(pc.getName(), pc);
             }
             this.uncommittedProperties.clear();
@@ -225,7 +223,6 @@ public class EdgeLabel extends AbstractLabel {
                                 ImmutablePair.of(column.getKey(), column.getValue())
                         );
                         propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
-                        propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE, true);
                     }

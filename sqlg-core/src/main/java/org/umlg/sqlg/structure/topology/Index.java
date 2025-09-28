@@ -90,11 +90,6 @@ public class Index implements TopologyInf {
         return this.abstractLabel.equals(otherIndex.abstractLabel) && this.name.equals(otherIndex.name);
     }
 
-    @Override
-    public boolean isCommitted() {
-        return this.committed;
-    }
-
     public IndexType getIndexType() {
         return indexType;
     }
@@ -114,7 +109,6 @@ public class Index implements TopologyInf {
         while (propertyColumnIterator.hasNext()) {
             PropertyColumn propertyColumn = propertyColumnIterator.next();
             this.properties.add(propertyColumn);
-            propertyColumn.afterCommit();
             propertyColumnIterator.remove();
         }
         this.uncommittedIndexType = null;

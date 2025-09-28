@@ -127,11 +127,6 @@ public class Schema implements TopologyInf {
         return this.sqlgGraph;
     }
 
-    @Override
-    public boolean isCommitted() {
-        return this.committed;
-    }
-
     public boolean isForeignSchema() {
         return isForeignSchema;
     }
@@ -954,7 +949,6 @@ public class Schema implements TopologyInf {
     }
 
     Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
-        Preconditions.checkState(getTopology().isSchemaChanged(), "Schema.getUncommittedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -974,7 +968,6 @@ public class Schema implements TopologyInf {
     }
 
     Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedRemovedSchemaTableForeignKeys() {
-        Preconditions.checkState(getTopology().isSchemaChanged(), "Schema.getUncommittedRemovedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -1059,30 +1052,34 @@ public class Schema implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.afterCommit must have schemaChanged = true");
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
-            this.vertexLabels.put(entry.getKey(), entry.getValue());
-            it.remove();
-        }
-        for (Iterator<String> it = uncommittedRemovedVertexLabels.iterator(); it.hasNext(); ) {
-            String s = it.next();
-            VertexLabel lbl = this.vertexLabels.remove(s);
-            if (lbl != null) {
-                this.getTopology().removeVertexLabel(lbl);
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, VertexLabel> entry = it.next();
+                this.vertexLabels.put(entry.getKey(), entry.getValue());
+                it.remove();
             }
-            it.remove();
+        }
+        if (!this.uncommittedRemovedVertexLabels.isEmpty()) {
+            for (Iterator<String> it = uncommittedRemovedVertexLabels.iterator(); it.hasNext(); ) {
+                String s = it.next();
+                VertexLabel lbl = this.vertexLabels.remove(s);
+                if (lbl != null) {
+                    this.getTopology().removeVertexLabel(lbl);
+                }
+                it.remove();
+            }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
         }
-        for (Iterator<String> it = uncommittedRemovedEdgeLabels.iterator(); it.hasNext(); ) {
-            String s = it.next();
-            getTopology().removeEdgeLabel(s);
-            this.outEdgeLabels.remove(s);
-            it.remove();
+        if (!this.uncommittedRemovedEdgeLabels.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedEdgeLabels.iterator(); it.hasNext(); ) {
+                String s = it.next();
+                getTopology().removeEdgeLabel(s);
+                this.outEdgeLabels.remove(s);
+                it.remove();
+            }
         }
-
         this.uncommittedOutEdgeLabels.clear();
         this.committed = true;
     }

@@ -451,7 +451,6 @@ public class VertexLabel extends AbstractLabel {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
                         propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
-                        propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE, true);
                     }
@@ -619,69 +618,75 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.schema.getTopology().isSchemaChanged(), "VertexLabel.afterCommit must have schemaChanged = true");
         super.afterCommit();
-        Iterator<Map.Entry<String, EdgeRole>> edgeRoleEntryIter = this.uncommittedOutEdgeRoles.entrySet().iterator();
-        while (edgeRoleEntryIter.hasNext()) {
-            Map.Entry<String, EdgeRole> edgeRoleEntry = edgeRoleEntryIter.next();
-            String edgeLabelName = edgeRoleEntry.getKey();
-            EdgeRole edgeRole = edgeRoleEntry.getValue();
-            this.outEdgeRoles.put(edgeLabelName, edgeRole);
-            edgeRole.getEdgeLabel().afterCommit();
-            this.getSchema().addToAllEdgeCache(edgeRole.getEdgeLabel());
-            edgeRoleEntryIter.remove();
-        }
-        edgeRoleEntryIter = this.uncommittedInEdgeRoles.entrySet().iterator();
-        while (edgeRoleEntryIter.hasNext()) {
-            Map.Entry<String, EdgeRole> edgeRoleEntry = edgeRoleEntryIter.next();
-            String edgeLabelName = edgeRoleEntry.getKey();
-            EdgeRole edgeRole = edgeRoleEntry.getValue();
-            this.inEdgeRoles.put(edgeLabelName, edgeRole);
-            edgeRole.getEdgeLabel().afterCommit();
-            edgeRoleEntryIter.remove();
-
-        }
-        for (Iterator<String> it = this.uncommittedRemovedOutEdgeRoles.keySet().iterator(); it.hasNext(); ) {
-            String s = it.next();
-            EdgeRole edgeRole = this.outEdgeRoles.remove(s);
-            if (edgeRole != null) {
-                ForeignKey foreignKey;
-                if (hasIDPrimaryKey()) {
-                    foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
-                } else {
-                    foreignKey = new ForeignKey();
-                    for (String identifier : this.getIdentifiers()) {
-                        foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
-                    }
-                }
-                this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
-                        edgeRole.getEdgeLabel().getSchema().getName() + "." + EDGE_PREFIX + edgeRole.getEdgeLabel().getLabel(),
-                        foreignKey);
-                this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
-
+        if (!this.uncommittedOutEdgeRoles.isEmpty()) {
+            Iterator<Map.Entry<String, EdgeRole>> edgeRoleEntryIter = this.uncommittedOutEdgeRoles.entrySet().iterator();
+            while (edgeRoleEntryIter.hasNext()) {
+                Map.Entry<String, EdgeRole> edgeRoleEntry = edgeRoleEntryIter.next();
+                String edgeLabelName = edgeRoleEntry.getKey();
+                EdgeRole edgeRole = edgeRoleEntry.getValue();
+                this.outEdgeRoles.put(edgeLabelName, edgeRole);
+                edgeRole.getEdgeLabel().afterCommit();
+                this.getSchema().addToAllEdgeCache(edgeRole.getEdgeLabel());
+                edgeRoleEntryIter.remove();
             }
-            it.remove();
+        }
+        if (!this.uncommittedInEdgeRoles.isEmpty()) {
+            Iterator<Map.Entry<String, EdgeRole>> edgeRoleEntryIter = this.uncommittedInEdgeRoles.entrySet().iterator();
+            while (edgeRoleEntryIter.hasNext()) {
+                Map.Entry<String, EdgeRole> edgeRoleEntry = edgeRoleEntryIter.next();
+                String edgeLabelName = edgeRoleEntry.getKey();
+                EdgeRole edgeRole = edgeRoleEntry.getValue();
+                this.inEdgeRoles.put(edgeLabelName, edgeRole);
+                edgeRole.getEdgeLabel().afterCommit();
+                edgeRoleEntryIter.remove();
+            }
+        }
+        if (!this.uncommittedRemovedOutEdgeRoles.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedOutEdgeRoles.keySet().iterator(); it.hasNext(); ) {
+                String s = it.next();
+                EdgeRole edgeRole = this.outEdgeRoles.remove(s);
+                if (edgeRole != null) {
+                    ForeignKey foreignKey;
+                    if (hasIDPrimaryKey()) {
+                        foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                    } else {
+                        foreignKey = new ForeignKey();
+                        for (String identifier : this.getIdentifiers()) {
+                            foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
+                        }
+                    }
+                    this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
+                            edgeRole.getEdgeLabel().getSchema().getName() + "." + EDGE_PREFIX + edgeRole.getEdgeLabel().getLabel(),
+                            foreignKey);
+                    this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
+
+                }
+                it.remove();
+            }
         }
 
-        for (Iterator<String> it = this.uncommittedRemovedInEdgeRoles.keySet().iterator(); it.hasNext(); ) {
-            String s = it.next();
-            EdgeRole edgeRole = this.inEdgeRoles.remove(s);
-            if (edgeRole != null) {
-                ForeignKey foreignKey;
-                if (this.hasIDPrimaryKey()) {
-                    foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
-                } else {
-                    foreignKey = new ForeignKey();
-                    for (String identifier : this.getIdentifiers()) {
-                        foreignKey.add(this.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
+        if (!this.uncommittedRemovedInEdgeRoles.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedInEdgeRoles.keySet().iterator(); it.hasNext(); ) {
+                String s = it.next();
+                EdgeRole edgeRole = this.inEdgeRoles.remove(s);
+                if (edgeRole != null) {
+                    ForeignKey foreignKey;
+                    if (this.hasIDPrimaryKey()) {
+                        foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                    } else {
+                        foreignKey = new ForeignKey();
+                        for (String identifier : this.getIdentifiers()) {
+                            foreignKey.add(this.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
+                        }
                     }
+                    this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
+                            edgeRole.getEdgeLabel().getSchema().getName() + "." + EDGE_PREFIX + edgeRole.getEdgeLabel().getLabel(),
+                            foreignKey);
+                    this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
                 }
-                this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
-                        edgeRole.getEdgeLabel().getSchema().getName() + "." + EDGE_PREFIX + edgeRole.getEdgeLabel().getLabel(),
-                        foreignKey);
-                this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
+                it.remove();
             }
-            it.remove();
         }
 
         for (EdgeRole edgeRole : this.outEdgeRoles.values()) {

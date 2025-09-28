@@ -9,11 +9,6 @@ import org.umlg.sqlg.structure.TopologyInf;
 public class Graph implements TopologyInf {
 
     @Override
-    public boolean isCommitted() {
-        return true;
-    }
-
-    @Override
     public String getName() {
         return "Graph";
     }

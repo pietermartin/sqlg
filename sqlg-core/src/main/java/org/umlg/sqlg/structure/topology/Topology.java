@@ -2182,7 +2182,6 @@ public class Topology {
     }
 
     private Map<String, AbstractLabel> getUncommittedAllTables() {
-        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedAllTables must have schemaChanged = true");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -2196,7 +2195,6 @@ public class Topology {
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
-        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new ConcurrentHashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -2210,7 +2208,6 @@ public class Topology {
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedRemovedSchemaTableForeignKeys() {
-        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedRemovedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -2224,7 +2221,6 @@ public class Topology {
     }
 
     private Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
-        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedEdgeForeignKeys must have schemaChanged = true");
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -2239,7 +2235,6 @@ public class Topology {
     }
 
     private Map<String, Set<ForeignKey>> getUncommittedRemovedEdgeForeignKeys() {
-        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedRemovedEdgeForeignKeys must have schemaChanged = true");
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();

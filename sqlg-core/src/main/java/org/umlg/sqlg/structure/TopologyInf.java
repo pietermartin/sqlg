@@ -5,12 +5,6 @@ package org.umlg.sqlg.structure;
  */
 public interface TopologyInf {
 
-    default boolean isUncommitted() {
-        return !isCommitted();
-    }
-
-    boolean isCommitted();
-
     String getName();
 
     /**

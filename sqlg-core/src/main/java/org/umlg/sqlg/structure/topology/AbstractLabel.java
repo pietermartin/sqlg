@@ -97,7 +97,6 @@ public abstract class AbstractLabel implements TopologyInf {
         this.label = label;
         for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
-            property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
         this.uncommittedIdentifiers.addAll(identifiers);
@@ -120,7 +119,6 @@ public abstract class AbstractLabel implements TopologyInf {
         this.label = label;
         for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
-            property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
         this.uncommittedIdentifiers.addAll(identifiers);
@@ -313,11 +311,6 @@ public abstract class AbstractLabel implements TopologyInf {
         } else {
             return partitionOptional.get();
         }
-    }
-
-    @Override
-    public boolean isCommitted() {
-        return this.committed;
     }
 
     public boolean isRangePartition() {
@@ -918,58 +911,71 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getTopology().isSchemaChanged(), "AbstractLabel.afterCommit must have schemaChanged ThreadLocal var as true");
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
-            this.properties.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
+        if (!this.uncommittedProperties.isEmpty()) {
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
+                this.properties.put(entry.getKey(), entry.getValue());
+                it.remove();
+            }
         }
-        for (Iterator<String> it = this.uncommittedRemovedProperties.iterator(); it.hasNext(); ) {
-            String prop = it.next();
-            this.properties.remove(prop);
-            it.remove();
+        if (!this.uncommittedRemovedProperties.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedProperties.iterator(); it.hasNext(); ) {
+                String prop = it.next();
+                this.properties.remove(prop);
+                it.remove();
+            }
         }
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
-            this.properties.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
+        if (!this.uncommittedUpdatedProperties.isEmpty()) {
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
+                this.properties.put(entry.getKey(), entry.getValue());
+                it.remove();
+            }
         }
         this.identifiers.addAll(this.uncommittedIdentifiers);
-        int index = -1;
-        for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
-            index++;
-            Pair<String, String> oldName = it.next();
-            this.identifiers.remove(oldName.getLeft());
-            this.identifiers.add(index, oldName.getRight());
-            it.remove();
+        if (!this.renamedIdentifiers.isEmpty()) {
+            int index = -1;
+            for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
+                index++;
+                Pair<String, String> oldName = it.next();
+                this.identifiers.remove(oldName.getLeft());
+                this.identifiers.add(index, oldName.getRight());
+                it.remove();
+            }
         }
         this.uncommittedIdentifiers.clear();
-        for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Index> entry = it.next();
-            this.indexes.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
+        if (!this.uncommittedIndexes.isEmpty()) {
+            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Index> entry = it.next();
+                this.indexes.put(entry.getKey(), entry.getValue());
+                entry.getValue().afterCommit();
+                it.remove();
+            }
         }
-        for (Iterator<String> it = this.uncommittedRemovedIndexes.iterator(); it.hasNext(); ) {
-            String prop = it.next();
-            this.indexes.remove(prop);
-            it.remove();
+        if (!this.uncommittedRemovedIndexes.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedIndexes.iterator(); it.hasNext(); ) {
+                String prop = it.next();
+                this.indexes.remove(prop);
+                it.remove();
+            }
         }
-        for (Map.Entry<String, PropertyColumn> entry : this.properties.entrySet()) {
-            entry.getValue().afterCommit();
+        //PropertyColumn does not have an afterCommit
+//        if (!this.properties.isEmpty()) {
+//        }
+        if (!this.uncommittedPartitions.isEmpty()) {
+            for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Partition> entry = it.next();
+                this.partitions.put(entry.getKey(), entry.getValue());
+                entry.getValue().afterCommit();
+                it.remove();
+            }
         }
-        for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Partition> entry = it.next();
-            this.partitions.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
-        }
-        for (Iterator<String> it = this.uncommittedRemovedPartitions.iterator(); it.hasNext(); ) {
-            String prop = it.next();
-            this.partitions.remove(prop);
-            it.remove();
+        if (!this.uncommittedRemovedPartitions.isEmpty()) {
+            for (Iterator<String> it = this.uncommittedRemovedPartitions.iterator(); it.hasNext(); ) {
+                String prop = it.next();
+                this.partitions.remove(prop);
+                it.remove();
+            }
         }
         for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
             entry.getValue().afterCommit();
@@ -988,31 +994,41 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void afterRollback() {
         Preconditions.checkState(this.getTopology().isSchemaChanged(), "AbstractLabel.afterRollback must have schemaChanged ThreadLocal var as true");
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (!this.uncommittedProperties.isEmpty()) {
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
         }
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (!this.uncommittedUpdatedProperties.isEmpty()) {
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
         }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedIdentifiers.clear();
         this.renamedIdentifiers.clear();
-        for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Index> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (!this.uncommittedIndexes.isEmpty()) {
+            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Index> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
         }
         this.uncommittedRemovedIndexes.clear();
-        for (Map.Entry<String, PropertyColumn> entry : this.properties.entrySet()) {
-            entry.getValue().afterRollback();
+        if (!this.properties.isEmpty()) {
+            for (Map.Entry<String, PropertyColumn> entry : this.properties.entrySet()) {
+                entry.getValue().afterRollback();
+            }
         }
         this.uncommittedRemovedPartitions.clear();
-        for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
-            entry.getValue().afterRollback();
+        if (!this.partitions.isEmpty()) {
+            for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
+                entry.getValue().afterRollback();
+            }
         }
         this.uncommittedDistributionPropertyColumn = null;
         this.uncommittedDistributionColocateAbstractLabel = null;

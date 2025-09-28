@@ -15,7 +15,6 @@ public class PropertyColumn implements TopologyInf {
 
     private final AbstractLabel abstractLabel;
     private final String name;
-    private boolean committed = true;
     private PropertyDefinition propertyDefinition;
     @SuppressWarnings("unused")
     private final boolean isForeignPropertyColumn;
@@ -39,11 +38,6 @@ public class PropertyColumn implements TopologyInf {
         return name;
     }
 
-    @Override
-    public boolean isCommitted() {
-        return this.committed;
-    }
-
     public PropertyType getPropertyType() {
         return propertyDefinition.propertyType();
     }
@@ -58,15 +52,6 @@ public class PropertyColumn implements TopologyInf {
 
     public AbstractLabel getParentLabel() {
         return abstractLabel;
-    }
-
-    void setCommitted(boolean committed) {
-        this.committed = committed;
-    }
-
-    void afterCommit() {
-        Preconditions.checkState(this.getParentLabel().getTopology().isSchemaChanged(), "PropertyColumn.afterCommit must have schemaChanged = true");
-        this.committed = true;
     }
 
     void afterRollback() {
@@ -110,7 +95,6 @@ public class PropertyColumn implements TopologyInf {
     public String toString() {
         return this.abstractLabel.getSchema().getName() + "." + this.abstractLabel.getLabel() + "." + this.name;
     }
-
 
     @Override
     public void remove(boolean preserveData) {

@@ -101,11 +101,6 @@ public class EdgeRole implements TopologyInf {
     }
 
     @Override
-    public boolean isCommitted() {
-        return committed;
-    }
-
-    @Override
     public void remove(boolean preserveData) {
         getVertexLabel().removeEdgeRole(this, true, preserveData);
     }
