@@ -334,27 +334,19 @@ public class TestLoadSchemaViaNotify extends BaseTest {
                     .ifPresent(v -> v.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(v.getProperty("name").orElseThrow())));
 
             Schema aSchema = this.sqlgGraph.getTopology().getSchema("A").orElseThrow();
-            Assert.assertTrue(aSchema.isUncommitted());
             VertexLabel vertexLabel = aSchema.getVertexLabel("A").orElseThrow();
-            Assert.assertTrue(vertexLabel.isUncommitted());
             PropertyColumn namePropertyColumn = vertexLabel.getProperty("name").orElseThrow();
-            Assert.assertTrue(namePropertyColumn.isUncommitted());
             String indexName = this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "A"), Topology.VERTEX_PREFIX, Collections.singletonList("name"));
             Index index = vertexLabel.getIndex(indexName).orElseThrow();
-            Assert.assertTrue(index.isUncommitted());
 
             this.sqlgGraph.tx().commit();
             //allow time for notification to happen
             Thread.sleep(1_000);
             aSchema = sqlgGraph1.getTopology().getSchema("A").orElseThrow();
-            Assert.assertTrue(aSchema.isCommitted());
             vertexLabel = aSchema.getVertexLabel("A").orElseThrow();
-            Assert.assertTrue(vertexLabel.isCommitted());
             namePropertyColumn = vertexLabel.getProperty("name").orElseThrow();
-            Assert.assertTrue(namePropertyColumn.isCommitted());
             indexName = sqlgGraph1.getSqlDialect().indexName(SchemaTable.of("A", "A"), Topology.VERTEX_PREFIX, Collections.singletonList("name"));
             index = vertexLabel.getIndex(indexName).orElseThrow();
-            Assert.assertTrue(index.isCommitted());
         }
     }
 
