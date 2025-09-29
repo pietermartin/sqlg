@@ -839,7 +839,9 @@ public class Schema implements TopologyInf {
         }
         VertexLabel result = null;
         if (this.topology.isSchemaChanged()) {
-            result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+            if (!this.uncommittedVertexLabels.isEmpty()) {
+                result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+            }
         }
         if (result == null) {
             result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
@@ -850,7 +852,9 @@ public class Schema implements TopologyInf {
     public Map<String, EdgeLabel> getEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
         if (this.topology.isSchemaChanged()) {
-            result.putAll(this.uncommittedOutEdgeLabels);
+            if (!this.uncommittedOutEdgeLabels.isEmpty()) {
+                result.putAll(this.uncommittedOutEdgeLabels);
+            }
             for (String e : uncommittedRemovedEdgeLabels) {
                 result.remove(e);
             }
@@ -861,7 +865,9 @@ public class Schema implements TopologyInf {
     private Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         if (this.topology.isSchemaChanged()) {
-            result.putAll(this.uncommittedOutEdgeLabels);
+            if (!this.uncommittedOutEdgeLabels.isEmpty()) {
+                result.putAll(this.uncommittedOutEdgeLabels);
+            }
             for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
                 Map<String, PropertyColumn> propertyMap = edgeLabel.getUncommittedPropertyTypeMap();
                 if (!propertyMap.isEmpty() || !edgeLabel.getUncommittedRemovedProperties().isEmpty()) {
@@ -899,10 +905,12 @@ public class Schema implements TopologyInf {
             result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyDefinitionMap());
         }
         if (this.topology.isSchemaChanged()) {
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                String vertexQualifiedName = vertexLabelEntry.getKey();
-                VertexLabel vertexLabel = vertexLabelEntry.getValue();
-                result.put(vertexQualifiedName, vertexLabel.getPropertyDefinitionMap());
+            if (!this.uncommittedVertexLabels.isEmpty()) {
+                for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                    String vertexQualifiedName = vertexLabelEntry.getKey();
+                    VertexLabel vertexLabel = vertexLabelEntry.getValue();
+                    result.put(vertexQualifiedName, vertexLabel.getPropertyDefinitionMap());
+                }
             }
         }
         for (EdgeLabel edgeLabel : this.getEdgeLabels().values()) {
@@ -916,7 +924,9 @@ public class Schema implements TopologyInf {
         Map<String, VertexLabel> result;
         if (this.topology.isSchemaChanged()) {
             result = new HashMap<>(this.vertexLabels);
-            result.putAll(this.uncommittedVertexLabels);
+            if (!this.uncommittedVertexLabels.isEmpty()) {
+                result.putAll(this.uncommittedVertexLabels);
+            }
             for (String e : uncommittedRemovedVertexLabels) {
                 result.remove(e);
             }
@@ -937,10 +947,12 @@ public class Schema implements TopologyInf {
                 result.put(vertexQualifiedName, vertexLabelEntry.getValue());
             }
         }
-        for (Map.Entry<String, VertexLabel> stringVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-            String vertexQualifiedLabel = stringVertexLabelEntry.getKey();
-            VertexLabel vertexLabel = stringVertexLabelEntry.getValue();
-            result.put(vertexQualifiedLabel, vertexLabel);
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Map.Entry<String, VertexLabel> stringVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                String vertexQualifiedLabel = stringVertexLabelEntry.getKey();
+                VertexLabel vertexLabel = stringVertexLabelEntry.getValue();
+                result.put(vertexQualifiedLabel, vertexLabel);
+            }
         }
         for (EdgeLabel edgeLabel : this.getUncommittedOutEdgeLabels().values()) {
             result.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel);
@@ -958,11 +970,13 @@ public class Schema implements TopologyInf {
                 result.put(schemaTable, uncommittedSchemaTableForeignKeys);
             }
         }
-        for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
-            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
-            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedSchemaTableForeignKeys();
-            result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
+                SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedSchemaTableForeignKeys();
+                result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+            }
         }
         return result;
     }
@@ -977,11 +991,13 @@ public class Schema implements TopologyInf {
                 result.put(schemaTable, uncommittedSchemaTableForeignKeys);
             }
         }
-        for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
-            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
-            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedRemovedSchemaTableForeignKeys();
-            result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
+                SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedRemovedSchemaTableForeignKeys();
+                result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+            }
         }
         return result;
     }
@@ -991,11 +1007,15 @@ public class Schema implements TopologyInf {
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
             result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
-        for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
-            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+        if (!this.uncommittedOutEdgeLabels.isEmpty()) {
+            for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
+                result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+            }
         }
-        for (String e : this.uncommittedRemovedEdgeLabels) {
-            result.remove(e);
+        if (!this.uncommittedRemovedEdgeLabels.isEmpty()) {
+            for (String e : this.uncommittedRemovedEdgeLabels) {
+                result.remove(e);
+            }
         }
         return result;
     }
@@ -1005,8 +1025,10 @@ public class Schema implements TopologyInf {
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
             result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedRemovedEdgeForeignKeys());
         }
-        for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
-            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedRemovedEdgeForeignKeys());
+        if (!this.uncommittedOutEdgeLabels.isEmpty()) {
+            for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
+                result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedRemovedEdgeForeignKeys());
+            }
         }
         return result;
     }
@@ -1053,11 +1075,8 @@ public class Schema implements TopologyInf {
 
     void afterCommit() {
         if (!this.uncommittedVertexLabels.isEmpty()) {
-            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, VertexLabel> entry = it.next();
-                this.vertexLabels.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
+            this.vertexLabels.putAll(this.uncommittedVertexLabels);
+            this.uncommittedVertexLabels.clear();
         }
         if (!this.uncommittedRemovedVertexLabels.isEmpty()) {
             for (Iterator<String> it = uncommittedRemovedVertexLabels.iterator(); it.hasNext(); ) {
@@ -1086,13 +1105,16 @@ public class Schema implements TopologyInf {
 
     void afterRollback() {
         Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.afterRollback must have schemaChanged = true");
-        for (Map.Entry<String, VertexLabel> entry : this.uncommittedVertexLabels.entrySet()) {
-            entry.getValue().afterRollbackForInEdges();
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Map.Entry<String, VertexLabel> entry : this.uncommittedVertexLabels.entrySet()) {
+                entry.getValue().afterRollbackForInEdges();
+            }
         }
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
-            entry.getValue().afterRollbackForOutEdges();
-            it.remove();
+        if (!this.uncommittedVertexLabels.isEmpty()) {
+            for (Map.Entry<String, VertexLabel> entry : this.uncommittedVertexLabels.entrySet()) {
+                entry.getValue().afterRollbackForOutEdges();
+            }
+            this.uncommittedVertexLabels.clear();
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForInEdges();

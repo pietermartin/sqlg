@@ -1023,16 +1023,14 @@ public class Topology {
         try {
             getPublicSchema().removeTemporaryTables();
             if (isSchemaChanged()) {
-                for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-                    Map.Entry<String, Schema> entry = it.next();
-                    this.schemas.put(entry.getKey(), entry.getValue());
-                    it.remove();
+                if (!this.uncommittedSchemas.isEmpty()) {
+                    this.schemas.putAll(this.uncommittedSchemas);
+                    this.uncommittedSchemas.clear();
                 }
-                for (Iterator<String> it = this.uncommittedRemovedSchemas.iterator(); it.hasNext(); ) {
-                    String sch = it.next();
+                for (String sch : this.uncommittedRemovedSchemas) {
                     removeSchemaFromCaches(sch);
-                    it.remove();
                 }
+                this.uncommittedRemovedSchemas.clear();
                 //merge the allTableCache and uncommittedAllTables
                 Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
                 for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
@@ -1090,10 +1088,11 @@ public class Topology {
     private void afterRollback() {
         getPublicSchema().removeTemporaryTables();
         if (isSchemaChanged()) {
-            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Schema> entry = it.next();
-                entry.getValue().afterRollback();
-                it.remove();
+            if (!this.uncommittedSchemas.isEmpty()) {
+                for (Map.Entry<String, Schema> entry : this.uncommittedSchemas.entrySet()) {
+                    entry.getValue().afterRollback();
+                }
+                this.uncommittedSchemas.clear();
             }
             this.uncommittedRemovedSchemas.clear();
             for (Schema schema : this.schemas.values()) {
@@ -2004,17 +2003,19 @@ public class Topology {
         }
         ArrayNode unCommittedSchemaArrayNode = null;
         if (isSchemaChanged()) {
-            for (Schema schema : this.uncommittedSchemas.values()) {
-                if (unCommittedSchemaArrayNode == null) {
-                    unCommittedSchemaArrayNode = OBJECT_MAPPER.createArrayNode();
-                }
-                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-                if (jsonNodeOptional.isPresent()) {
-                    unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
-                } else {
-                    ObjectNode schemaNode = OBJECT_MAPPER.createObjectNode();
-                    schemaNode.put("name", schema.getName());
-                    unCommittedSchemaArrayNode.add(schemaNode);
+            if (!this.uncommittedSchemas.isEmpty()) {
+                for (Schema schema : this.uncommittedSchemas.values()) {
+                    if (unCommittedSchemaArrayNode == null) {
+                        unCommittedSchemaArrayNode = OBJECT_MAPPER.createArrayNode();
+                    }
+                    Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                    if (jsonNodeOptional.isPresent()) {
+                        unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
+                    } else {
+                        ObjectNode schemaNode = OBJECT_MAPPER.createObjectNode();
+                        schemaNode.put("name", schema.getName());
+                        unCommittedSchemaArrayNode.add(schemaNode);
+                    }
                 }
             }
             ArrayNode removed = OBJECT_MAPPER.createArrayNode();
@@ -2123,11 +2124,13 @@ public class Topology {
         return toJson().equals(other.toJson());
     }
 
-    /////////////////////////////////getters and cache/////////////////////////////
+    /// //////////////////////////////getters and cache/////////////////////////////
     public Set<Schema> getSchemas() {
         Set<Schema> result = new HashSet<>(this.schemas.values());
         if (isSchemaChanged()) {
-            result.addAll(this.uncommittedSchemas.values());
+            if (!this.uncommittedSchemas.isEmpty()) {
+                result.addAll(this.uncommittedSchemas.values());
+            }
             if (!this.uncommittedRemovedSchemas.isEmpty()) {
                 result.removeIf(sch -> this.uncommittedRemovedSchemas.contains(sch.getName()));
             }
@@ -2150,7 +2153,7 @@ public class Topology {
         }
         Schema result = this.schemas.get(schema);
         if (result == null) {
-            if (isSchemaChanged()) {
+            if (isSchemaChanged() && !this.uncommittedSchemas.isEmpty()) {
                 result = this.uncommittedSchemas.get(schema);
             }
             if (result == null) {
@@ -2187,9 +2190,11 @@ public class Topology {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedLabels());
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedLabels());
+        if (!this.uncommittedSchemas.isEmpty()) {
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedLabels());
+            }
         }
         return result;
     }
@@ -2200,9 +2205,11 @@ public class Topology {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedSchemaTableForeignKeys());
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema uncommittedSchema = stringSchemaEntry.getValue();
-            result.putAll(uncommittedSchema.getUncommittedSchemaTableForeignKeys());
+        if (!this.uncommittedSchemas.isEmpty()) {
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema uncommittedSchema = stringSchemaEntry.getValue();
+                result.putAll(uncommittedSchema.getUncommittedSchemaTableForeignKeys());
+            }
         }
         return result;
     }
@@ -2213,9 +2220,11 @@ public class Topology {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+        if (!this.uncommittedSchemas.isEmpty()) {
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+            }
         }
         return result;
     }
@@ -2226,9 +2235,11 @@ public class Topology {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedEdgeForeignKeys());
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedEdgeForeignKeys());
+        if (!this.uncommittedSchemas.isEmpty()) {
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedEdgeForeignKeys());
+            }
         }
         //TODO include removedSchemas
         return result;
@@ -2240,9 +2251,11 @@ public class Topology {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
+        if (!this.uncommittedSchemas.isEmpty()) {
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
+            }
         }
         return result;
     }

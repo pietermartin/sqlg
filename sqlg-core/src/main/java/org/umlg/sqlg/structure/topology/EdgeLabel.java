@@ -63,7 +63,6 @@ public class EdgeLabel extends AbstractLabel {
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties, identifiers, edgeDefinition);
         edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, false, edgeDefinition);
-        edgeLabel.committed = false;
         return edgeLabel;
     }
 
@@ -90,7 +89,6 @@ public class EdgeLabel extends AbstractLabel {
                 partitionType,
                 partitionExpression);
         edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, isForeignKeyPartition, edgeDefinition);
-        edgeLabel.committed = false;
         return edgeLabel;
     }
 
@@ -1692,7 +1690,6 @@ public class EdgeLabel extends AbstractLabel {
         }
         edgeLabel.renameEdgeLabelOnDb(oldEdgeLabel.getLabel(), newLabel);
         TopologyManager.renameEdgeLabel(sqlgGraph, schema.getName(), EDGE_PREFIX + oldEdgeLabel.getLabel(), EDGE_PREFIX + newLabel);
-        edgeLabel.committed = false;
         schema.getTopology().fire(oldEdgeLabel, oldEdgeLabel, TopologyChangeAction.DELETE, true);
         schema.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, true);
         return edgeLabel;

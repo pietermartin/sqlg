@@ -32,7 +32,6 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 public abstract class AbstractLabel implements TopologyInf {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLabel.class);
-    boolean committed = true;
     final String label;
     final SqlgGraph sqlgGraph;
     final Map<String, PropertyColumn> properties = new ConcurrentHashMap<>();
@@ -486,16 +485,20 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         Partition result = null;
         if (schemaChanged) {
-            result = this.uncommittedPartitions.get(name);
+            if (!this.uncommittedPartitions.isEmpty()) {
+                result = this.uncommittedPartitions.get(name);
+            }
         }
         if (result == null) {
             result = this.partitions.get(name);
         }
         if (result == null) {
-            for (Partition uncommittedPartition : this.uncommittedPartitions.values()) {
-                Optional<Partition> p = uncommittedPartition.getPartition(name);
-                if (p.isPresent()) {
-                    return p;
+            if (!this.uncommittedPartitions.isEmpty()) {
+                for (Partition uncommittedPartition : this.uncommittedPartitions.values()) {
+                    Optional<Partition> p = uncommittedPartition.getPartition(name);
+                    if (p.isPresent()) {
+                        return p;
+                    }
                 }
             }
             for (Partition partition : this.partitions.values()) {
@@ -511,7 +514,9 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, Partition> getPartitions() {
         if (getTopology().isSchemaChanged()) {
             Map<String, Partition> result = new HashMap<>(this.partitions);
-            result.putAll(this.uncommittedPartitions);
+            if (!this.uncommittedPartitions.isEmpty()) {
+                result.putAll(this.uncommittedPartitions);
+            }
             for (String s : this.uncommittedRemovedPartitions) {
                 result.remove(s);
             }
@@ -524,8 +529,12 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, PropertyColumn> getProperties() {
         if (getTopology().isSchemaChanged()) {
             Map<String, PropertyColumn> result = new HashMap<>(this.properties);
-            result.putAll(this.uncommittedProperties);
-            result.putAll(this.uncommittedUpdatedProperties);
+            if (!this.uncommittedProperties.isEmpty()) {
+                result.putAll(this.uncommittedProperties);
+            }
+            if (!this.uncommittedUpdatedProperties.isEmpty()) {
+                result.putAll(this.uncommittedUpdatedProperties);
+            }
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
             }
@@ -561,7 +570,9 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, Index> getIndexes() {
         if (getTopology().isSchemaChanged()) {
             Map<String, Index> result = new HashMap<>(this.indexes);
-            result.putAll(this.uncommittedIndexes);
+            if (!this.uncommittedIndexes.isEmpty()) {
+                result.putAll(this.uncommittedIndexes);
+            }
             for (String i : this.uncommittedRemovedIndexes) {
                 result.remove(i);
             }
@@ -586,8 +597,10 @@ public abstract class AbstractLabel implements TopologyInf {
             for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
                 result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyDefinition());
             }
-            for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
-                result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyDefinition());
+            if (!this.uncommittedProperties.isEmpty()) {
+                for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
+                    result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyDefinition());
+                }
             }
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
@@ -912,70 +925,58 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void afterCommit() {
         if (!this.uncommittedProperties.isEmpty()) {
-            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, PropertyColumn> entry = it.next();
-                this.properties.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
+            this.properties.putAll(this.uncommittedProperties);
+            this.uncommittedProperties.clear();
         }
         if (!this.uncommittedRemovedProperties.isEmpty()) {
-            for (Iterator<String> it = this.uncommittedRemovedProperties.iterator(); it.hasNext(); ) {
-                String prop = it.next();
+            for (String prop : this.uncommittedRemovedProperties) {
                 this.properties.remove(prop);
-                it.remove();
             }
+            this.uncommittedRemovedProperties.clear();
         }
         if (!this.uncommittedUpdatedProperties.isEmpty()) {
-            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, PropertyColumn> entry = it.next();
-                this.properties.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
+            this.properties.putAll(this.uncommittedUpdatedProperties);
+            this.uncommittedUpdatedProperties.clear();
         }
         this.identifiers.addAll(this.uncommittedIdentifiers);
         if (!this.renamedIdentifiers.isEmpty()) {
             int index = -1;
-            for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
+            for (Pair<String, String> renamedIdentifier : this.renamedIdentifiers) {
                 index++;
-                Pair<String, String> oldName = it.next();
-                this.identifiers.remove(oldName.getLeft());
-                this.identifiers.add(index, oldName.getRight());
-                it.remove();
+                this.identifiers.remove(renamedIdentifier.getLeft());
+                this.identifiers.add(index, renamedIdentifier.getRight());
             }
+            this.renamedIdentifiers.clear();
         }
         this.uncommittedIdentifiers.clear();
         if (!this.uncommittedIndexes.isEmpty()) {
-            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Index> entry = it.next();
+            for (Map.Entry<String, Index> entry : this.uncommittedIndexes.entrySet()) {
                 this.indexes.put(entry.getKey(), entry.getValue());
                 entry.getValue().afterCommit();
-                it.remove();
             }
+            this.uncommittedIndexes.clear();
         }
         if (!this.uncommittedRemovedIndexes.isEmpty()) {
-            for (Iterator<String> it = this.uncommittedRemovedIndexes.iterator(); it.hasNext(); ) {
-                String prop = it.next();
+            for (String prop : this.uncommittedRemovedIndexes) {
                 this.indexes.remove(prop);
-                it.remove();
             }
+            this.uncommittedRemovedIndexes.clear();
         }
         //PropertyColumn does not have an afterCommit
 //        if (!this.properties.isEmpty()) {
 //        }
         if (!this.uncommittedPartitions.isEmpty()) {
-            for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Partition> entry = it.next();
+            for (Map.Entry<String, Partition> entry : this.uncommittedPartitions.entrySet()) {
                 this.partitions.put(entry.getKey(), entry.getValue());
                 entry.getValue().afterCommit();
-                it.remove();
             }
+            this.uncommittedPartitions.clear();
         }
         if (!this.uncommittedRemovedPartitions.isEmpty()) {
-            for (Iterator<String> it = this.uncommittedRemovedPartitions.iterator(); it.hasNext(); ) {
-                String prop = it.next();
+            for (String prop : this.uncommittedRemovedPartitions) {
                 this.partitions.remove(prop);
-                it.remove();
             }
+            this.uncommittedRemovedPartitions.clear();
         }
         for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
             entry.getValue().afterCommit();
@@ -989,34 +990,30 @@ public abstract class AbstractLabel implements TopologyInf {
         if (this.uncommittedShardCount != -1) {
             this.shardCount = this.uncommittedShardCount;
         }
-        this.committed = true;
     }
 
     void afterRollback() {
         Preconditions.checkState(this.getTopology().isSchemaChanged(), "AbstractLabel.afterRollback must have schemaChanged ThreadLocal var as true");
         if (!this.uncommittedProperties.isEmpty()) {
-            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, PropertyColumn> entry = it.next();
+            for (Map.Entry<String, PropertyColumn> entry : this.uncommittedProperties.entrySet()) {
                 entry.getValue().afterRollback();
-                it.remove();
             }
+            this.uncommittedProperties.clear();
         }
         if (!this.uncommittedUpdatedProperties.isEmpty()) {
-            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, PropertyColumn> entry = it.next();
+            for (Map.Entry<String, PropertyColumn> entry : this.uncommittedUpdatedProperties.entrySet()) {
                 entry.getValue().afterRollback();
-                it.remove();
             }
+            this.uncommittedUpdatedProperties.clear();
         }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedIdentifiers.clear();
         this.renamedIdentifiers.clear();
         if (!this.uncommittedIndexes.isEmpty()) {
-            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Index> entry = it.next();
+            for (Map.Entry<String, Index> entry : this.uncommittedIndexes.entrySet()) {
                 entry.getValue().afterRollback();
-                it.remove();
             }
+            this.uncommittedIndexes.clear();
         }
         this.uncommittedRemovedIndexes.clear();
         if (!this.properties.isEmpty()) {
@@ -1048,12 +1045,16 @@ public abstract class AbstractLabel implements TopologyInf {
         if (getTopology().isSchemaChanged()) {
             ObjectNode result = Topology.OBJECT_MAPPER.createObjectNode();
             ArrayNode propertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-            for (PropertyColumn property : this.uncommittedProperties.values()) {
-                propertyArrayNode.add(property.toNotifyJson());
+            if (!this.uncommittedProperties.isEmpty()) {
+                for (PropertyColumn property : this.uncommittedProperties.values()) {
+                    propertyArrayNode.add(property.toNotifyJson());
+                }
             }
             ArrayNode updatedPropertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-            for (PropertyColumn property : this.uncommittedUpdatedProperties.values()) {
-                updatedPropertyArrayNode.add(property.toNotifyJson());
+            if (!this.uncommittedUpdatedProperties.isEmpty()) {
+                for (PropertyColumn property : this.uncommittedUpdatedProperties.values()) {
+                    updatedPropertyArrayNode.add(property.toNotifyJson());
+                }
             }
             ArrayNode removedPropertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String property : this.uncommittedRemovedProperties) {
@@ -1071,9 +1072,11 @@ public abstract class AbstractLabel implements TopologyInf {
                 renamedIdentifierArrayNode.add(renamedObjectNode);
             }
             ArrayNode uncommittedPartitionArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-            for (Partition partition : this.uncommittedPartitions.values()) {
-                Optional<ObjectNode> json = partition.toUncommittedPartitionNotifyJson();
-                json.ifPresent(uncommittedPartitionArrayNode::add);
+            if (!this.uncommittedPartitions.isEmpty()) {
+                for (Partition partition : this.uncommittedPartitions.values()) {
+                    Optional<ObjectNode> json = partition.toUncommittedPartitionNotifyJson();
+                    json.ifPresent(uncommittedPartitionArrayNode::add);
+                }
             }
             ArrayNode removedPartitionArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String partition : this.uncommittedRemovedPartitions) {
@@ -1102,10 +1105,12 @@ public abstract class AbstractLabel implements TopologyInf {
             }
 
             ArrayNode indexArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-            for (Index index : this.uncommittedIndexes.values()) {
-                Optional<JsonNode> indexJsonOptional = index.toNotifyJson();
-                Preconditions.checkState(indexJsonOptional.isPresent());
-                indexArrayNode.add(indexJsonOptional.get());
+            if (!this.uncommittedIndexes.isEmpty()) {
+                for (Index index : this.uncommittedIndexes.values()) {
+                    Optional<JsonNode> indexJsonOptional = index.toNotifyJson();
+                    Preconditions.checkState(indexJsonOptional.isPresent());
+                    indexArrayNode.add(indexJsonOptional.get());
+                }
             }
             ArrayNode removedIndexArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String property : this.uncommittedRemovedIndexes) {
