@@ -5,7 +5,7 @@
     <parent>
         <artifactId>sqlg-h2-parent</artifactId>
         <groupId>org.umlg</groupId>
-        <version>3.1.5</version>
+        <version>3.1.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -29,7 +29,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.3.232</version>
+            <version>2.4.240</version>
         </dependency>
         <dependency>
             <groupId>org.umlg</groupId>
