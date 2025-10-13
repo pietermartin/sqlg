@@ -49,7 +49,7 @@ public class TestIndex extends BaseTest {
 
         Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
         this.sqlgGraph.tx().commit();
-        Assert.assertSame(index.getIndexType(), IndexType.NON_UNIQUE);
+        Assert.assertSame(IndexType.NON_UNIQUE, index.getIndexType());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -346,8 +346,6 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph = SqlgGraph.open(configuration);
         edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").orElseThrow(IllegalStateException::new);
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").orElseThrow(IllegalStateException::new)));
-
-
     }
 
     @Test
@@ -363,7 +361,9 @@ public class TestIndex extends BaseTest {
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").orElseThrow(IllegalStateException::new)));
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).orElseThrow(IllegalStateException::new).getIndexType());
+        Assert.assertEquals(
+                IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name")))
+                .orElseThrow(IllegalStateException::new).getIndexType());
         Assert.assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
 
         try {

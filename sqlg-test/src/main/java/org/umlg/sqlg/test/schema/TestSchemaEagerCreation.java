@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.schema;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/11/23
@@ -108,7 +110,7 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertTrue(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
         this.sqlgGraph.getTopology().ensureEdgePropertiesExist("ab", properties);
         this.sqlgGraph.tx().commit();
-        assertFalse(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
+        Assert.assertFalse(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
     }
 
     @Test
@@ -119,7 +121,7 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertTrue(vertexLabel.isPresent());
         this.sqlgGraph.tx().rollback();
         vertexLabel = schema.getVertexLabel("Person");
-        assertFalse(vertexLabel.isPresent());
+        Assert.assertFalse(vertexLabel.isPresent());
 
         this.sqlgGraph.addVertex(T.label, "Person");
         vertexLabel = schema.getVertexLabel("Person");
@@ -143,8 +145,8 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(2, vertexLabel.get().getProperties().size());
         PropertyColumn propertyColumnName = vertexLabel.get().getProperties().get("name");
         PropertyColumn propertyColumnAge = vertexLabel.get().getProperties().get("age");
-        assertNotNull(propertyColumnName);
-        assertNotNull(propertyColumnAge);
+        Assert.assertNotNull(propertyColumnName);
+        Assert.assertNotNull(propertyColumnAge);
         assertEquals(PropertyDefinition.of(PropertyType.STRING), propertyColumnName.getPropertyDefinition());
         assertEquals(PropertyType.INTEGER, propertyColumnAge.getPropertyType());
     }

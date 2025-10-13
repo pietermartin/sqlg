@@ -306,7 +306,6 @@ public class TestTopologyDelete extends BaseTest {
         }
     }
 
-
     @Test
     public void testDeleteEdgeProperty() throws Exception {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
@@ -1301,6 +1300,5 @@ public class TestTopologyDelete extends BaseTest {
         assertTrue(columnExistsInSQL(schema, VERTEX_PREFIX + "A", "p2"));
 
     }
-
 
 }

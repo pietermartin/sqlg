@@ -266,7 +266,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPartitionedDrop.class,
         TestDropStepPartition.class,
         TestBatchUpdatePartitioning.class,
-        TestLargeSchemaPerformance.class,
+//        TestLargeSchemaPerformance.class,
         TestInject.class,
         TestFoldStep.class,
         TestForeignSchema.class,

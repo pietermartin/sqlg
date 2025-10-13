@@ -34,6 +34,7 @@ public abstract class AbstractLabel implements TopologyInf {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLabel.class);
     final String label;
     final SqlgGraph sqlgGraph;
+    final ThreadLocal<Boolean> isDirty = ThreadLocal.withInitial(() -> false);
     final Map<String, PropertyColumn> properties = new ConcurrentHashMap<>();
     final Map<String, PropertyColumn> uncommittedProperties = new ThreadLocalMap<>();
     final Set<String> uncommittedRemovedProperties = new ThreadLocalSet<>();
@@ -67,7 +68,7 @@ public abstract class AbstractLabel implements TopologyInf {
     String partitionExpression;
     private final Map<String, Partition> partitions = new ConcurrentHashMap<>();
     private final Map<String, Partition> uncommittedPartitions = new ThreadLocalMap<>();
-    private final Set<String> uncommittedRemovedPartitions = new ThreadLocalSet<>();
+    protected final Set<String> uncommittedRemovedPartitions = new ThreadLocalSet<>();
 
     protected final boolean isForeignAbstractLabel;
 
@@ -96,7 +97,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.label = label;
         for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
-            this.uncommittedProperties.put(propertyEntry.getKey(), property);
+            putUncommittedProperties(propertyEntry.getKey(), property);
         }
         this.uncommittedIdentifiers.addAll(identifiers);
         this.isForeignAbstractLabel = false;
@@ -118,7 +119,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.label = label;
         for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
-            this.uncommittedProperties.put(propertyEntry.getKey(), property);
+            putUncommittedProperties(propertyEntry.getKey(), property);
         }
         this.uncommittedIdentifiers.addAll(identifiers);
         this.partitionType = partitionType;
@@ -137,6 +138,23 @@ public abstract class AbstractLabel implements TopologyInf {
         this.sqlgGraph = sqlgGraph;
         this.label = label;
         this.isForeignAbstractLabel = isForeignAbstractLabel;
+    }
+
+    void markDirty() {
+       this.isDirty.set(true);
+    }
+
+    void markClean() {
+        this.isDirty.set(false);
+    }
+
+    public boolean isDirty() {
+        return isDirty.get();
+    }
+
+    protected void putUncommittedProperties(String key, PropertyColumn propertyColumn) {
+        markDirty();
+        this.uncommittedProperties.put(key, propertyColumn);
     }
 
     public boolean isForeign() {
@@ -334,6 +352,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createRangePartition(this.sqlgGraph, this, name, from, to);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -343,6 +367,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createRangePartitionWithSubPartition(this.sqlgGraph, this, name, from, to, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -352,6 +382,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createHashPartition(this.sqlgGraph, this, name, modulus, remainder);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -361,6 +397,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListPartition(this.sqlgGraph, this, name, in);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -370,6 +412,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListPartitionWithSubPartition(this.sqlgGraph, this, name, in, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -379,6 +427,12 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createHashPartitionWithSubPartition(this.sqlgGraph, this, name, modulus, remainder, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
+        markDirty();
+        getSchema().markDirty();
+        if (this instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -427,9 +481,11 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    private Index createIndex(String indexName, IndexType indexType, List<PropertyColumn> properties) {
+    protected Index createIndex(String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = Index.createIndex(this.sqlgGraph, this, indexName, indexType, properties);
         this.uncommittedIndexes.put(indexName, index);
+        markDirty();
+        getSchema().markDirty();
         this.getTopology().fire(index, null, TopologyChangeAction.CREATE, true);
         return index;
     }
@@ -1629,6 +1685,8 @@ public abstract class AbstractLabel implements TopologyInf {
         );
         if (!uncommittedRemovedIndexes.contains(idx.getName())) {
             uncommittedRemovedIndexes.add(idx.getName());
+            markDirty();
+            getSchema().markDirty();
             TopologyManager.removeIndex(this.sqlgGraph, idx);
             if (!preserveData) {
                 idx.delete(sqlgGraph);
@@ -1664,6 +1722,12 @@ public abstract class AbstractLabel implements TopologyInf {
                 partition.delete();
             } else {
                 partition.detach();
+            }
+            markDirty();
+            getSchema().markDirty();
+            if (this instanceof EdgeLabel edgeLabel) {
+                edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+                edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
             }
             this.getTopology().fire(partition, partition, TopologyChangeAction.DELETE, true);
         }

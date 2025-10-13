@@ -39,6 +39,7 @@ public class TestAllVertices extends BaseTest {
         Vertex b = this.sqlgGraph.addVertex();
         Vertex c = this.sqlgGraph.addVertex();
         Vertex d = this.sqlgGraph.addVertex();
+        this.sqlgGraph.tx().commit();
         a.addEdge("aaa", b);
         b.addEdge("aaa", b);
         c.addEdge("aaa", b);

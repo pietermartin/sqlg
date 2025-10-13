@@ -2188,7 +2188,9 @@ public class Topology {
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedLabels());
+            if (schema.isDirty()) {
+                result.putAll(schema.getUncommittedLabels());
+            }
         }
         if (!this.uncommittedSchemas.isEmpty()) {
             for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
@@ -2203,7 +2205,9 @@ public class Topology {
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new ConcurrentHashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+            if (schema.isDirty()) {
+                result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+            }
         }
         if (!this.uncommittedSchemas.isEmpty()) {
             for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
@@ -2218,7 +2222,9 @@ public class Topology {
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+            if (schema.isDirty()) {
+                result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+            }
         }
         if (!this.uncommittedSchemas.isEmpty()) {
             for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
@@ -2233,7 +2239,9 @@ public class Topology {
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedEdgeForeignKeys());
+            if (schema.isDirty()) {
+                result.putAll(schema.getUncommittedEdgeForeignKeys());
+            }
         }
         if (!this.uncommittedSchemas.isEmpty()) {
             for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
@@ -2249,7 +2257,9 @@ public class Topology {
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
+            if (schema.isDirty()) {
+                result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
+            }
         }
         if (!this.uncommittedSchemas.isEmpty()) {
             for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
@@ -2282,8 +2292,7 @@ public class Topology {
         } else {
             if (isSchemaChanged()) {
                 //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
-                Map<String, Map<String, PropertyDefinition>> result;
-                result = new HashMap<>();
+                Map<String, Map<String, PropertyDefinition>> result = new HashMap<>();
                 for (Map.Entry<String, Map<String, PropertyDefinition>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
                     String key = allTableCacheMapEntry.getKey();
                     SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, key);
@@ -2604,6 +2613,7 @@ public class Topology {
             if (!preserveData) {
                 schema.delete();
             }
+            schema.markDirty();
             fire(schema, schema, TopologyChangeAction.DELETE, true);
         }
     }

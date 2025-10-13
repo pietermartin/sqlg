@@ -200,7 +200,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             previousBatchModeKeys = Collections.emptyList();
         }
         Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
-        if (!complete && keyValueMapPair.getRight().size() != keyValueMapPair.getRight().size()) {
+        if (!complete && keyValueMapPair.getLeft().size() != keyValueMapPair.getRight().size()) {
             throw Property.Exceptions.propertyKeyCanNotBeNull();
         }
         final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();

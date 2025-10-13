@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.topology;
 
-import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -12,6 +11,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.util.*;
 

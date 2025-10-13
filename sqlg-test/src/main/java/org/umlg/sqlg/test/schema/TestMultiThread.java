@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.schema;
 
-import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -18,6 +17,7 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.net.URL;
 import java.util.*;
@@ -163,7 +163,7 @@ public class TestMultiThread extends BaseTest {
         }
         boolean success = countDownLatch.await(5, TimeUnit.MINUTES);
         Assert.assertTrue(success);
-        Assert.assertEquals(completedThreads.get(), totalThreads);
+        Assert.assertEquals(totalThreads, completedThreads.get());
         System.out.println(vertices.get());
         assertVertexEdgeCounts(graph, vertices.get(), edges.get());
     }
@@ -391,7 +391,7 @@ public class TestMultiThread extends BaseTest {
         Assume.assumeFalse(isH2());
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         List<Future<Integer>> futureList = new ArrayList<>();
-        int loop = 1000;
+        int loop = 2_000;
         for (int i = 0; i < loop; i++) {
             String n = "person" + i;
             String edge = "e" + i;

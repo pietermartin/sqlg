@@ -461,7 +461,8 @@ public class VertexLabel extends AbstractLabel {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
                         propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
-                        this.uncommittedProperties.put(column.getKey(), propertyColumn);
+                        putUncommittedProperties(column.getKey(), propertyColumn);
+                        getSchema().markDirty();
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE, true);
                     }
                 } else {
@@ -506,7 +507,7 @@ public class VertexLabel extends AbstractLabel {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" ");
             sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
-            if (columns.size() > 0) {
+            if (!columns.isEmpty()) {
                 sql.append(", ");
             }
         }
@@ -703,6 +704,7 @@ public class VertexLabel extends AbstractLabel {
         for (EdgeRole edgeRole : this.inEdgeRoles.values()) {
             edgeRole.getEdgeLabel().afterCommit();
         }
+        markClean();
     }
 
     void afterRollbackForInEdges() {
@@ -710,16 +712,17 @@ public class VertexLabel extends AbstractLabel {
         super.afterRollback();
         if (!this.uncommittedInEdgeRoles.isEmpty()) {
             for (EdgeRole edgeRole : this.uncommittedInEdgeRoles.values()) {
-                edgeRole.getEdgeLabel().afterRollbackInEdges(this);
+                edgeRole.getEdgeLabel().afterRollbackInEdges(edgeRole);
             }
             this.uncommittedInEdgeRoles.clear();
         }
         for (EdgeRole edgeRole : this.inEdgeRoles.values()) {
-            edgeRole.getEdgeLabel().afterRollbackInEdges(this);
+            edgeRole.getEdgeLabel().afterRollbackInEdges(edgeRole);
             if (!this.uncommittedRemovedInEdgeRoles.isEmpty()) {
                 this.uncommittedRemovedInEdgeRoles.remove(edgeRole.getEdgeLabel().getFullName());
             }
         }
+        markClean();
     }
 
     void afterRollbackForOutEdges() {
@@ -728,17 +731,18 @@ public class VertexLabel extends AbstractLabel {
         if (!this.uncommittedOutEdgeRoles.isEmpty()) {
             for (EdgeRole edgeRole : this.uncommittedOutEdgeRoles.values()) {
                 //It is important to first remove the EdgeLabel from the iterator as the EdgeLabel's outVertex is still
-                // present and its needed for the hashCode method which is invoked during the it.remove()
-                edgeRole.getEdgeLabel().afterRollbackOutEdges(this);
+                // present and it's needed for the hashCode method which is invoked during the it.remove()
+                edgeRole.getEdgeLabel().afterRollbackOutEdges(edgeRole);
             }
             this.uncommittedOutEdgeRoles.clear();
         }
         for (EdgeRole edgeRole : this.outEdgeRoles.values()) {
-            edgeRole.getEdgeLabel().afterRollbackOutEdges(this);
+            edgeRole.getEdgeLabel().afterRollbackOutEdges(edgeRole);
             if (!this.uncommittedRemovedOutEdgeRoles.isEmpty()) {
                 this.uncommittedRemovedOutEdgeRoles.remove(edgeRole.getEdgeLabel().getFullName());
             }
         }
+        markClean();
     }
 
     @Override
@@ -1172,6 +1176,8 @@ public class VertexLabel extends AbstractLabel {
             if (!preserveData) {
                 removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
             }
+            markDirty();
+            getSchema().markDirty();
             this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE, true);
         }
     }
@@ -1190,6 +1196,8 @@ public class VertexLabel extends AbstractLabel {
         if (!this.uncommittedUpdatedProperties.containsKey(name)) {
             PropertyColumn copy = new PropertyColumn(this, name, propertyDefinition);
             this.uncommittedUpdatedProperties.put(name, copy);
+            markDirty();
+            getSchema().markDirty();
             TopologyManager.updateVertexLabelPropertyColumn(
                     this.sqlgGraph,
                     getSchema().getName(),
@@ -1211,7 +1219,7 @@ public class VertexLabel extends AbstractLabel {
         if (!this.uncommittedRemovedProperties.contains(name)) {
             this.uncommittedRemovedProperties.add(oldName);
             PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyDefinition());
-            this.uncommittedProperties.put(name, copy);
+            putUncommittedProperties(name, copy);
             TopologyManager.renameVertexLabelPropertyColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
             renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
             if (this.getIdentifiers().contains(oldName)) {
@@ -1230,6 +1238,8 @@ public class VertexLabel extends AbstractLabel {
                 }
 
             }
+            markDirty();
+            getSchema().markDirty();
             this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE, true);
             this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.CREATE, true);
         }
@@ -1269,28 +1279,33 @@ public class VertexLabel extends AbstractLabel {
             throw new IllegalStateException("Trying to remove a EdgeRole from a non owner VertexLabel");
         }
         // the edge had only this vertex on that direction, remove the edge
+        EdgeLabel edgeLabel = edgeRole.getEdgeLabel();
+        edgeLabel.markDirty();
+        edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+        edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
         if (inOutVertexLabels.size() == 1) {
-            edgeRole.getEdgeLabel().remove(preserveData);
+            edgeLabel.remove(preserveData);
         } else {
             getSchema().getTopology().startSchemaChange(
                     String.format("VertexLabel '%s' removeEdgeRole with '%s'", getFullName(), edgeRole.getName())
             );
-            EdgeLabel edgeLabel = edgeRole.getEdgeLabel();
             switch (edgeRole.getDirection()) {
                 // we don't support both
                 case BOTH -> throw new IllegalStateException("BOTH is not a supported direction");
                 case IN -> {
-                    edgeRole.getEdgeLabel().removeInVertexLabel(this, dropEdges, preserveData);
+                    edgeLabel.removeInVertexLabel(this, dropEdges, preserveData);
                     this.uncommittedRemovedInEdgeRoles.put(edgeLabel.getFullName(), Pair.of(edgeRole, EdgeRemoveType.EDGE_ROLE));
                 }
                 case OUT -> {
-                    edgeRole.getEdgeLabel().removeOutVertexLabel(this, dropEdges, preserveData);
+                    edgeLabel.removeOutVertexLabel(this, dropEdges, preserveData);
                     this.uncommittedRemovedOutEdgeRoles.put(edgeLabel.getFullName(), Pair.of(edgeRole, EdgeRemoveType.EDGE_ROLE));
                 }
             }
 
             this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, true);
         }
+        getSchema().markDirty();
+        markDirty();
     }
 
     @Override

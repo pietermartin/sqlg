@@ -28,23 +28,70 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestLargeSchemaPerformance.class);
 
-    private final static int NUMBER_OF_SCHEMAS = 10;
-    private final static int NUMBER_OF_TABLES = 100;
-    private final static int NUMBER_OF_PARTITIONS = 10;
-    private final static int NUMBER_OF_COLUMNS = 100;
+    private final static int NUMBER_OF_SCHEMAS = 50;
+    private final static int NUMBER_OF_TABLES = 2000;
+    private final static int NUMBER_OF_PARTITIONS = 100;
+    private final static int NUMBER_OF_COLUMNS = 200;
 
 //    @Before
 //    public void before() throws Exception {
 //        System.out.println("before");
 //    }
-//
+
 //    @Test
-//    public void load() {
-//        StopWatch stopWatch = StopWatch.createStarted();
-//        this.sqlgGraph = SqlgGraph.open(configuration);
-//        stopWatch.stop();
-//        LOGGER.info("time taken: {}", stopWatch);
-//    }
+    public void test1() {
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        int count = 1;
+        for (int i = 1; i <= NUMBER_OF_SCHEMAS; i++) {
+            this.sqlgGraph.getTopology().ensureSchemaExist("TT_" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        StopWatch stopWatch = StopWatch.createStarted();
+        for (int i = 1; i <= NUMBER_OF_SCHEMAS; i++) {
+            Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("TT_" + i);
+            Assert.assertTrue(schemaOptional.isPresent());
+            Schema schema = schemaOptional.get();
+            for (int j = 1; j <= NUMBER_OF_TABLES; j++) {
+                schema.ensureVertexLabelExist(
+                        "TT" + j,
+                        columns()
+                );
+                this.sqlgGraph.tx().commit();
+                count++;
+                stopWatch.stop();
+                LOGGER.info("created {} for far in {}", count, stopWatch);
+                stopWatch.reset();
+                stopWatch.start();
+            }
+            this.sqlgGraph.tx().commit();
+        }
+    }
+
+//    @Test
+    public void test2() {
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        stopWatch.stop();
+        LOGGER.info("time taken: {}", stopWatch);
+
+        for (int i = 0; i < 100; i++) {
+            stopWatch.reset();
+            stopWatch.start();
+            Schema r_1 = this.sqlgGraph.getTopology().getSchema("R_1").orElseThrow();
+            VertexLabel vertexLabel = r_1.ensureVertexLabelExist("TestMe", new LinkedHashMap<>() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+            }});
+            this.sqlgGraph.tx().commit();
+            stopWatch.stop();
+            String createTime = stopWatch.toString();
+            stopWatch.reset();
+            stopWatch.start();
+            vertexLabel.remove();
+            this.sqlgGraph.tx().commit();
+            stopWatch.stop();
+            LOGGER.info("create time: {}, remove time: : {}", createTime, stopWatch);
+        }
+    }
 
     @Test
     public void testPerformance() {
@@ -57,34 +104,41 @@ public class TestLargeSchemaPerformance extends BaseTest {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         LOGGER.info("create schema {}", stopWatch);
-        stopWatch = StopWatch.createStarted();
-        StopWatch stopWatch2 = StopWatch.createStarted();
+        stopWatch.reset();
+        stopWatch.start();
         int count = 1;
         for (int i = 1; i <= NUMBER_OF_SCHEMAS; i++) {
             Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("R_" + i);
             Assert.assertTrue(schemaOptional.isPresent());
             Schema schema = schemaOptional.get();
             for (int j = 1; j <= NUMBER_OF_TABLES; j++) {
-                if (count % NUMBER_OF_TABLES == 0) {
-                    this.sqlgGraph.tx().commit();
-                    stopWatch2.stop();
-                    LOGGER.info("created {} for far in {}", count, stopWatch2);
-                    stopWatch2.reset();
-                    stopWatch2.start();
-                }
-                VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist(
-                        "T" + j,
-                        columns(),
-                        ListOrderedSet.listOrderedSet(List.of("column1")),
-                        PartitionType.LIST,
-                        "column1"
-                );
-                for (int k = 0; k < NUMBER_OF_PARTITIONS; k++) {
-                    vertexLabel.ensureListPartitionExists(
-                            "test" + j + k,
-                            "'test" + j + k + "'"
+                if (j % NUMBER_OF_PARTITIONS == 0) {
+                    VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist(
+                            "T" + j,
+                            columns(),
+                            ListOrderedSet.listOrderedSet(List.of("column1")),
+                            PartitionType.LIST,
+                            "column1"
+                    );
+                    for (int k = 0; k < NUMBER_OF_PARTITIONS; k++) {
+                        vertexLabel.ensureListPartitionExists(
+                                "test" + j + k,
+                                "'test" + j + k + "'"
+                        );
+                    }
+                } else {
+                    schema.ensureVertexLabelExist(
+                            "T" + j,
+                            columns()
                     );
                 }
+                if (count % 100 == 0) {
+                    stopWatch.stop();
+                    LOGGER.info("created {} for far in {}", count, stopWatch);
+                    stopWatch.reset();
+                    stopWatch.start();
+                }
+                this.sqlgGraph.tx().commit();
                 count++;
             }
             this.sqlgGraph.tx().commit();

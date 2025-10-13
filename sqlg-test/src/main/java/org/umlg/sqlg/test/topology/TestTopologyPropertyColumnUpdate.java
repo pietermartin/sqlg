@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.topology;
 
-import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -12,6 +11,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.util.Preconditions;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -1079,7 +1079,6 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
                     put("name", PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), "'a'"));
                 }});
-        this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();

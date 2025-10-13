@@ -3,7 +3,6 @@ package org.umlg.sqlg.structure.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.umlg.sqlg.util.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
@@ -13,6 +12,7 @@ import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.ThreadLocalMap;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
@@ -1191,6 +1191,12 @@ public class Partition implements TopologyInf {
         }
         Partition partition = Partition.createRangeSubPartition(this.sqlgGraph, this, name, from, to);
         this.uncommittedPartitions.put(name, partition);
+        getAbstractLabel().markDirty();
+        getAbstractLabel().getSchema().markDirty();
+        if (getAbstractLabel() instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
@@ -1202,6 +1208,12 @@ public class Partition implements TopologyInf {
         }
         Partition partition = Partition.createListSubPartition(this.sqlgGraph, this, name, in);
         this.uncommittedPartitions.put(name, partition);
+        getAbstractLabel().markDirty();
+        getAbstractLabel().getSchema().markDirty();
+        if (getAbstractLabel() instanceof EdgeLabel edgeLabel) {
+            edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+            edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+        }
         this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
