@@ -812,13 +812,18 @@ public abstract class BaseStrategy {
         Preconditions.checkState(labelHasContainers.size() == 1);
         HasContainer labelHasContainer = labelHasContainers.get(0);
         String _edgeLabel = (String) labelHasContainer.getValue();
-        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
-        Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
-        Preconditions.checkState(schemaOpt.isPresent());
-        Schema schema = schemaOpt.get();
-        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
-        Preconditions.checkState(edgeLabelOptional.isPresent());
-        EdgeLabel edgeLabel = edgeLabelOptional.get();
+
+        EdgeLabel edgeLabel = null;
+        Set<Schema> schemas = this.sqlgGraph.getTopology().getSchemas();
+        for (Schema schema : schemas) {
+            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
+            if (edgeLabelOptional.isPresent()) {
+                edgeLabel =  edgeLabelOptional.get();
+                break;
+            }
+        }
+        Preconditions.checkState(edgeLabel != null, "Failed to find %s", _edgeLabel);
+
         Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
         Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
         Preconditions.checkState(inVertexLabels.size() == 1);

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgTraversalSource;
+import org.umlg.sqlg.structure.topology.Schema;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -64,6 +65,20 @@ public class PGRDijkstraTest extends BasePGRouting {
                         p.get(5) instanceof Edge && ((Edge) p.get(1)).label().equals("connects") && ((Edge) p.get(5)).value("source").equals(5) && ((Edge) p.get(5)).value("target").equals(6) &&
                         p.get(6) instanceof Vertex && ((Vertex) p.get(0)).label().equals("wiki") && ((Vertex) p.get(6)).value("name").equals("5") && ((Vertex) p.get(6)).value("_index").equals(5)
         );
+    }
+
+    @Test
+    public void g_V_call_dijkstra_one2one_sampleDataInCustomSchema() {
+        Schema customSchema = this.sqlgGraph.getTopology().ensureSchemaExist("custom");
+        loadPGRoutingSampleData(customSchema);
+        for (Long start_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
+            for (Long end_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
+                LOGGER.info("start_vid: {}, end_vid: {}", start_vid, end_vid);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(start_vid, end_vid, true);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(start_vid, end_vid, false);
+            }
+        }
+        assertPGRoutingOneToOneSampleDataInCustomSchema(6L, 10L, false);
     }
 
     @Test
@@ -126,7 +141,7 @@ public class PGRDijkstraTest extends BasePGRouting {
         }
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(
-                        'select id, source, target, cost, reverse_cost from edges order by id',
+                        'select "ID" as id, source, target, cost, reverse_cost from "E_edges" order by id',
                         %s, %s, %b);
                 """.formatted(startVids, endVids, directed);
         assertPGRoutingOnSampleData(paths, pgroutingSql);
@@ -147,7 +162,7 @@ public class PGRDijkstraTest extends BasePGRouting {
         }
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(
-                        'select id, source, target, cost, reverse_cost from edges order by id',
+                        'select "ID" as id, source, target, cost, reverse_cost from "E_edges" order by id',
                         %s, %d, %b);
                 """.formatted(startVids, end_vid, directed);
         assertPGRoutingOnSampleData(paths, pgroutingSql);
@@ -169,9 +184,24 @@ public class PGRDijkstraTest extends BasePGRouting {
         }
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(
-                        'select id, source, target, cost, reverse_cost from edges order by id',
+                        'select "ID" as id, source, target, cost, reverse_cost from "E_edges" order by id',
                         %d, %s, %b);
                 """.formatted(start_vid, endVids, directed);
+        assertPGRoutingOnSampleData(paths, pgroutingSql);
+    }
+
+    private void assertPGRoutingOneToOneSampleDataInCustomSchema(long start_vid, long end_vid, boolean directed) {
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>dijkstra(
+                        start_vid,
+                        end_vid,
+                        directed
+                )
+                .toList();
+        String pgroutingSql = """
+                SELECT * FROM pgr_Dijkstra(
+                        'select "ID" as id, source, target, cost, reverse_cost from "custom"."E_edges" order by "ID"',
+                        %d, %d, %b);
+                """.formatted(start_vid, end_vid, directed);
         assertPGRoutingOnSampleData(paths, pgroutingSql);
     }
 
@@ -184,7 +214,7 @@ public class PGRDijkstraTest extends BasePGRouting {
                 .toList();
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(
-                        'select id, source, target, cost, reverse_cost from edges order by id',
+                        'select "ID" as id, source, target, cost, reverse_cost from "E_edges" order by "ID"',
                         %d, %d, %b);
                 """.formatted(start_vid, end_vid, directed);
         assertPGRoutingOnSampleData(paths, pgroutingSql);
