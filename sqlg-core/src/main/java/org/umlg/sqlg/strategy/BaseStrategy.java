@@ -813,16 +813,21 @@ public abstract class BaseStrategy {
         HasContainer labelHasContainer = labelHasContainers.get(0);
         String _edgeLabel = (String) labelHasContainer.getValue();
 
-        EdgeLabel edgeLabel = null;
-        Set<Schema> schemas = this.sqlgGraph.getTopology().getSchemas();
-        for (Schema schema : schemas) {
-            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
+
+        EdgeLabel edgeLabel;
+        Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        if (schemaOptional.isPresent()) {
+            Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(schemaTable.getTable());
             if (edgeLabelOptional.isPresent()) {
                 edgeLabel =  edgeLabelOptional.get();
-                break;
+            } else {
+                throw new IllegalArgumentException("Failed to find edge label for " + _edgeLabel);
+
             }
+        } else {
+            throw new IllegalArgumentException("Failed to find schema label for " + _edgeLabel);
         }
-        Preconditions.checkState(edgeLabel != null, "Failed to find %s", _edgeLabel);
 
         Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
         Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
@@ -841,7 +846,7 @@ public abstract class BaseStrategy {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 new EdgeVertexStep(traversal, Direction.OUT),
-                pathCount.getValue()
+                pathCount.intValue()
         );
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         this.traversal.removeStep(callStep);
