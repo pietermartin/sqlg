@@ -1102,10 +1102,12 @@ public class SchemaTableTree {
         String idAlias = _columnList.getAlias(this, "ID");
         String costAlias = _columnList.getAlias(this, "cost");
         String reverseCostAlias = _columnList.getAlias(this, "reverse_cost");
-//        String sourceAlias = _columnList.getAlias(this, "source");
-//        String targetAlias = _columnList.getAlias(this, "target");
-        String sourceAlias = "alias2";
-        String targetAlias = "alias1";
+
+        Preconditions.checkState(schemaTableTree.children.size() == 1, "pgdijksta queries can only have on VertexLabel and EdgeLabel");
+        SchemaTableTree child = schemaTableTree.children.get(0);
+        SchemaTable childVertexLabelSchemaTable = child.getSchemaTable().withOutPrefix();
+        String sourceAlias = _columnList.getAlias(this, childVertexLabelSchemaTable.getSchema() + "." + childVertexLabelSchemaTable.getTable() + "__I");
+        String targetAlias = _columnList.getAlias(this, childVertexLabelSchemaTable.getSchema() + "." + childVertexLabelSchemaTable.getTable() + "__O");
 
         resetColumnAliasMaps();
         String ignore = constructSinglePathSql(

@@ -74,11 +74,27 @@ public class PGRDijkstraTest extends BasePGRouting {
         for (Long start_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
             for (Long end_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
                 LOGGER.info("start_vid: {}, end_vid: {}", start_vid, end_vid);
-                assertPGRoutingOneToOneSampleDataInCustomSchema(start_vid, end_vid, true);
-                assertPGRoutingOneToOneSampleDataInCustomSchema(start_vid, end_vid, false);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema, start_vid, end_vid, true);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema, start_vid, end_vid, false);
             }
         }
-        assertPGRoutingOneToOneSampleDataInCustomSchema(6L, 10L, false);
+        assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema, 6L, 10L, false);
+    }
+
+    @Test
+    public void g_V_call_dijkstra_one2one_sampleDataInCustomSchema2() {
+        Schema customSchema1 = this.sqlgGraph.getTopology().ensureSchemaExist("custom1");
+        Schema customSchema2 = this.sqlgGraph.getTopology().ensureSchemaExist("custom2");
+        loadPGRoutingSampleData(customSchema1);
+        loadPGRoutingSampleData(customSchema2);
+        for (Long start_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
+            for (Long end_vid : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L)) {
+                LOGGER.info("start_vid: {}, end_vid: {}", start_vid, end_vid);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema1, start_vid, end_vid, true);
+                assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema1, start_vid, end_vid, false);
+            }
+        }
+        assertPGRoutingOneToOneSampleDataInCustomSchema(customSchema1, 6L, 10L, false);
     }
 
     @Test
@@ -190,8 +206,8 @@ public class PGRDijkstraTest extends BasePGRouting {
         assertPGRoutingOnSampleData(paths, pgroutingSql);
     }
 
-    private void assertPGRoutingOneToOneSampleDataInCustomSchema(long start_vid, long end_vid, boolean directed) {
-        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel("edges").<Path>dijkstra(
+    private void assertPGRoutingOneToOneSampleDataInCustomSchema(Schema schema, long start_vid, long end_vid, boolean directed) {
+        List<Path> paths = this.sqlgGraph.traversal().E().hasLabel(schema.getName() + ".edges").<Path>dijkstra(
                         start_vid,
                         end_vid,
                         directed
@@ -199,9 +215,9 @@ public class PGRDijkstraTest extends BasePGRouting {
                 .toList();
         String pgroutingSql = """
                 SELECT * FROM pgr_Dijkstra(
-                        'select "ID" as id, source, target, cost, reverse_cost from "custom"."E_edges" order by "ID"',
+                        'select "ID" as id, source, target, cost, reverse_cost from "%s"."E_edges" order by "ID"',
                         %d, %d, %b);
-                """.formatted(start_vid, end_vid, directed);
+                """.formatted(schema.getName(), start_vid, end_vid, directed);
         assertPGRoutingOnSampleData(paths, pgroutingSql);
     }
 
