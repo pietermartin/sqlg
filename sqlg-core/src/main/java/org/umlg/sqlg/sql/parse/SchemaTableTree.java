@@ -122,7 +122,7 @@ public class SchemaTableTree {
     //This counter is used for the within predicate when aliasing the temporary table
     private int tmpTableAliasCounter = 1;
     private boolean fakeEmit = false;
-    
+
     public static final String TMP_INDEX_FIELD = "sqlg_index";
 
     SchemaTableTree(
@@ -1149,36 +1149,69 @@ public class SchemaTableTree {
         String edgeColumnsToAdd = edgeColumns.stream().map(a -> "c." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(a)).reduce((a, b) -> a + ", " + b).map(a -> ", " + a).orElse("");
 
         String sql;
-        sql = """
-                WITH a AS (
-                    SELECT * FROM pgr_dijkstra(
-                    'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
-                        %s
-                    ) a', %s, %s, %b)
-                ), b AS (
-                    SELECT * from %s
-                ), c AS (
-                    SELECT * from %s
-                )
-                SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
-                    a JOIN
-                    b ON a.node = b."ID" LEFT JOIN
-                    c ON a.edge = c."ID"
-                """
-                .formatted(
-                        idAlias, sourceAlias, targetAlias, costAlias, reverseCostAlias,
-                        startSql,
-                        pgRoutingDijkstraConfig.toStartVidsString(),
-                        pgRoutingDijkstraConfig.toEndVidsString(),
-                        pgRoutingDijkstraConfig.directed(),
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
-                        SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
-                )
-                .replace("{edgeColumns}", edgeColumnsToAdd)
-                .replace("{vertexColumns}", vertexColumnsToAdd)
-                .replace("{outForeignKey}", outForeignKey)
-                .replace("{inForeignKey}", inForeignKey);
+        if (reverseCostAlias != null) {
+            sql = """
+                    WITH a AS (
+                        SELECT * FROM pgr_dijkstra(
+                        'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost, a."%s" as reverse_cost FROM (
+                            %s
+                        ) a', %s, %s, %b)
+                    ), b AS (
+                        SELECT * from %s
+                    ), c AS (
+                        SELECT * from %s
+                    )
+                    SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
+                        a JOIN
+                        b ON a.node = b."ID" LEFT JOIN
+                        c ON a.edge = c."ID"
+                    """;
+            sql = sql.formatted(
+                            idAlias, targetAlias, sourceAlias, costAlias, reverseCostAlias,
+                            startSql,
+                            pgRoutingDijkstraConfig.toStartVidsString(),
+                            pgRoutingDijkstraConfig.toEndVidsString(),
+                            pgRoutingDijkstraConfig.directed(),
+                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
+                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
+                            SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
+                    )
+                    .replace("{edgeColumns}", edgeColumnsToAdd)
+                    .replace("{vertexColumns}", vertexColumnsToAdd)
+                    .replace("{outForeignKey}", outForeignKey)
+                    .replace("{inForeignKey}", inForeignKey);
+        } else {
+            sql = """
+                    WITH a AS (
+                        SELECT * FROM pgr_dijkstra(
+                        'SELECT a."%s" as id, a."%s" as source, a."%s" as target, a."%s" as cost FROM (
+                            %s
+                        ) a', %s, %s, %b)
+                    ), b AS (
+                        SELECT * from %s
+                    ), c AS (
+                        SELECT * from %s
+                    )
+                    SELECT c."ID" as edge_id {edgeColumns}, c.{inForeignKey}, c.{outForeignKey}, b."ID" as vertex_id {vertexColumns}, a."cost" as "%s", a.agg_cost as "%s", a.start_vid, a.end_vid FROM
+                        a JOIN
+                        b ON a.node = b."ID" LEFT JOIN
+                        c ON a.edge = c."ID"
+                    """;
+            sql = sql.formatted(
+                            idAlias, targetAlias, sourceAlias, costAlias,
+                            startSql,
+                            pgRoutingDijkstraConfig.toStartVidsString(),
+                            pgRoutingDijkstraConfig.toEndVidsString(),
+                            pgRoutingDijkstraConfig.directed(),
+                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabelSchemaTable.getTable()),
+                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getSchema()) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabelSchemaTable.getTable()),
+                            SqlgPGRoutingFactory.TRAVERSAL_COST, SqlgPGRoutingFactory.TRAVERSAL_AGG_COST
+                    )
+                    .replace("{edgeColumns}", edgeColumnsToAdd)
+                    .replace("{vertexColumns}", vertexColumnsToAdd)
+                    .replace("{outForeignKey}", outForeignKey)
+                    .replace("{inForeignKey}", inForeignKey);
+        }
         return sql;
 
     }

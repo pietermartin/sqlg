@@ -833,7 +833,9 @@ public abstract class BaseStrategy {
         Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
         Preconditions.checkState(inVertexLabels.size() == 1);
         Preconditions.checkState(outVertexLabels.size() == 1);
-        Preconditions.checkState(inVertexLabels.equals(outVertexLabels));
+        VertexLabel inVertexLabel = inVertexLabels.iterator().next();
+        VertexLabel outVertexLabel = outVertexLabels.iterator().next();
+        Preconditions.checkState(inVertexLabel.equals(outVertexLabel),  "in and out VertexLabels must be the same, found %s and %s", inVertexLabel.getName(), outVertexLabel.getName());
 
         VertexLabel vertexLabel = inVertexLabels.iterator().next();
 
