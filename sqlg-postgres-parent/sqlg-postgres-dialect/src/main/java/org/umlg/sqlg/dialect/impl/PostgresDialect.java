@@ -929,7 +929,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
                 break;
             case POINT_ORDINAL:
-                throw new IllegalStateException("JSON Arrays are not supported.");
+                Point point = (Point) value;
+                sql.append("ST_MakePoint(").append(point.x).append(", ").append(point.y).append(")");
+                break;
             case LINESTRING_ORDINAL:
                 throw new IllegalStateException("line strings are not supported.");
             case POLYGON_ORDINAL:

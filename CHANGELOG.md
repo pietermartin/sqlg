@@ -1,3 +1,7 @@
+##3.1.6
+
+* Added support for updating POINTs in bulk.
+
 ##3.1.2
 
 * Added support for `pg_routing` functions.
