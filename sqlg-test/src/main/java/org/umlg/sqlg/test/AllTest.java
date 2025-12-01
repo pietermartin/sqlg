@@ -314,7 +314,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestRepeatStepIncludeEdgeWithoutNotStep.class,
         TestRecursiveRepeatAll.class,
         TestTopologyRecursiveRepeat.class,
-        TestQueryTimeout.class
+        TestQueryTimeout.class,
+        TestValidateProperty.class
 })
 public class AllTest {
 

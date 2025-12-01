@@ -1902,6 +1902,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (value == null) {
             return;
         }
+        if (value == "\0x00") {
+            throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+        }
         if (value instanceof String) {
             return;
         }
