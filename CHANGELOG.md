@@ -1,5 +1,7 @@
 ##3.1.6
 
+* Bump `log4j2` to `2.25.3`
+* Added `pgrConnectedComponent` to `SqlgTraversalDsl`
 * Added support for updating POINTs in bulk.
 
 ##3.1.2
