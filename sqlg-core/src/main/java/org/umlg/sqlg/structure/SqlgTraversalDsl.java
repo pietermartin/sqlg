@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.GremlinDsl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.services.SqlgFunctionFactory;
 import org.umlg.sqlg.services.SqlgPGRoutingFactory;
 
@@ -13,6 +14,21 @@ import java.util.function.Function;
 @SuppressWarnings("resource")
 @GremlinDsl
 public interface SqlgTraversalDsl<S, E> extends GraphTraversal.Admin<S, E> {
+
+    /**
+     * Implements <a href="https://docs.pgrouting.org/latest/en/pgr_connectedComponents.html">pgr_connectedComponents</a>.
+     * The methods runs over the whole graph.
+     * @return Returns each vertex in the graph, with a special property `SqlgPGRoutingFactory.TRAVERSAL_COMPONENT` which holds
+     * the component label.
+     */
+    default GraphTraversal<S, Vertex> pgrConnectedComponent() {
+        return call(
+                SqlgPGRoutingFactory.NAME,
+                Map.of(
+                        SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_connectedComponents
+                )
+        );
+    }
 
     /**
      * @param startVid sequence id of the start vertex

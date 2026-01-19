@@ -34,8 +34,12 @@ public class PGRConnectedComponentTest extends BasePGRouting {
                 .toList();
         for (Vertex v: result) {
             long component = v.value(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COMPONENT));
-            System.out.println(component + ": " + v);
+            LOGGER.debug("{}: {}", component, v);
         }
+
+        List<Vertex> components = this.sqlgGraph.traversal().E().hasLabel("edges").pgrConnectedComponent().toList();
+        Assert.assertEquals(result, components);
+
         String pgr_drivingDistance = """
                 SELECT * FROM pgr_connectedComponents(
                   'SELECT id, source, target, cost, reverse_cost FROM edges'
