@@ -922,10 +922,20 @@ public abstract class BaseStrategy {
         SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
         Optional<Schema> schemaOpt = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
         Preconditions.checkState(schemaOpt.isPresent());
-        Schema schema = schemaOpt.get();
-        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(_edgeLabel);
-        Preconditions.checkState(edgeLabelOptional.isPresent());
-        EdgeLabel edgeLabel = edgeLabelOptional.get();
+
+        EdgeLabel edgeLabel;
+        Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        if (schemaOptional.isPresent()) {
+            Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(schemaTable.getTable());
+            if (edgeLabelOptional.isPresent()) {
+                edgeLabel =  edgeLabelOptional.get();
+            } else {
+                throw new IllegalArgumentException("Failed to find edge label for " + _edgeLabel);
+            }
+        } else {
+            throw new IllegalArgumentException("Failed to find schema label for " + _edgeLabel);
+        }
+
         Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
         Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
         Preconditions.checkState(inVertexLabels.size() == 1);
