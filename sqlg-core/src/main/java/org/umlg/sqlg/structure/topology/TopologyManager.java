@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.BatchManager;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -26,6 +28,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class TopologyManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TopologyManager.class);
 
     private TopologyManager() {
     }
@@ -63,10 +66,17 @@ public class TopologyManager {
             Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
             Vertex graph = graphVertices.get(0);
             String oldVersion = graph.value(SQLG_SCHEMA_GRAPH_VERSION);
-            if (!oldVersion.equals(version)) {
+
+            int oldVersionAsInt = Integer.parseInt(oldVersion.replace("-SNAPSHOT", "").replace(".", ""));
+            int newVersionAsInt = Integer.parseInt(version.replace("-SNAPSHOT", "").replace(".", ""));
+
+//            if (!oldVersion.equals(version)) {
+            if (newVersionAsInt > oldVersionAsInt) {
                 graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
                 graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
                 graph.property(UPDATED_ON, LocalDateTime.now());
+            } else if (newVersionAsInt < oldVersionAsInt) {
+                LOGGER.warn("An older version '{}' of Sqlg is starting up on a graph with version '{}'\nThis has undetermined behavior.\nUPGRADE all Sqlg instances to be on the same version!!!", version, oldVersion);
             }
             return oldVersion;
         } catch (Exception e) {
