@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure.topology;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -27,6 +29,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class TopologyManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TopologyManager.class);
 
     private TopologyManager() {
     }
@@ -64,10 +67,17 @@ public class TopologyManager {
             Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
             Vertex graph = graphVertices.get(0);
             String oldVersion = graph.value(SQLG_SCHEMA_GRAPH_VERSION);
-            if (!oldVersion.equals(version)) {
+
+            int oldVersionAsInt = Integer.parseInt(oldVersion.replace("-SNAPSHOT", "").replace(".", ""));
+            int newVersionAsInt = Integer.parseInt(version.replace("-SNAPSHOT", "").replace(".", ""));
+
+//            if (!oldVersion.equals(version)) {
+            if (newVersionAsInt > oldVersionAsInt) {
                 graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
                 graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
                 graph.property(UPDATED_ON, LocalDateTime.now());
+            } else if (newVersionAsInt < oldVersionAsInt) {
+                LOGGER.warn("An older version '{}' of Sqlg is starting up on a graph with version '{}'\nThis has undetermined behavior.\nUPGRADE all Sqlg instances to be on the same version!!!", version, oldVersion);
             }
             return oldVersion;
         } catch (Exception e) {
