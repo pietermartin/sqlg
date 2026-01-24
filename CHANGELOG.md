@@ -1,3 +1,9 @@
+##2.1.8
+
+* Fixed [#543](https://github.com/pietermartin/sqlg/issues/543) Added code to prevent downgrading the graph version.
+
+##2.1.7
+
 ##2.1.6
 
 * Added tests for inserting via fdw on postgres for user identified elements
