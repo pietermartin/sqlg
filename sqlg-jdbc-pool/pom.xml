@@ -15,7 +15,7 @@
 
     <modules>
         <module>sqlg-c3p0</module>
-<!--        <module>sqlg-hikari</module>-->
+        <module>sqlg-hikari</module>
     </modules>
 
 </project>
