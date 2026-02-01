@@ -1,8 +1,24 @@
 ##3.1.6
 
+* Fixed [#543](https://github.com/pietermartin/sqlg/issues/543) Added code to prevent downgrading the graph version.
 * Bump `log4j2` to `2.25.3`
 * Added `pgrConnectedComponent` to `SqlgTraversalDsl`
-* Added support for updating POINTs in bulk.
+* Added support for updating gis `POINT`s in bulk mode.
+
+##3.1.5
+
+* Implement [#529](https://github.com/pietermartin/sqlg/issues/529). Optimize `RangeGlobalStep`
+
+##3.1.4
+
+* Upgrade to `Tinkerpop 3.7.4`
+* Improve error messages.
+* Use `sqlg.index` instead of `index` for custom sql field to prevent name clash. 
+* Implement [#528](https://github.com/pietermartin/sqlg/issues/528), only pass required fields to sql `select` clause.
+
+##3.1.3
+
+* Exposed `queryTimeout` on the transaction via `g.tx().setQueryTimeout(x)`
 
 ##3.1.2
 
