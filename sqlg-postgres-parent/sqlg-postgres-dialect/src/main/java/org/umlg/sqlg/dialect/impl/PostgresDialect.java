@@ -4475,7 +4475,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "where \n" +
                 "table_schema = ? and\n" +
                 "table_name = ? and\n" +
-                "column_name = ?\n" +
+                "column_name = ? and\n" +
+                "pgc.contype = 'c'\n" +
                 "order by pgc.conname;";
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, schema);
@@ -4485,6 +4486,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (rs.next()) {
                 String constraintName = rs.getString(1);
                 Preconditions.checkState(!rs.next(), "Expected only one check constraint.");
+//                if (rs.next()) {
+//                    String _constraintName = rs.getString(1);
+//                    throw new IllegalStateException("Expected only one check constraint.");
+//                }
                 return constraintName;
             } else {
                 return null;
