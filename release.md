@@ -1,7 +1,3 @@
-* change pom to non snapshot version
+* change pom to non snapshot version `mvn versions:set -DnewVersion=x.x.x`
+* edit `<sqlg.version>x.x.x</sqlg.version>`
 * mvn clean deploy -P release -DskipTests
-* log in to https://oss.sonatype.org
-* close and release the artifacts
-* tag with pom version
-* might need to add `export GPG_TTY=$(tty)`
-* copy generated docs to `/var/www/html/docs/`
