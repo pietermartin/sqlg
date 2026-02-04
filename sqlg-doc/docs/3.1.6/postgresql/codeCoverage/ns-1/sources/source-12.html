@@ -1,0 +1,253 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestSchemaTableTreeCache</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: TestSchemaTableTreeCache (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestSchemaTableTreeCache</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    52%
+  </span>
+  <span class="absValue">
+    (13/25)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestSchemaTableTreeCache$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    60%
+  </span>
+  <span class="absValue">
+    (3/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    48.1%
+  </span>
+  <span class="absValue">
+    (13/27)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.sql.parse.AndOrHasContainer;
+&nbsp;import org.umlg.sqlg.sql.parse.SchemaTableTree;
+&nbsp;import org.umlg.sqlg.strategy.SqlgComparatorHolder;
+&nbsp;import org.umlg.sqlg.strategy.SqlgRangeHolder;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.SchemaTable;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;
+<b class="fc">&nbsp;public class TestSchemaTableTreeCache extends BaseTest {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemaTableTreeCache.class);</b>
+&nbsp;
+&nbsp;//    @Test
+&nbsp;//    public void testLRUCAche() {
+&nbsp;//        LRUMap&lt;MutableInt, String&gt; lruMap = new LRUMap&lt;&gt;(2);
+&nbsp;//        MutableInt mutableInt1 = new MutableInt(1);
+&nbsp;//        MutableInt mutableInt2 = new MutableInt(2);
+&nbsp;//        MutableInt mutableInt3 = new MutableInt(3);
+&nbsp;//        lruMap.put(mutableInt1, &quot;1&quot;);
+&nbsp;//        lruMap.put(mutableInt2, &quot;2&quot;);
+&nbsp;//        lruMap.get(mutableInt1);
+&nbsp;//        mutableInt1.setValue(33);
+&nbsp;//        lruMap.put(mutableInt3, &quot;3&quot;);
+&nbsp;//        System.out.println(&quot;&quot;);
+&nbsp;//    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCacheResetOnSchemaChange() {
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;prop1&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; graphTraversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        String sql = getSQL(graphTraversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;prop1\&quot; AS \&quot;alias2\&quot;\n&quot; +
+&nbsp;                &quot;FROM\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, sql);
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;prop2&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        graphTraversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        sql = getSQL(graphTraversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;SELECT\n&quot; +</b>
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;prop2\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;.\&quot;prop1\&quot; AS \&quot;alias3\&quot;\n&quot; +
+&nbsp;                &quot;FROM\n&quot; +
+&nbsp;                &quot;\t\&quot;public\&quot;.\&quot;V_A\&quot;&quot;, sql);
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    //    @Test
+&nbsp;    public void testSchemaTableTreeHashCode() {
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;A&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;            put(&quot;a&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;        }});
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;//        SqlgGraph sqlgGraph
+&nbsp;//        SchemaTable schemaTable,
+&nbsp;//        int stepDepth,
+&nbsp;//        List&lt;HasContainer&gt; hasContainers,
+&nbsp;//        List&lt;AndOrHasContainer&gt; andOrHasContainers,
+&nbsp;//        SqlgComparatorHolder sqlgComparatorHolder,
+&nbsp;//        List&lt;org.javatuples.Pair&lt;Traversal.Admin&lt;?, ?&gt;, Comparator&lt;?&gt;&gt;&gt; dbComparators,
+&nbsp;//        SqlgRangeHolder sqlgRangeHolder,
+&nbsp;//        SchemaTableTree.STEP_TYPE stepType,
+&nbsp;//        boolean emit,
+&nbsp;//        boolean untilFirst,
+&nbsp;//        boolean optionalLeftJoin,
+&nbsp;//        boolean drop,
+&nbsp;//        int replacedStepDepth,
+&nbsp;//        Set&lt;String&gt; labels,
+&nbsp;//        Pair&lt;String, List&lt;String&gt;&gt; aggregateFunction,
+&nbsp;//        List&lt;String&gt; groupBy,
+&nbsp;//        boolean idOnly
+<b class="nc">&nbsp;        SchemaTableTree schemaTableTree1 = new SchemaTableTree(</b>
+&nbsp;                this.sqlgGraph,
+&nbsp;                null,
+<b class="nc">&nbsp;                SchemaTable.of(&quot;public&quot;, &quot;V_A&quot;),</b>
+&nbsp;                0,
+<b class="nc">&nbsp;                List.of(new HasContainer(&quot;key1&quot;, P.eq(&quot;what&quot;))),</b>
+<b class="nc">&nbsp;                List.of(new AndOrHasContainer(AndOrHasContainer.TYPE.AND)),</b>
+&nbsp;                new SqlgComparatorHolder(),
+<b class="nc">&nbsp;                List.of(),</b>
+<b class="nc">&nbsp;                SqlgRangeHolder.from(1),</b>
+&nbsp;                SchemaTableTree.STEP_TYPE.GRAPH_STEP,
+&nbsp;                false,
+&nbsp;                false,
+&nbsp;                false,
+&nbsp;                false,
+&nbsp;                1,
+<b class="nc">&nbsp;                Set.of(&quot;label1&quot;),</b>
+<b class="nc">&nbsp;                Pair.of(&quot;String1&quot;, List.of(&quot;what&quot;)),</b>
+<b class="nc">&nbsp;                List.of(&quot;groupBy1&quot;),</b>
+&nbsp;                false,
+&nbsp;                null,
+&nbsp;                null, null, null,
+&nbsp;                null,
+&nbsp;                null
+&nbsp;        );
+<b class="nc">&nbsp;        LOGGER.info(Integer.toString(schemaTableTree1.hashCode()));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

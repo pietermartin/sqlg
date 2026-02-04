@@ -1,0 +1,622 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTraversalPerformance</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTraversalPerformance (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTraversalPerformance</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/48)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestTraversalPerformance$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/50)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.time.StopWatch;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.SqlgVertex;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2015/02/01
+&nbsp; * Time: 11:48 AM
+&nbsp; */
+<b class="nc">&nbsp;public class TestTraversalPerformance extends BaseTest {</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(TestTraversalPerformance.class);</b>
+&nbsp;
+&nbsp;    //    @Test
+&nbsp;//    public void testAddVNotCached() {
+&nbsp;//        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().addV(&quot;animal&quot;).property(&quot;age&quot;, 0).toList();
+&nbsp;//        Assert.assertEquals(1, vertices.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//
+&nbsp;//        Scenario: g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX
+&nbsp;//    Given the empty graph
+&nbsp;//    And the graph initializer of
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//      g.addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a1&quot;).as(&quot;a1&quot;).
+&nbsp;//        addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a2&quot;).as(&quot;a2&quot;).
+&nbsp;//        addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a3&quot;).as(&quot;a3&quot;).
+&nbsp;//        addV(&quot;B&quot;).property(&quot;name&quot;, &quot;b1&quot;).as(&quot;b1&quot;).
+&nbsp;//        addV(&quot;B&quot;).property(&quot;name&quot;, &quot;b2&quot;).as(&quot;b2&quot;).
+&nbsp;//        addV(&quot;B&quot;).property(&quot;name&quot;, &quot;b3&quot;).as(&quot;b3&quot;).
+&nbsp;//        addE(&quot;ab&quot;).from(&quot;a1&quot;).to(&quot;b1&quot;).
+&nbsp;//        addE(&quot;ab&quot;).from(&quot;a2&quot;).to(&quot;b2&quot;).
+&nbsp;//        addE(&quot;ab&quot;).from(&quot;a3&quot;).to(&quot;b3&quot;)
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//    And the traversal of
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//      g.V().as(&quot;a&quot;).out().as(&quot;a&quot;).in().as(&quot;a&quot;).
+&nbsp;//        select(Pop.all, &quot;a&quot;, &quot;a&quot;, &quot;a&quot;).
+&nbsp;//          by(unfold().values(&#39;name&#39;).fold())
+&nbsp;//      &quot;&quot;&quot;
+&nbsp;//    When iterated to list
+&nbsp;//    Then the result should be unordered
+&nbsp;//      | result |
+&nbsp;//            | m[{&quot;a&quot;:[&quot;a1&quot;,&quot;b1&quot;,&quot;a1&quot;]}] |
+&nbsp;//            | m[{&quot;a&quot;:[&quot;a2&quot;,&quot;b2&quot;,&quot;a2&quot;]}] |
+&nbsp;//            | m[{&quot;a&quot;:[&quot;a3&quot;,&quot;b3&quot;,&quot;a3&quot;]}] |
+&nbsp;//    @Test
+&nbsp;//    public void test() {
+&nbsp;//        this.sqlgGraph.traversal().addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a1&quot;).as(&quot;a1&quot;).iterate();
+&nbsp;//        this.sqlgGraph.traversal().addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a2&quot;).as(&quot;a2&quot;).iterate();
+&nbsp;//        this.sqlgGraph.traversal().addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a3&quot;).as(&quot;a3&quot;).iterate();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.traversal().addV(&quot;A&quot;).property(&quot;name&quot;, &quot;a1&quot;).as(&quot;a1&quot;).iterate();
+&nbsp;//        Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0L);
+&nbsp;//    }
+&nbsp;//
+&nbsp;    //    @Test
+&nbsp;//    public void testHasIdWithin() {
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;A&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;col1&quot;, PropertyDefinition.of(PropertyType.INTEGER));
+&nbsp;//        }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Vertex one = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 1);
+&nbsp;//        Vertex two = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 2);
+&nbsp;//        Vertex three = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 3);
+&nbsp;//        Vertex four = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 4);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(one.id(), two.id(), three.id(), four.id())).toList();
+&nbsp;//        Assert.assertEquals(4, vertices.size());
+&nbsp;//        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(four.id())).toList();
+&nbsp;//        Assert.assertEquals(1, vertices.size());
+&nbsp;//
+&nbsp;//    }
+&nbsp;//
+&nbsp;    //    @Test
+&nbsp;//    public void g_V_hasId() {
+&nbsp;//        loadModern();
+&nbsp;//        assertModernGraph(this.sqlgGraph, true, false);
+&nbsp;//        GraphTraversalSource g = this.sqlgGraph.traversal();
+&nbsp;//
+&nbsp;//        Object id = convertToVertexId(&quot;marko&quot;);
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; traversala2 =  g.V().has(T.id, id).toList();
+&nbsp;//        Assert.assertEquals(1, traversala2.size());
+&nbsp;//        Assert.assertEquals(convertToVertex(this.sqlgGraph, &quot;marko&quot;), traversala2.get(0));
+&nbsp;//
+&nbsp;//        traversala2 =  g.V().hasId(id).toList();
+&nbsp;//        Assert.assertEquals(1, traversala2.size());
+&nbsp;//        Assert.assertEquals(convertToVertex(this.sqlgGraph, &quot;marko&quot;), traversala2.get(0));
+&nbsp;//    }
+&nbsp;//
+&nbsp;    @Test
+&nbsp;    public void test() {
+<b class="nc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;A&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;            put(&quot;col1&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+&nbsp;        }});
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Vertex one = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 1);</b>
+<b class="nc">&nbsp;        Vertex two = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 2);</b>
+<b class="nc">&nbsp;        Vertex three = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 3);</b>
+<b class="nc">&nbsp;        Vertex four = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, 4);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;col1&quot;, P.within(1)).toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="nc">&nbsp;        vertices.containsAll(List.of(one));</b>
+<b class="nc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;col1&quot;, P.within(1, 3)).toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="nc">&nbsp;        vertices.containsAll(List.of(one, three));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;//        @Test
+&nbsp;    public void testSpeedWithLargeSchemaFastQuery1() {
+<b class="nc">&nbsp;        StopWatch stopWatch = new StopWatch();</b>
+<b class="nc">&nbsp;        stopWatch.start();</b>
+<b class="nc">&nbsp;        Map&lt;String, PropertyDefinition&gt; columns = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="nc">&nbsp;            columns.put(&quot;property_&quot; + i, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;        }
+&nbsp;        //Create a large schema, it slows the maps  down
+&nbsp;//        int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
+<b class="nc">&nbsp;        int NUMBER_OF_SCHEMA_ELEMENTS = 1_0;</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_SCHEMA_ELEMENTS; i++) {</b>
+<b class="nc">&nbsp;            VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;Person_&quot; + i, columns);</b>
+<b class="nc">&nbsp;            VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;Dog_&quot; + i, columns);</b>
+<b class="nc">&nbsp;            person.ensureEdgeLabelExist(&quot;pet_&quot; + i, dog, columns);</b>
+<b class="nc">&nbsp;            if (i % 100 == 0) {</b>
+<b class="nc">&nbsp;                this.sqlgGraph.tx().commit();</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        LOGGER.info(&quot;done creating schema time taken: {}&quot;, stopWatch);</b>
+<b class="nc">&nbsp;        stopWatch.reset();</b>
+<b class="nc">&nbsp;        stopWatch.start();</b>
+&nbsp;
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; columnValues = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="nc">&nbsp;            columnValues.put(&quot;property_&quot; + i, &quot;asdasdasd&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_SCHEMA_ELEMENTS; i++) {</b>
+<b class="nc">&nbsp;            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex(&quot;Person_&quot; + i, columnValues);</b>
+<b class="nc">&nbsp;            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex(&quot;Dog_&quot; + i, columnValues);</b>
+<b class="nc">&nbsp;            person.addEdgeWithMap(&quot;pet_&quot; + i, dog, columnValues);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        LOGGER.info(&quot;done inserting data time taken: {}&quot;, stopWatch);</b>
+&nbsp;
+<b class="nc">&nbsp;        stopWatch.reset();</b>
+<b class="nc">&nbsp;        stopWatch.start();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 300_000; i++) {</b>
+<b class="nc">&nbsp;            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Person_0&quot;).out(&quot;pet_0&quot;).toList().size());</b>
+&nbsp;        }
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        LOGGER.info(&quot;total query time: {}&quot;, stopWatch);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;////    @Test
+&nbsp;//    public void testSpeedWithLargeSchemaFastQuery() {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        Map&lt;String, PropertyType&gt; columns = new HashMap&lt;&gt;();
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            columns.put(&quot;property_&quot; + i, PropertyType.STRING);
+&nbsp;//        }
+&nbsp;//        //Create a large schema, it slows the maps  down
+&nbsp;//        for (int i = 0; i &lt; 1_000; i++) {
+&nbsp;//            VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;Person_&quot; + i, columns);
+&nbsp;//            VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;Dog_&quot; + i, columns);
+&nbsp;//            person.ensureEdgeLabelExist(&quot;pet_&quot; + i, dog, columns);
+&nbsp;//            if (i % 100 == 0) {
+&nbsp;//                this.sqlgGraph.tx().commit();
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;done time taken &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//
+&nbsp;//        Map&lt;String, Object&gt; columnValues = new HashMap&lt;&gt;();
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            columnValues.put(&quot;property_&quot; + i, &quot;asdasdasd&quot;);
+&nbsp;//        }
+&nbsp;//        for (int i = 0; i &lt; 1_000; i++) {
+&nbsp;//            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex(&quot;Person_&quot; + i, columnValues);
+&nbsp;//            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex(&quot;Dog_&quot; + i, columnValues);
+&nbsp;//            person.addEdgeWithMap(&quot;pet_&quot; + i, dog, columnValues);
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        for (int i = 0; i &lt; 100_000; i++) {
+&nbsp;//            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Person_0&quot;).out(&quot;pet_0&quot;).toList().size());
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;query time &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//            stopWatch.start();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;query time &quot; + stopWatch.toString());
+&nbsp;//
+&nbsp;//    }
+&nbsp;//
+&nbsp;////    @Test
+&nbsp;//    public void testSpeed() throws InterruptedException {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        Map&lt;String, Object&gt; columns = new HashMap&lt;&gt;();
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            columns.put(&quot;property_&quot; + i, &quot;asdasd&quot;);
+&nbsp;//        }
+&nbsp;//        //Create a large schema, it slows the maps  down
+&nbsp;//        this.sqlgGraph.tx().normalBatchModeOn();
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            if (i % 100 == 0) {
+&nbsp;//                stopWatch.stop();
+&nbsp;//                System.out.println(&quot;got &quot; + i + &quot; time taken &quot; + stopWatch.toString());
+&nbsp;//                stopWatch.reset();
+&nbsp;//                stopWatch.start();
+&nbsp;//            }
+&nbsp;//            Vertex person = this.sqlgGraph.addVertex(&quot;Person_&quot; + i, columns);
+&nbsp;//            Vertex dog = this.sqlgGraph.addVertex(&quot;Dog_&quot; + i, columns);
+&nbsp;//            ((SqlgVertex)person).addEdgeWithMap(&quot;pet_&quot; + i, dog, columns);
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;done time taken &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//
+&nbsp;//        Thread.sleep(5_000);
+&nbsp;//
+&nbsp;//        Map&lt;String, PropertyType&gt; properties = new HashMap&lt;&gt;() {{
+&nbsp;//           put(&quot;name&quot;, PropertyType.STRING);
+&nbsp;//        }};
+&nbsp;//        VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;God&quot;, properties);
+&nbsp;//        VertexLabel handVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Hand&quot;, properties);
+&nbsp;//        VertexLabel fingerVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Finger&quot;, properties);
+&nbsp;//        godVertexLabel.ensureEdgeLabelExist(&quot;hand&quot;, handVertexLabel);
+&nbsp;//        handVertexLabel.ensureEdgeLabelExist(&quot;finger&quot;, fingerVertexLabel);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;done another time taken &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//
+&nbsp;//        StopWatch stopWatchAddOnly = new StopWatch();
+&nbsp;//        stopWatchAddOnly.start();
+&nbsp;//
+&nbsp;//        this.sqlgGraph.tx().normalBatchModeOn();
+&nbsp;//        for (int i = 1; i &lt; 1_00_001; i++) {
+&nbsp;//            Vertex a = this.sqlgGraph.addVertex(T.label, &quot;God&quot;, &quot;name&quot;, &quot;god&quot; + i);
+&nbsp;//            for (int j = 0; j &lt; 2; j++) {
+&nbsp;//                Vertex b = this.sqlgGraph.addVertex(T.label, &quot;Hand&quot;, &quot;name&quot;, &quot;name_&quot; + j);
+&nbsp;//                a.addEdge(&quot;hand&quot;, b);
+&nbsp;//                for (int k = 0; k &lt; 5; k++) {
+&nbsp;//                    Vertex c = this.sqlgGraph.addVertex(T.label, &quot;Finger&quot;, &quot;name&quot;, &quot;name_&quot; + k);
+&nbsp;//                    Edge e = b.addEdge(&quot;finger&quot;, c);
+&nbsp;//                }
+&nbsp;//            }
+&nbsp;////            if (i % 500_000 == 0) {
+&nbsp;////                this.graph.tx().flush();
+&nbsp;////                stopWatch.split();
+&nbsp;////                System.out.println(stopWatch.toString());
+&nbsp;////                stopWatch.unsplit();
+&nbsp;////            }
+&nbsp;//        }
+&nbsp;//        stopWatchAddOnly.stop();
+&nbsp;//        System.out.println(&quot;Time for add only : &quot; + stopWatchAddOnly.toString());
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time for insert: &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            GraphTraversal&lt;Vertex, Path&gt; traversal = sqlgGraph.traversal().V().hasLabel(&quot;God&quot;).as(&quot;god&quot;).out(&quot;hand&quot;).as(&quot;hand&quot;).out(&quot;finger&quot;).as(&quot;finger&quot;).path();
+&nbsp;//            while (traversal.hasNext()) {
+&nbsp;//                Path path = traversal.next();
+&nbsp;//                List&lt;Object&gt; objects = path.objects();
+&nbsp;//                assertEquals(3, objects.size());
+&nbsp;//                List&lt;Set&lt;String&gt;&gt; labels = path.labels();
+&nbsp;//                assertEquals(3, labels.size());
+&nbsp;//            }
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;Time for gremlin: &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//            stopWatch.start();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time for gremlin: &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//        for (int i = 0; i &lt; 5; i++) {
+&nbsp;//            List&lt;Map&lt;String, Vertex&gt;&gt; traversalMap = sqlgGraph.traversal().V().hasLabel(&quot;God&quot;).as(&quot;god&quot;).out(&quot;hand&quot;).as(&quot;hand&quot;).out(&quot;finger&quot;).as(&quot;finger&quot;).&lt;Vertex&gt;select(&quot;god&quot;, &quot;hand&quot;, &quot;finger&quot;).toList();
+&nbsp;//            assertEquals(1_000_000, traversalMap.size());
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;Time for gremlin 2: &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//            stopWatch.start();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time for gremlin 2: &quot; + stopWatch.toString());
+&nbsp;//        stopWatch.reset();
+&nbsp;//        stopWatch.start();
+&nbsp;//
+&nbsp;//        for (int i = 0; i &lt; 20; i++) {
+&nbsp;//            Connection connection = sqlgGraph.tx().getConnection();
+&nbsp;//            try (Statement statement = connection.createStatement()) {
+&nbsp;//                ResultSet resultSet = statement.executeQuery(&quot;SELECT\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;name\&quot; AS \&quot;alias4\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; AS \&quot;alias5\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;name\&quot; AS \&quot;alias6\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias7\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias8\&quot;\n&quot; +
+&nbsp;//                        &quot;FROM\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_God\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_hand\&quot; ON \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.God__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Hand\&quot; ON \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.Hand__I\&quot; = \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_finger\&quot; ON \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Hand__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot; ON \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Finger__I\&quot; = \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot;&quot;);
+&nbsp;//                while (resultSet.next()) {
+&nbsp;//                    String s1 = resultSet.getString(&quot;alias1&quot;);
+&nbsp;//                    String s2 = resultSet.getString(&quot;alias2&quot;);
+&nbsp;//                    String s3 = resultSet.getString(&quot;alias3&quot;);
+&nbsp;//                    String s4 = resultSet.getString(&quot;alias4&quot;);
+&nbsp;//                    String s5 = resultSet.getString(&quot;alias5&quot;);
+&nbsp;//                    String s6 = resultSet.getString(&quot;alias6&quot;);
+&nbsp;//                    String s7 = resultSet.getString(&quot;alias7&quot;);
+&nbsp;//                    String s8 = resultSet.getString(&quot;alias8&quot;);
+&nbsp;//                }
+&nbsp;//            } catch (SQLException e) {
+&nbsp;//                throw new RuntimeException(e);
+&nbsp;//            }
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;Time for name sql 1: &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//            stopWatch.start();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        stopWatch.reset();
+&nbsp;//        for (int i = 0; i &lt; 20; i++) {
+&nbsp;//            stopWatch.start();
+&nbsp;//            Connection connection = sqlgGraph.tx().getConnection();
+&nbsp;//            try (Statement statement = connection.createStatement()) {
+&nbsp;//                ResultSet resultSet = statement.executeQuery(&quot;SELECT\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;name\&quot; AS \&quot;alias4\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; AS \&quot;alias5\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;name\&quot; AS \&quot;alias6\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias7\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias8\&quot;\n&quot; +
+&nbsp;//                        &quot;FROM\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_God\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_hand\&quot; ON \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.God__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Hand\&quot; ON \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.Hand__I\&quot; = \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_finger\&quot; ON \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Hand__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot; ON \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Finger__I\&quot; = \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot;&quot;);
+&nbsp;//                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+&nbsp;//
+&nbsp;//
+&nbsp;//                while (resultSet.next()) {
+&nbsp;//                    Long s1 = resultSet.getLong(1);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    String s2 = resultSet.getString(2);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    Long s3 = resultSet.getLong(3);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    String s4 = resultSet.getString(4);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    Long s5 = resultSet.getLong(5);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    String s6 = resultSet.getString(6);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    Long s7 = resultSet.getLong(7);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                    String s8 = resultSet.getString(8);
+&nbsp;//                    if (resultSet.wasNull()) {
+&nbsp;//                        System.out.println(&quot;&quot;);
+&nbsp;//                    };
+&nbsp;//                }
+&nbsp;//            } catch (SQLException e) {
+&nbsp;//                throw new RuntimeException(e);
+&nbsp;//            }
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;Time for index sql 2: &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        for (int i = 0; i &lt; 20; i++) {
+&nbsp;//            stopWatch.start();
+&nbsp;//            Connection connection = sqlgGraph.tx().getConnection();
+&nbsp;//            try (Statement statement = connection.createStatement()) {
+&nbsp;//                ResultSet resultSet = statement.executeQuery(&quot;SELECT\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias1\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias2\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; AS \&quot;alias3\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;name\&quot; AS \&quot;alias4\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; AS \&quot;alias5\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;name\&quot; AS \&quot;alias6\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot; AS \&quot;alias7\&quot;,\n&quot; +
+&nbsp;//                        &quot;\t \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;name\&quot; AS \&quot;alias8\&quot;\n&quot; +
+&nbsp;//                        &quot;FROM\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_God\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_hand\&quot; ON \&quot;public\&quot;.\&quot;V_God\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.God__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Hand\&quot; ON \&quot;public\&quot;.\&quot;E_hand\&quot;.\&quot;public.Hand__I\&quot; = \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;E_finger\&quot; ON \&quot;public\&quot;.\&quot;V_Hand\&quot;.\&quot;ID\&quot; = \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Hand__O\&quot; INNER JOIN\n&quot; +
+&nbsp;//                        &quot;\t\&quot;public\&quot;.\&quot;V_Finger\&quot; ON \&quot;public\&quot;.\&quot;E_finger\&quot;.\&quot;public.Finger__I\&quot; = \&quot;public\&quot;.\&quot;V_Finger\&quot;.\&quot;ID\&quot;&quot;);
+&nbsp;//                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+&nbsp;//
+&nbsp;//
+&nbsp;//                while (resultSet.next()) {
+&nbsp;//                    Object s1 = resultSet.getObject(1);
+&nbsp;//                    Object s2 = resultSet.getObject(2);
+&nbsp;//                    Object s3 = resultSet.getObject(3);
+&nbsp;//                    Object s4 = resultSet.getObject(4);
+&nbsp;//                    Object s5 = resultSet.getObject(5);
+&nbsp;//                    Object s6 = resultSet.getObject(6);
+&nbsp;//                    Object s7 = resultSet.getObject(7);
+&nbsp;//                    Object s8 = resultSet.getObject(8);
+&nbsp;//                }
+&nbsp;//            } catch (SQLException e) {
+&nbsp;//                throw new RuntimeException(e);
+&nbsp;//            }
+&nbsp;//            stopWatch.stop();
+&nbsp;//            System.out.println(&quot;Time for index sql 3: &quot; + stopWatch.toString());
+&nbsp;//            stopWatch.reset();
+&nbsp;//        }
+&nbsp;////        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
+&nbsp;//    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

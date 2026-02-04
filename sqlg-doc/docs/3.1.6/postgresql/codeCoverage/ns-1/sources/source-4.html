@@ -1,0 +1,180 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Log4j2TestAppender</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: Log4j2TestAppender (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Log4j2TestAppender</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (6/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78.9%
+  </span>
+  <span class="absValue">
+    (15/19)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.logging.log4j.core.Appender;
+&nbsp;import org.apache.logging.log4j.core.Core;
+&nbsp;import org.apache.logging.log4j.core.Filter;
+&nbsp;import org.apache.logging.log4j.core.LogEvent;
+&nbsp;import org.apache.logging.log4j.core.appender.AbstractAppender;
+&nbsp;import org.apache.logging.log4j.core.config.plugins.Plugin;
+&nbsp;import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+&nbsp;import org.apache.logging.log4j.core.config.plugins.PluginElement;
+&nbsp;import org.apache.logging.log4j.core.config.plugins.PluginFactory;
+&nbsp;
+&nbsp;import java.util.LinkedList;
+&nbsp;
+&nbsp;@Plugin(
+&nbsp;        name = &quot;Log4j2TestAppender&quot;,
+&nbsp;        category = Core.CATEGORY_NAME,
+&nbsp;        elementType = Appender.ELEMENT_TYPE)
+&nbsp;public class Log4j2TestAppender extends AbstractAppender {
+&nbsp;
+<b class="fc">&nbsp;    private static final LinkedList&lt;Pair&lt;LogEvent, String&gt;&gt; EVENT_LIST = new LinkedList&lt;&gt;();</b>
+&nbsp;
+&nbsp;    public static String last(String name) {
+<b class="fc">&nbsp;        synchronized (EVENT_LIST) {</b>
+<b class="pc">&nbsp;            if (EVENT_LIST.isEmpty()) {</b>
+<b class="nc">&nbsp;                return null;</b>
+&nbsp;            }
+<b class="fc">&nbsp;            Pair&lt;LogEvent, String&gt; event = EVENT_LIST.removeLast();</b>
+<b class="pc">&nbsp;            while (event != null &amp;&amp; event.getLeft().getLoggerName() != null &amp;&amp; !event.getLeft().getLoggerName().equals(name)) {</b>
+<b class="nc">&nbsp;                event = EVENT_LIST.removeLast();</b>
+&nbsp;            }
+<b class="fc">&nbsp;            EVENT_LIST.clear();</b>
+<b class="pc">&nbsp;            if (event != null) {</b>
+<b class="fc">&nbsp;                return event.getRight();</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                return null;</b>
+&nbsp;            }
+<b class="nc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    protected Log4j2TestAppender(String name, Filter filter) {
+<b class="fc">&nbsp;        super(name, filter, null, true, null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;unused&quot;)
+&nbsp;    @PluginFactory
+&nbsp;    public static Log4j2TestAppender createAppender(
+&nbsp;            @PluginAttribute(&quot;name&quot;) String name,
+&nbsp;            @PluginElement(&quot;Filter&quot;) Filter filter) {
+<b class="fc">&nbsp;        return new Log4j2TestAppender(name, filter);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void append(LogEvent event) {
+<b class="fc">&nbsp;        synchronized (EVENT_LIST) {</b>
+<b class="fc">&nbsp;            EVENT_LIST.add(Pair.of(event, event.getMessage().getFormattedMessage()));</b>
+&nbsp;            // keep memory low, since we want the last event usually anyway
+<b class="fc">&nbsp;            if (EVENT_LIST.size() &gt; 10) {</b>
+<b class="fc">&nbsp;                EVENT_LIST.removeFirst();</b>
+&nbsp;            }
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

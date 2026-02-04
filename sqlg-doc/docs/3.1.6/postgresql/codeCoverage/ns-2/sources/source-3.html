@@ -1,0 +1,250 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchEdgeWithMultipleOutLabels</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchEdgeWithMultipleOutLabels (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchEdgeWithMultipleOutLabels</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/72)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Before;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.UUID;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;import static org.junit.Assert.assertTrue;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/08/09
+&nbsp; * Time: 9:10 AM
+&nbsp; */
+<b class="nc">&nbsp;public class TestBatchEdgeWithMultipleOutLabels extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="nc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="nc">&nbsp;        if (isPostgres()) {</b>
+<b class="nc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="nc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBatchModeEdgeMultipleOutLabels() throws InterruptedException {
+<b class="nc">&nbsp;        sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 5; i++) {</b>
+<b class="nc">&nbsp;            Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A1&quot;);</b>
+<b class="nc">&nbsp;            Vertex a2  = this.sqlgGraph.addVertex(T.label, &quot;A2&quot;);</b>
+<b class="nc">&nbsp;            Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="nc">&nbsp;            a1.addEdge(&quot;address&quot;, b);</b>
+<b class="nc">&nbsp;            a2.addEdge(&quot;address&quot;, b);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        assertEquals(5, this.sqlgGraph.traversal().V().hasLabel(&quot;A1&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(5, this.sqlgGraph.traversal().V().hasLabel(&quot;A2&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(5, this.sqlgGraph.traversal().V().hasLabel(&quot;A1&quot;).out(&quot;address&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(5, this.sqlgGraph.traversal().V().hasLabel(&quot;A2&quot;).out(&quot;address&quot;).count().next().intValue());</b>
+&nbsp;
+<b class="nc">&nbsp;        sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="nc">&nbsp;        for (int i = 0; i &lt; 5; i++) {</b>
+<b class="nc">&nbsp;            Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A1&quot;);</b>
+<b class="nc">&nbsp;            Vertex a2  = this.sqlgGraph.addVertex(T.label, &quot;A2&quot;);</b>
+<b class="nc">&nbsp;            Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="nc">&nbsp;            a1.addEdge(&quot;address&quot;, b);</b>
+<b class="nc">&nbsp;            a2.addEdge(&quot;address&quot;, b);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        testBatchModeEdgeMulitpleOutLabels_assert(this.sqlgGraph);</b>
+<b class="nc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="nc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="nc">&nbsp;            testBatchModeEdgeMulitpleOutLabels_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBatchModeEdgeMulitpleOutLabels_assert(SqlgGraph sqlgGraph) {
+<b class="nc">&nbsp;        assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A1&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A2&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A1&quot;).out(&quot;address&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(10, sqlgGraph.traversal().V().hasLabel(&quot;A2&quot;).out(&quot;address&quot;).count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void issue57() throws InterruptedException {
+<b class="nc">&nbsp;        sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="nc">&nbsp;        String key = &quot;AbstractTinkerPopFhirGraph.Prop.ID&quot;;</b>
+<b class="nc">&nbsp;        int indexCount = 100;</b>
+<b class="nc">&nbsp;        for (int index = 0; index &lt; indexCount; index++) {</b>
+<b class="nc">&nbsp;            Vertex v1 = sqlgGraph.addVertex(T.label, &quot;Patient&quot;, key, index);</b>
+<b class="nc">&nbsp;            Vertex v2 = sqlgGraph.addVertex(T.label, &quot;HumanNameDt&quot;, key, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;            v1.addEdge(&quot;name&quot;, v2);</b>
+&nbsp;
+<b class="nc">&nbsp;            Vertex v3 = sqlgGraph.addVertex(T.label, &quot;Condition&quot;, key, index);</b>
+<b class="nc">&nbsp;            Vertex v4 = sqlgGraph.addVertex(T.label, &quot;CodeableConceptDt&quot;, key, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;            Vertex v5 = sqlgGraph.addVertex(T.label, &quot;CodingDt&quot;, key, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;            v3.addEdge(&quot;code&quot;, v4);</b>
+<b class="nc">&nbsp;            v4.addEdge(&quot;coding&quot;, v5);</b>
+&nbsp;
+<b class="nc">&nbsp;            v3.addEdge(&quot;patient&quot;, v1);</b>
+&nbsp;
+<b class="nc">&nbsp;            Vertex v6 = sqlgGraph.addVertex(T.label, &quot;CodeableConcept&quot;, key, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;            v3.addEdge(&quot;category&quot;, v6);</b>
+&nbsp;
+<b class="nc">&nbsp;            Vertex v7 = sqlgGraph.addVertex(T.label, &quot;CodingDt&quot;, key, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;            v6.addEdge(&quot;coding&quot;, v7);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        testIssue57_assert(this.sqlgGraph, indexCount);</b>
+<b class="nc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="nc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="nc">&nbsp;            testIssue57_assert(this.sqlgGraph1, indexCount);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testIssue57_assert(SqlgGraph sqlgGraph, int indexCount) {
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;Patient&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;HumanNameDt&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;Patient&quot;).out(&quot;name&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;Patient&quot;).out(&quot;name&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;HumanNameDt&quot;)));</b>
+&nbsp;
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;CodeableConceptDt&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount * 2, sqlgGraph.traversal().V().hasLabel(&quot;CodingDt&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;code&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;CodeableConceptDt&quot;).out(&quot;coding&quot;).count().next().intValue());</b>
+&nbsp;
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;code&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;CodeableConceptDt&quot;)));</b>
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;coding&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;CodingDt&quot;)));</b>
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;patient&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;Patient&quot;)));</b>
+&nbsp;
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;CodeableConcept&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;category&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;Condition&quot;).out(&quot;category&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;CodeableConcept&quot;)));</b>
+&nbsp;
+<b class="nc">&nbsp;        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel(&quot;CodeableConcept&quot;).out(&quot;coding&quot;).count().next().intValue());</b>
+<b class="nc">&nbsp;        sqlgGraph.traversal().V().hasLabel(&quot;CodeableConcept&quot;).out(&quot;coding&quot;).forEachRemaining(v -&gt; assertTrue(v.label().equals(&quot;CodingDt&quot;)));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

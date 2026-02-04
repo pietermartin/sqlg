@@ -1,0 +1,823 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTopologyPropertyColumnUpdateDistributed</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.topology</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTopologyPropertyColumnUpdateDistributed (org.umlg.sqlg.test.topology)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTopologyPropertyColumnUpdateDistributed</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    92.9%
+  </span>
+  <span class="absValue">
+    (65/70)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestTopologyPropertyColumnUpdateDistributed$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    93.1%
+  </span>
+  <span class="absValue">
+    (67/72)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.topology;
+&nbsp;
+&nbsp;import org.umlg.sqlg.util.Preconditions;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.commons.lang3.tuple.Triple;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.junit.*;
+&nbsp;import org.umlg.sqlg.structure.*;
+&nbsp;import org.umlg.sqlg.structure.topology.PropertyColumn;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+<b class="fc">&nbsp;public class TestTopologyPropertyColumnUpdateDistributed extends BaseTest {</b>
+&nbsp;
+<b class="fc">&nbsp;    private final List&lt;Triple&lt;TopologyInf, TopologyInf, TopologyChangeAction&gt;&gt; topologyListenerTriple = new ArrayList&lt;&gt;();</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="fc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+<b class="pc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;))</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;
+&nbsp;        } catch (ConfigurationException e) {
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void before() throws Exception {
+<b class="fc">&nbsp;        Assume.assumeTrue(!isMariaDb());</b>
+<b class="fc">&nbsp;        super.before();</b>
+<b class="fc">&nbsp;        this.topologyListenerTriple.clear();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testPropertyUpdateMultiplicityFrom1to0() throws InterruptedException {
+<b class="fc">&nbsp;        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {</b>
+<b class="fc">&nbsp;            TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);</b>
+<b class="fc">&nbsp;            sqlgGraph1.getTopology().registerListener(topologyListenerTest);</b>
+<b class="fc">&nbsp;            sqlgGraph1.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                        put(&quot;column1&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));</b>
+&nbsp;                    }});
+<b class="fc">&nbsp;            sqlgGraph1.tx().commit();</b>
+&nbsp;            try {
+<b class="fc">&nbsp;                sqlgGraph1.addVertex(T.label, &quot;A&quot;);</b>
+<b class="nc">&nbsp;                Assert.fail(&quot;NOT NULL should have prevented this&quot;);</b>
+&nbsp;            } catch (Exception e) {
+<b class="fc">&nbsp;                sqlgGraph1.tx().rollback();</b>
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(sqlgGraph1.getTopology(), this.sqlgGraph.getTopology());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .getVertexLabel(&quot;A&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getProperty(&quot;column1&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getPropertyDefinition().multiplicity().isRequired());</b>
+&nbsp;
+<b class="fc">&nbsp;            Optional&lt;VertexLabel&gt; aVertexLabelOptional = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;            Preconditions.checkState(aVertexLabelOptional.isPresent());</b>
+<b class="fc">&nbsp;            VertexLabel aVertexLabel = aVertexLabelOptional.get();</b>
+<b class="fc">&nbsp;            Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;column1&quot;);</b>
+<b class="fc">&nbsp;            Preconditions.checkState(column1Optional.isPresent());</b>
+<b class="fc">&nbsp;            PropertyColumn column1 = column1Optional.get();</b>
+&nbsp;            //Change the property from required to optional
+<b class="fc">&nbsp;            column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().commit();</b>
+&nbsp;            try {
+<b class="fc">&nbsp;                sqlgGraph1.addVertex(T.label, &quot;A&quot;);</b>
+&nbsp;            } catch (Exception e) {
+<b class="nc">&nbsp;                Assert.fail(&quot;NOT NULL should have been dropped&quot;);</b>
+<b class="nc">&nbsp;                sqlgGraph1.tx().rollback();</b>
+&nbsp;            }
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(sqlgGraph1.getTopology(), this.sqlgGraph.getTopology());</b>
+<b class="fc">&nbsp;            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .getVertexLabel(&quot;A&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getProperty(&quot;column1&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getPropertyDefinition().multiplicity().isRequired());</b>
+&nbsp;
+<b class="fc">&nbsp;            Assert.assertEquals(2, this.topologyListenerTriple.size());</b>
+<b class="fc">&nbsp;            Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());</b>
+<b class="fc">&nbsp;            column1Optional = aVertexLabel.getProperty(&quot;column1&quot;);</b>
+<b class="fc">&nbsp;            Preconditions.checkState(column1Optional.isPresent());</b>
+<b class="fc">&nbsp;            column1 = column1Optional.get();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(0, column1.getPropertyDefinition().multiplicity().lower());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());</b>
+&nbsp;
+<b class="fc">&nbsp;            column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));</b>
+<b class="fc">&nbsp;            List&lt;Long&gt; lowers = sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;Long&gt;values(Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER).toList();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, lowers.size());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1L, lowers.get(0).longValue());</b>
+<b class="fc">&nbsp;            sqlgGraph1.tx().rollback();</b>
+&nbsp;            
+<b class="fc">&nbsp;            Thread.sleep(1_000);</b>
+<b class="fc">&nbsp;            Assert.assertEquals(sqlgGraph1.getTopology(), this.sqlgGraph.getTopology());</b>
+<b class="fc">&nbsp;            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="fc">&nbsp;                    .getVertexLabel(&quot;A&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getProperty(&quot;column1&quot;).orElseThrow()</b>
+<b class="fc">&nbsp;                    .getPropertyDefinition().multiplicity().isRequired());</b>
+&nbsp;
+<b class="fc">&nbsp;            lowers = sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;Long&gt;values(Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER).toList();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(1, lowers.size());</b>
+<b class="fc">&nbsp;            Assert.assertEquals(0L, lowers.get(0).longValue());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateMultiplicityFrom0to1() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;column1&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1)));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;column1&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //Change the property from required to optional
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1)));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//            Assert.fail(&quot;NOT NULL should have been dropped&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;column1&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1)));
+&nbsp;//        List&lt;Long&gt; lowers = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;Long&gt;values(Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER).toList();
+&nbsp;//        Assert.assertEquals(1, lowers.size());
+&nbsp;//        Assert.assertEquals(0L, lowers.get(0).longValue());
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            lowers = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;Long&gt;values(Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER).toList();
+&nbsp;//            Assert.assertEquals(1, lowers.size());
+&nbsp;//            Assert.assertEquals(1L, lowers.get(0).longValue());
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateDropCheckConstraint() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //drop the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1)));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        v.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(0, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;));
+&nbsp;//        List&lt;String&gt; checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//        Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//        Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//            Assert.assertEquals(0, checkConstraints.size());
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateAddCheckConstraint() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1)));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this!!!&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(0, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1)));
+&nbsp;//        List&lt;String&gt; checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//        Assert.assertEquals(0, checkConstraints.size());
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//            Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//            Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateChangeCheckConstraint() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this.&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(0, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;b&#39;)&quot;));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        v.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;b&quot;);
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this!!!&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(0, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;));
+&nbsp;//
+&nbsp;//        List&lt;String&gt; checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//        Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//        Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;a&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//            Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//            Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; &lt;&gt; &#39;b&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateArrayMultiplicityAndCheckConstraintH2() {
+&nbsp;//        Assume.assumeTrue(isH2());
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null,
+&nbsp;//                            &quot;(ARRAY_CONTAINS (&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot;, &#39;a1&#39;))&quot;)
+&nbsp;//                    );
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this.&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null,
+&nbsp;//                &quot;(ARRAY_CONTAINS (&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot;, &#39;b1&#39;))&quot;)
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        v.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;a1&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this!!!&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(2, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(4, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateArrayMultiplicityAndCheckConstraintHsqldb() {
+&nbsp;//        Assume.assumeTrue(isHsqldb());
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null,
+&nbsp;//                            &quot;(POSITION_ARRAY (&#39;{a1}&#39; IN &quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot;) = -1)&quot;)
+&nbsp;//                    );
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this.&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null,
+&nbsp;//                &quot;(POSITION_ARRAY (&#39;{b1}&#39; IN &quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot;) != -1)&quot;)
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        v.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;a1&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this!!!&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(2, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(4, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateArrayMultiplicityAndCheckConstraint() {
+&nbsp;//        Assume.assumeTrue(isPostgres());
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; @&gt; &#39;{a1}&#39;)&quot;));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this.&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; @&gt; &#39;{b2}&#39;)&quot;));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;b1&quot;, &quot;b2&quot;});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        v.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, new String[]{&quot;a1&quot;});
+&nbsp;//            Assert.fail(&quot;check constraint should have prevented this!!!&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(2, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(4, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4), null, &quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; @&gt; &#39;{a1}&#39;)&quot;));
+&nbsp;//        List&lt;String&gt; checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//        Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//        Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; @&gt; &#39;{a1}&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+&nbsp;//            Assert.assertEquals(1, checkConstraints.size());
+&nbsp;//            Assert.assertEquals(&quot;(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;name&quot;) + &quot; @&gt; &#39;{b2}&#39;)&quot;, checkConstraints.get(0));
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyUpdateDefaultLiteral() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;a&#39;&quot;));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        String name = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).tryNext().orElseThrow().value(&quot;name&quot;);
+&nbsp;//        Assert.assertEquals(&quot;a&quot;, name);
+&nbsp;//        this.sqlgGraph.traversal().V().drop().iterate();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;b&#39;&quot;));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        name = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).tryNext().orElseThrow().value(&quot;name&quot;);
+&nbsp;//        Assert.assertEquals(&quot;b&quot;, name);
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;a&#39;&quot;));
+&nbsp;//        List&lt;String&gt; defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//        Assert.assertEquals(1, defaultLiterals.size());
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//            Assert.assertEquals(1, defaultLiterals.size());
+&nbsp;//            Assert.assertEquals(&quot;&#39;b&#39;&quot;, defaultLiterals.get(0));
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyRemoveDefaultLiteral() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;a&#39;&quot;));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        String name = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).tryNext().orElseThrow().value(&quot;name&quot;);
+&nbsp;//        Assert.assertEquals(&quot;a&quot;, name);
+&nbsp;//        this.sqlgGraph.traversal().V().drop().iterate();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1)));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//            Assert.fail(&quot;required column should have prevented this.&quot;);
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        }
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;a&#39;&quot;));
+&nbsp;//        List&lt;String&gt; defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//        Assert.assertEquals(1, defaultLiterals.size());
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//            Assert.assertEquals(0, defaultLiterals.size());
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPropertyAddDefaultLiteral() {
+&nbsp;//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+&nbsp;//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;A&quot;, new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1)));
+&nbsp;//                }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Optional&lt;VertexLabel&gt; aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;);
+&nbsp;//        Preconditions.checkState(aVertexLabelOptional.isPresent());
+&nbsp;//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+&nbsp;//        Optional&lt;PropertyColumn&gt; column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        PropertyColumn column1 = column1Optional.get();
+&nbsp;//        //add the check constraint
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1), &quot;&#39;b&#39;&quot;));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; b = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;name&quot;, &quot;b&quot;).toList();
+&nbsp;//        Assert.assertEquals(1, b.size());
+&nbsp;//
+&nbsp;//        Assert.assertEquals(2, this.topologyListenerTriple.size());
+&nbsp;//        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
+&nbsp;//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+&nbsp;//        column1Optional = aVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        Preconditions.checkState(column1Optional.isPresent());
+&nbsp;//        column1 = column1Optional.get();
+&nbsp;//        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().lower());
+&nbsp;//        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+&nbsp;//
+&nbsp;//        column1.updatePropertyDefinition(PropertyDefinition.of(PropertyType.varChar(10), Multiplicity.of(1, 1)));
+&nbsp;//        List&lt;String&gt; defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//        Assert.assertEquals(0, defaultLiterals.size());
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//
+&nbsp;//        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+&nbsp;//            defaultLiterals = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PROPERTY).&lt;String&gt;values(Topology.SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL).toList();
+&nbsp;//            Assert.assertEquals(1, defaultLiterals.size());
+&nbsp;//            Assert.assertEquals(&quot;&#39;b&#39;&quot;, defaultLiterals.get(0));
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

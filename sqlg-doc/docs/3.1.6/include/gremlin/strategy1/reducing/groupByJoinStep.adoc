@@ -1,0 +1,69 @@
+===== Group By with join
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertyWithJoin() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
+    Vertex address1 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 2);
+    Vertex address2 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 4);
+    Vertex address3 = this.sqlgGraph.addVertex(T.label, "Address", "name", "C", "year", 6);
+    Vertex address4 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 8);
+    Vertex address5 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 7);
+    Vertex address6 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 6);
+    person.addEdge("livesAt", address1);
+    person.addEdge("livesAt", address2);
+    person.addEdge("livesAt", address3);
+    person.addEdge("livesAt", address4);
+    person.addEdge("livesAt", address5);
+    person.addEdge("livesAt", address6);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .out("livesAt")
+            .<String, Integer>group()
+            .by("name")
+            .by(__.values("year").max());
+
+    printTraversalForm(traversal);
+
+    Map<String, Integer> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertEquals(3, result.size());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("C"));
+    Assert.assertTrue(result.containsKey("D"));
+    Assert.assertEquals(4, result.get("A"), 0);
+    Assert.assertEquals(6, result.get("C"), 0);
+    Assert.assertEquals(8, result.get("D"), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbyjoin-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), VertexStep(OUT,[livesAt],vertex), GroupStep(value(name),[PropertiesStep([year],value), MaxGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbyjoin-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Address"."year") AS "alias1",
+	"public"."V_Address"."name" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_livesAt" ON "public"."V_Person"."ID" = "public"."E_livesAt"."public.Person__O" INNER JOIN
+	"public"."V_Address" ON "public"."E_livesAt"."public.Address__I" = "public"."V_Address"."ID"
+GROUP BY
+	"public"."V_Address"."name"
+----

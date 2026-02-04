@@ -1,0 +1,499 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTinkerPopEvent</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.event</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTinkerPopEvent (org.umlg.sqlg.test.event)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTinkerPopEvent</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (2/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.9%
+  </span>
+  <span class="absValue">
+    (47/49)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestTinkerPopEvent$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestTinkerPopEvent$AbstractMutationListener</td>
+<td class="coverageStat">
+  <span class="percent">
+    9.1%
+  </span>
+  <span class="absValue">
+    (1/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    9.1%
+  </span>
+  <span class="absValue">
+    (1/11)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestTinkerPopEvent$StubMutationListener</td>
+<td class="coverageStat">
+  <span class="percent">
+    21.7%
+  </span>
+  <span class="absValue">
+    (5/23)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (18/54)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    33.3%
+  </span>
+  <span class="absValue">
+    (14/42)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (2/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    59.3%
+  </span>
+  <span class="absValue">
+    (70/118)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.event;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.*;
+&nbsp;import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+&nbsp;import org.hamcrest.CoreMatchers;
+&nbsp;import org.hamcrest.MatcherAssert;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.concurrent.ConcurrentLinkedQueue;
+&nbsp;import java.util.concurrent.atomic.AtomicBoolean;
+&nbsp;import java.util.concurrent.atomic.AtomicLong;
+&nbsp;
+&nbsp;import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.addV;
+&nbsp;import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.unfold;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; *         Date: 2017/06/13
+&nbsp; */
+<b class="fc">&nbsp;public class TestTinkerPopEvent extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="fc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="pc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;)) {</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;            }
+&nbsp;        } catch (ConfigurationException e) {
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;John&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        a1 = this.sqlgGraph.traversal().V(a1).next();</b>
+<b class="fc">&nbsp;        Vertex a1Again = this.sqlgGraph.traversal().V(a1).next();</b>
+<b class="fc">&nbsp;        a1Again.property(&quot;name&quot;, &quot;Peter&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;        //This used to work when we had a vertex transaction cached.
+&nbsp;//        Assert.assertEquals(&quot;Peter&quot;, a1.value(&quot;name&quot;));
+<b class="fc">&nbsp;        Assert.assertNotEquals(&quot;Peter&quot;, a1.value(&quot;name&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void shouldDetachVertexPropertyWhenRemoved() {
+<b class="fc">&nbsp;        final AtomicBoolean triggered = new AtomicBoolean(false);</b>
+<b class="fc">&nbsp;        final Vertex v = this.sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        final VertexProperty vp = v.property(&quot;to-remove&quot;,&quot;blah&quot;);</b>
+<b class="fc">&nbsp;        final String label = vp.label();</b>
+<b class="fc">&nbsp;        final Object value = vp.value();</b>
+<b class="fc">&nbsp;        final VertexProperty vpToKeep = v.property(&quot;to-keep&quot;,&quot;dah&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        final MutationListener listener = new AbstractMutationListener() {</b>
+&nbsp;            @Override
+&nbsp;            public void vertexPropertyRemoved(final VertexProperty element) {
+<b class="fc">&nbsp;                Assert.assertEquals(label, element.label());</b>
+<b class="fc">&nbsp;                Assert.assertEquals(value, element.value());</b>
+<b class="fc">&nbsp;                triggered.set(true);</b>
+&nbsp;            }
+&nbsp;        };
+<b class="fc">&nbsp;        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (this.sqlgGraph.features().graph().supportsTransactions())</b>
+<b class="fc">&nbsp;            builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));</b>
+&nbsp;
+<b class="fc">&nbsp;        final EventStrategy eventStrategy = builder.create();</b>
+<b class="fc">&nbsp;        final GraphTraversalSource gts = create(eventStrategy);</b>
+&nbsp;
+<b class="fc">&nbsp;        gts.V(v).properties(&quot;to-remove&quot;).drop().iterate();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex vAgain = gts.V(v).next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, IteratorUtils.count(vAgain.properties()));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(vpToKeep.value(), v.value(&quot;to-keep&quot;));</b>
+<b class="fc">&nbsp;        MatcherAssert.assertThat(triggered.get(), CoreMatchers.is(true));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void shouldTriggerAddVertexAndPropertyUpdateWithCoalescePattern() {
+<b class="fc">&nbsp;        final StubMutationListener listener1 = new StubMutationListener();</b>
+<b class="fc">&nbsp;        final StubMutationListener listener2 = new StubMutationListener();</b>
+<b class="fc">&nbsp;        final EventStrategy.Builder builder = EventStrategy.build()</b>
+<b class="fc">&nbsp;                .addListener(listener1)</b>
+<b class="fc">&nbsp;                .addListener(listener2);</b>
+&nbsp;
+<b class="fc">&nbsp;        builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));</b>
+&nbsp;
+<b class="fc">&nbsp;        final EventStrategy eventStrategy = builder.create();</b>
+&nbsp;
+<b class="fc">&nbsp;        final GraphTraversalSource gts = create(eventStrategy);</b>
+<b class="fc">&nbsp;        Traversal&lt;Vertex, Vertex&gt; traversal = gts.V().has(&quot;some&quot;,&quot;thing&quot;).fold().coalesce(unfold(), addV()).property(&quot;some&quot;, &quot;thing&quot;);</b>
+<b class="fc">&nbsp;        traversal.iterate();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(1, IteratorUtils.count(gts.V().has(&quot;some&quot;, &quot;thing&quot;)));</b>
+<b class="fc">&nbsp;        assertEquals(1, listener1.addVertexEventRecorded());</b>
+<b class="fc">&nbsp;        assertEquals(1, listener2.addVertexEventRecorded());</b>
+<b class="fc">&nbsp;        assertEquals(1, listener1.vertexPropertyChangedEventRecorded());</b>
+<b class="fc">&nbsp;        assertEquals(1, listener2.vertexPropertyChangedEventRecorded());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private GraphTraversalSource create(final EventStrategy strategy) {
+<b class="fc">&nbsp;        return this.sqlgGraph.traversal().withStrategies(strategy);</b>
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    static abstract class AbstractMutationListener implements MutationListener {</b>
+&nbsp;        @Override
+&nbsp;        public void vertexAdded(final Vertex vertex) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexRemoved(final Vertex vertex) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyChanged(Vertex element, VertexProperty oldValue, Object setValue, Object... vertexPropertyKeyValues) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyRemoved(final VertexProperty vertexProperty) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgeAdded(final Edge edge) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgeRemoved(final Edge edge) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgePropertyChanged(final Edge element, final Property oldValue, final Object setValue) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgePropertyRemoved(final Edge element, final Property property) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyPropertyChanged(final VertexProperty element, final Property oldValue, final Object setValue) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyPropertyRemoved(final VertexProperty element, final Property property) {
+&nbsp;
+<b class="nc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    static class StubMutationListener implements MutationListener {</b>
+<b class="fc">&nbsp;        private final AtomicLong addEdgeEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong addVertexEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong vertexRemovedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong edgePropertyChangedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong vertexPropertyChangedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong vertexPropertyPropertyChangedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong edgePropertyRemovedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong vertexPropertyPropertyRemovedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong edgeRemovedEvent = new AtomicLong(0);</b>
+<b class="fc">&nbsp;        private final AtomicLong vertexPropertyRemovedEvent = new AtomicLong(0);</b>
+&nbsp;
+<b class="fc">&nbsp;        private final ConcurrentLinkedQueue&lt;String&gt; order = new ConcurrentLinkedQueue&lt;&gt;();</b>
+&nbsp;
+&nbsp;        public void reset() {
+<b class="nc">&nbsp;            addEdgeEvent.set(0);</b>
+<b class="nc">&nbsp;            addVertexEvent.set(0);</b>
+<b class="nc">&nbsp;            vertexRemovedEvent.set(0);</b>
+<b class="nc">&nbsp;            edgePropertyChangedEvent.set(0);</b>
+<b class="nc">&nbsp;            vertexPropertyChangedEvent.set(0);</b>
+<b class="nc">&nbsp;            vertexPropertyPropertyChangedEvent.set(0);</b>
+<b class="nc">&nbsp;            vertexPropertyPropertyRemovedEvent.set(0);</b>
+<b class="nc">&nbsp;            edgePropertyRemovedEvent.set(0);</b>
+<b class="nc">&nbsp;            edgeRemovedEvent.set(0);</b>
+<b class="nc">&nbsp;            vertexPropertyRemovedEvent.set(0);</b>
+&nbsp;
+<b class="nc">&nbsp;            order.clear();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public List&lt;String&gt; getOrder() {
+<b class="nc">&nbsp;            return new ArrayList&lt;&gt;(this.order);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexAdded(final Vertex vertex) {
+<b class="fc">&nbsp;            addVertexEvent.incrementAndGet();</b>
+<b class="fc">&nbsp;            order.add(&quot;v-added-&quot; + vertex.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexRemoved(final Vertex vertex) {
+<b class="nc">&nbsp;            vertexRemovedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;v-removed-&quot; + vertex.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgeAdded(final Edge edge) {
+<b class="nc">&nbsp;            addEdgeEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;e-added-&quot; + edge.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgePropertyRemoved(final Edge element, final Property o) {
+<b class="nc">&nbsp;            edgePropertyRemovedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;e-property-removed-&quot; + element.id() + &quot;-&quot; + o);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyPropertyRemoved(final VertexProperty element, final Property o) {
+<b class="nc">&nbsp;            vertexPropertyPropertyRemovedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;vp-property-removed-&quot; + element.id() + &quot;-&quot; + o);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgeRemoved(final Edge edge) {
+<b class="nc">&nbsp;            edgeRemovedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;e-removed-&quot; + edge.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyRemoved(final VertexProperty vertexProperty) {
+<b class="nc">&nbsp;            vertexPropertyRemovedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;vp-property-removed-&quot; + vertexProperty.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void edgePropertyChanged(final Edge element, final Property oldValue, final Object setValue) {
+<b class="nc">&nbsp;            edgePropertyChangedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;e-property-chanaged-&quot; + element.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyPropertyChanged(final VertexProperty element, final Property oldValue, final Object setValue) {
+<b class="nc">&nbsp;            vertexPropertyPropertyChangedEvent.incrementAndGet();</b>
+<b class="nc">&nbsp;            order.add(&quot;vp-property-changed-&quot; + element.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        @Override
+&nbsp;        public void vertexPropertyChanged(final Vertex element, final VertexProperty oldValue, final Object setValue, final Object... vertexPropertyKeyValues) {
+<b class="fc">&nbsp;            vertexPropertyChangedEvent.incrementAndGet();</b>
+<b class="fc">&nbsp;            order.add(&quot;v-property-changed-&quot; + element.id());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long addEdgeEventRecorded() {
+<b class="nc">&nbsp;            return addEdgeEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long addVertexEventRecorded() {
+<b class="fc">&nbsp;            return addVertexEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long vertexRemovedEventRecorded() {
+<b class="nc">&nbsp;            return vertexRemovedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long edgeRemovedEventRecorded() {
+<b class="nc">&nbsp;            return edgeRemovedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long edgePropertyRemovedEventRecorded() {
+<b class="nc">&nbsp;            return edgePropertyRemovedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long vertexPropertyRemovedEventRecorded() {
+<b class="nc">&nbsp;            return vertexPropertyRemovedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long vertexPropertyPropertyRemovedEventRecorded() {
+<b class="nc">&nbsp;            return vertexPropertyPropertyRemovedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long edgePropertyChangedEventRecorded() {
+<b class="nc">&nbsp;            return edgePropertyChangedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long vertexPropertyChangedEventRecorded() {
+<b class="fc">&nbsp;            return vertexPropertyChangedEvent.get();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        public long vertexPropertyPropertyChangedEventRecorded() {
+<b class="nc">&nbsp;            return vertexPropertyPropertyChangedEvent.get();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

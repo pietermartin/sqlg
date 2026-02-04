@@ -1,0 +1,759 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestOptionalWithOrder</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestOptionalWithOrder (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestOptionalWithOrder</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (24/24)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    68.1%
+  </span>
+  <span class="absValue">
+    (188/276)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (496/496)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Order;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Step;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.step.SqlgVertexStep;
+&nbsp;import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/31
+&nbsp; * Time: 7:32 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestOptionalWithOrder extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInlineOrder() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths  = sqlgGraph.traversal().V(a2, a1).order().by(&quot;name&quot;).optional(__.out()).path().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.get(0).size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOrder() {
+&nbsp;
+<b class="fc">&nbsp;        Vertex a1 = sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a1.addEdge(&quot;e_a&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;e_a&quot;, b2);</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Path&gt; t = sqlgGraph.traversal().V(a1, a2).order().by(&quot;name&quot;).optional(__.out()).path();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(t.hasNext());</b>
+<b class="fc">&nbsp;        Path p = t.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, p.size());</b>
+<b class="fc">&nbsp;        Vertex v1 = p.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, v1.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        Vertex v2 = p.get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b1&quot;, v2.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(t.hasNext());</b>
+<b class="fc">&nbsp;        p = t.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, p.size());</b>
+<b class="fc">&nbsp;        v1 = p.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a2&quot;, v1.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        v2 = p.get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b2&quot;, v2.property(&quot;name&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        b1.remove();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; paths  = sqlgGraph.traversal().V(a2, a1).order().by(&quot;name&quot;).optional(__.out()).path().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.get(0).size());</b>
+&nbsp;
+<b class="fc">&nbsp;        t = sqlgGraph.traversal().V(a2, a1).order().by(&quot;name&quot;).optional(__.out()).path();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(t.hasNext());</b>
+<b class="fc">&nbsp;        p = t.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, p.size());</b>
+<b class="fc">&nbsp;        v1 = p.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a1&quot;, v1.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(t.hasNext());</b>
+<b class="fc">&nbsp;        p = t.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, p.size());</b>
+<b class="fc">&nbsp;        v1 = p.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;a2&quot;, v1.property(&quot;name&quot;).value());</b>
+<b class="fc">&nbsp;        v2 = p.get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b2&quot;, v2.property(&quot;name&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrder() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aaa&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;d&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;c&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;g&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;f&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb3 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;e&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;h&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;i&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;j&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc1 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;k&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc2 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;l&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc3 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;m&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb3);</b>
+&nbsp;
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc2);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;name&quot;).optional(</b>
+<b class="fc">&nbsp;                                __.out().order().by(&quot;name&quot;, Order.desc)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, true, true, true);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(12, paths.size());</b>
+&nbsp;
+&nbsp;        //assert the order
+&nbsp;        //all the paths of length 2 and 3 must be sorted
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength3 = paths.stream().filter(p -&gt; p.size() == 3).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Vertex v = (Vertex) pathsOfLength3.get(5).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;h&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength3.get(4).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;i&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength3.get(3).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;j&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength3.get(2).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;k&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength3.get(1).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;l&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength3.get(0).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;m&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength2 = paths.stream().filter(p -&gt; p.size() == 2).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(0).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(1).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;e&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(2).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;f&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(3).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;g&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c2)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c2)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c3)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c3)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc1)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc1)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc2)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc2)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc3)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc3)).findAny().get());</b>
+&nbsp;
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb1)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb1)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb2)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb2)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb3)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb3)).findAny().get());</b>
+&nbsp;
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b3)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b3)).findAny().get());</b>
+&nbsp;
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a2)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a2)).findAny().get());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a3)));</b>
+<b class="pc">&nbsp;        paths.remove(paths.stream().filter(p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a3)).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrderAndRange() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aaa&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;d&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;c&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;g&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;f&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb3 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;e&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;h&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;i&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;j&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc1 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;k&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc2 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;l&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc3 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;m&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb3);</b>
+&nbsp;
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc2);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;name&quot;).optional(</b>
+<b class="fc">&nbsp;                                __.out().order().by(&quot;name&quot;, Order.desc).range(2, 3)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, true, true, true);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(7, paths.size());</b>
+&nbsp;
+&nbsp;        //all the paths of length 2 and 3 must be sorted
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength3 = paths.stream().filter(p -&gt; p.size() == 3).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, pathsOfLength3.size());</b>
+<b class="fc">&nbsp;        Vertex v = (Vertex) pathsOfLength3.get(0).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;k&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength2 = paths.stream().filter(p -&gt; p.size() == 2).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, pathsOfLength2.size());</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(0).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;b&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(1).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;e&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(2).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;f&quot;, v.value(&quot;name&quot;));</b>
+<b class="fc">&nbsp;        v = (Vertex) pathsOfLength2.get(3).objects().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;g&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength1 = paths.stream().filter(p -&gt; p.size() == 1).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, pathsOfLength1.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrderAndRange2() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;aaa&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;d&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;c&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;g&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;f&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb3 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;name&quot;, &quot;e&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;h&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;i&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;j&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc1 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;k&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc2 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;l&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc3 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;, &quot;name&quot;, &quot;m&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb3);</b>
+&nbsp;
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc2);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().order().by(&quot;name&quot;).range(1, 2).optional(</b>
+<b class="fc">&nbsp;                                __.out().order().by(&quot;name&quot;, Order.desc).range(2, 3)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+&nbsp;        //This query is no fully optimized.
+&nbsp;        //The range messes it up, so it has a SqlgVertexStep
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, false, false, true);</b>
+<b class="fc">&nbsp;        Step&lt;?, ?&gt; step = traversal.getSteps().get(1);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(step instanceof SqlgOptionalStepBarrier);</b>
+&nbsp;//        SqlgOptionalStepBarrier&lt;?,?,?&gt; sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier&lt;?, ?, ?&gt;) step;
+<b class="fc">&nbsp;        SqlgOptionalStepBarrier&lt;?&gt; sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier&lt;?&gt;) step;</b>
+<b class="fc">&nbsp;        Traversal.Admin&lt;?, ?&gt; traversal1 = sqlgOptionalStepBarrier.getLocalChildren().get(0);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);</b>
+<b class="fc">&nbsp;        assertStep(traversal1.getSteps().get(0), false, true, true, true);</b>
+&nbsp;        //There is another SqlgVertexStep but it is not being asserted
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength1 = paths.stream().filter(p -&gt; p.size() == 1).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, pathsOfLength1.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; pathsOfLength3 = paths.stream().filter(p -&gt; p.size() == 3).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, pathsOfLength3.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v = (Vertex) pathsOfLength3.get(0).objects().get(2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;k&quot;, v.value(&quot;name&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrder2() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;order&quot;, 13);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;order&quot;, 12);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;order&quot;, 11);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;).as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.outE().as(&quot;e&quot;).otherV().as(&quot;v&quot;)</b>
+<b class="fc">&nbsp;                ).order().by(&quot;order&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        for (Step step : traversal.getSteps()) {</b>
+<b class="fc">&nbsp;            System.out.println(step.toString());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, false, false, true);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(1) instanceof IdentityStep);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(2) instanceof OrderGlobalStep);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b2, vertices.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(b1, vertices.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a3, vertices.get(3));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a2, vertices.get(4));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrderBy2() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d3&quot;);</b>
+<b class="fc">&nbsp;        Edge ab1 = a1.addEdge(&quot;ab&quot;, b1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge ab2 = a1.addEdge(&quot;ab&quot;, b2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge ab3 = a1.addEdge(&quot;ab&quot;, b3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Edge bc1 = b1.addEdge(&quot;bc&quot;, c1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge bc2 = b1.addEdge(&quot;bc&quot;, c2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge bc3 = b1.addEdge(&quot;bc&quot;, c3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Edge cd1 = c1.addEdge(&quot;cd&quot;, d1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge cd2 = c1.addEdge(&quot;cd&quot;, d2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge cd3 = c1.addEdge(&quot;cd&quot;, d3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal().V(a1.id())</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.outE(&quot;ab&quot;).as(&quot;ab&quot;).otherV().as(&quot;vb&quot;).order().by(__.select(&quot;ab&quot;).by(&quot;order&quot;), Order.asc)</b>
+<b class="fc">&nbsp;                                .optional(</b>
+<b class="fc">&nbsp;                                        __.outE(&quot;bc&quot;).as(&quot;bc&quot;).otherV().as(&quot;vc&quot;).order().by(__.select(&quot;bc&quot;).by(&quot;order&quot;), Order.asc)</b>
+<b class="fc">&nbsp;                                                .optional(</b>
+<b class="fc">&nbsp;                                                        __.outE(&quot;cd&quot;).as(&quot;cd&quot;).inV().as(&quot;vd&quot;).order().by(__.select(&quot;cd&quot;).by(&quot;order&quot;), Order.asc)</b>
+&nbsp;                                                )
+&nbsp;                                )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+&nbsp;//        printTraversalForm(traversal);
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, true, false, true);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(7, paths.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 5 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(4).equals(c3)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 5 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(4).equals(c3)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 5 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(4).equals(c2)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 5 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(4).equals(c2)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(5).equals(cd1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d1)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(5).equals(cd1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d1)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(5).equals(cd2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d2)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(5).equals(cd2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d2)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(5).equals(cd3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d3)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 7 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(2).equals(b1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(3).equals(bc1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(4).equals(c1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(5).equals(cd3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(6).equals(d3)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(1).equals(ab2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(2).equals(b2)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(1).equals(ab2) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(2).equals(b2)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(paths.stream().anyMatch(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(2).equals(b3)</b>
+&nbsp;        ));
+<b class="fc">&nbsp;        paths.remove(paths.stream().filter(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(0).equals(a1) &amp;&amp;</b>
+<b class="pc">&nbsp;                        p.get(1).equals(ab3) &amp;&amp;</b>
+<b class="fc">&nbsp;                        p.get(2).equals(b3)</b>
+<b class="fc">&nbsp;        ).findAny().get());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, paths.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithOrderBy3() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b4&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d2&quot;);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d3&quot;);</b>
+<b class="fc">&nbsp;        Edge ab1 = a1.addEdge(&quot;ab&quot;, b1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge ab2 = a1.addEdge(&quot;ab&quot;, b2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge ab3 = a1.addEdge(&quot;ab&quot;, b3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Edge ab4 = a2.addEdge(&quot;ab&quot;, b4, &quot;order&quot;, 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        Edge bc1 = b1.addEdge(&quot;bc&quot;, c1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge bc2 = b1.addEdge(&quot;bc&quot;, c2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge bc3 = b1.addEdge(&quot;bc&quot;, c3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Edge cd1 = c1.addEdge(&quot;cd&quot;, d1, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        Edge cd2 = c1.addEdge(&quot;cd&quot;, d2, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Edge cd3 = c1.addEdge(&quot;cd&quot;, d3, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal().V(a1, a2)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.outE(&quot;ab&quot;).as(&quot;ab&quot;).otherV().as(&quot;vb&quot;).order().by(__.select(&quot;ab&quot;).by(&quot;order&quot;), Order.asc)</b>
+<b class="fc">&nbsp;                                .optional(</b>
+<b class="fc">&nbsp;                                        __.outE(&quot;bc&quot;).as(&quot;bc&quot;).otherV().as(&quot;vc&quot;).order().by(__.select(&quot;bc&quot;).by(&quot;order&quot;), Order.asc)</b>
+<b class="fc">&nbsp;                                                .optional(</b>
+<b class="fc">&nbsp;                                                        __.outE(&quot;cd&quot;).as(&quot;cd&quot;).inV().as(&quot;vd&quot;).order().by(__.select(&quot;cd&quot;).by(&quot;order&quot;), Order.asc)</b>
+&nbsp;                                                )
+&nbsp;                                )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        System.out.println(paths);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexStepAfterOptional() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;order&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;order&quot;, 3);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d1);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;cd&quot;, d3);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;order&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;order&quot;, -1);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;order&quot;, -2);</b>
+<b class="fc">&nbsp;        Vertex bb3 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;, &quot;order&quot;, -3);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;abb&quot;, bb2);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;abb&quot;, bb3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;)</b>
+<b class="fc">&nbsp;                                .optional(</b>
+<b class="fc">&nbsp;                                        __.out()</b>
+&nbsp;                                )
+&nbsp;                )
+<b class="fc">&nbsp;                .out()</b>
+<b class="fc">&nbsp;                .order().by(&quot;order&quot;, Order.desc);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="fc">&nbsp;        assertStep(traversal.getSteps().get(0), true, false, false, true);</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(d3, vertices.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(d2, vertices.get(1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(d1, vertices.get(2));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(bb1, vertices.get(3));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(bb2, vertices.get(4));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(bb3, vertices.get(5));</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

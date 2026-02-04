@@ -1,0 +1,211 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTopologyRecursiveRepeat</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.recursive</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTopologyRecursiveRepeat (org.umlg.sqlg.test.recursive)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTopologyRecursiveRepeat</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (33/33)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestTopologyRecursiveRepeat$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (38/38)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.recursive;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.step.SqlgGraphStep;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.*;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="fc">&nbsp;public class TestTopologyRecursiveRepeat extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testTopologyPartitionRecursiveRepeat() {
+<b class="fc">&nbsp;        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();</b>
+<b class="fc">&nbsp;        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist(&quot;Measurement&quot;,</b>
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;                    put(&quot;list1&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;                    put(&quot;list2&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="fc">&nbsp;                    put(&quot;unitsales&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(List.of(&quot;name&quot;, &quot;list1&quot;, &quot;list2&quot;)),</b>
+&nbsp;                PartitionType.LIST,
+&nbsp;                &quot;list1&quot;);
+&nbsp;
+<b class="fc">&nbsp;        Partition p1 = measurement.ensureListPartitionWithSubPartitionExists(&quot;measurement_list1&quot;, &quot;&#39;1&#39;&quot;, PartitionType.LIST, &quot;list2&quot;);</b>
+<b class="fc">&nbsp;        Partition p2 = measurement.ensureListPartitionWithSubPartitionExists(&quot;measurement_list2&quot;, &quot;&#39;2&#39;&quot;, PartitionType.LIST, &quot;list2&quot;);</b>
+<b class="fc">&nbsp;        p1.ensureListPartitionExists(&quot;measurement_list1_1&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        p1.ensureListPartitionExists(&quot;measurement_list1_2&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        p1.ensureListPartitionExists(&quot;measurement_list1_3&quot;, &quot;3&quot;);</b>
+<b class="fc">&nbsp;        p1.ensureListPartitionExists(&quot;measurement_list1_4&quot;, &quot;4&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        p2.ensureListPartitionExists(&quot;measurement_list2_1&quot;, &quot;1&quot;);</b>
+<b class="fc">&nbsp;        p2.ensureListPartitionExists(&quot;measurement_list2_2&quot;, &quot;2&quot;);</b>
+<b class="fc">&nbsp;        p2.ensureListPartitionExists(&quot;measurement_list2_3&quot;, &quot;3&quot;);</b>
+<b class="fc">&nbsp;        p2.ensureListPartitionExists(&quot;measurement_list2_4&quot;, &quot;4&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Object&gt; partitionIds = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)</b>
+<b class="fc">&nbsp;                .out(Topology.SQLG_SCHEMA_VERTEX_PARTITION_EDGE)</b>
+<b class="fc">&nbsp;                .id()</b>
+<b class="fc">&nbsp;                .toList();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Path&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Path&gt;)this.sqlgGraph.topology().V().hasId(P.within(partitionIds))</b>
+<b class="fc">&nbsp;                .repeat(</b>
+<b class="fc">&nbsp;                        __.out(Topology.SQLG_SCHEMA_PARTITION_PARTITION_EDGE).simplePath()</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .until(</b>
+<b class="fc">&nbsp;                        __.not(__.out(Topology.SQLG_SCHEMA_PARTITION_PARTITION_EDGE).simplePath())</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(SqlgGraphStep.class, traversal.getSteps().get(0).getClass());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(PathStep.class, traversal.getSteps().get(1).getClass());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(8, paths.size());</b>
+&nbsp;//        Assert.assertTrue(paths.stream().anyMatch(p -&gt; p.size() == 4 &amp;&amp; p.get(0).equals(a) &amp;&amp; p.get(1).equals(b) &amp;&amp; p.get(2).equals(c) &amp;&amp; p.get(3).equals(d)));
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,198 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestPropertyReference</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestPropertyReference (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestPropertyReference</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (34/34)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.DefaultSqlgTraversal;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;import static org.umlg.sqlg.predicate.PropertyReference.propertyRef;
+&nbsp;
+&nbsp;/**
+&nbsp; * Test column references
+&nbsp; *
+&nbsp; * @author JP Moresmau
+&nbsp; */
+<b class="fc">&nbsp;public class TestPropertyReference extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInt() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;johnny&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;pietie&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;koosie&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 1);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        assertOneStepOneVertex(this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;score&quot;, propertyRef(Compare.eq, &quot;experience&quot;))</b>
+&nbsp;                , v2);
+<b class="fc">&nbsp;        assertOneStepOneVertex(this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;score&quot;, propertyRef(Compare.lt, &quot;experience&quot;))</b>
+&nbsp;                , v1);
+<b class="fc">&nbsp;        assertOneStepOneVertex(this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;score&quot;, propertyRef(Compare.gt, &quot;experience&quot;))</b>
+&nbsp;                , v3);
+&nbsp;    }
+&nbsp;
+&nbsp;    private void assertOneStepOneVertex(GraphTraversal&lt;Vertex, Vertex&gt; gt, Vertex v) {
+<b class="fc">&nbsp;        DefaultSqlgTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultSqlgTraversal&lt;Vertex, Vertex&gt;) gt;</b>
+<b class="fc">&nbsp;        assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        assertEquals(v, vertices.get(0));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultiplePath() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;johnny&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;pietie&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex v3 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;koosie&quot;, &quot;score&quot;, 2, &quot;experience&quot;, 1);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v4 = this.sqlgGraph.addVertex(T.label, &quot;Group&quot;, &quot;name&quot;, &quot;Friends&quot;);</b>
+<b class="fc">&nbsp;        v4.addEdge(&quot;contains&quot;, v1);</b>
+<b class="fc">&nbsp;        v4.addEdge(&quot;contains&quot;, v2);</b>
+<b class="fc">&nbsp;        v4.addEdge(&quot;contains&quot;, v3);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v5 = this.sqlgGraph.addVertex(T.label, &quot;Company&quot;, &quot;name&quot;, &quot;Acme&quot;);</b>
+<b class="fc">&nbsp;        v5.addEdge(&quot;groups&quot;, v4);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;Company&quot;).as(&quot;c&quot;).out(&quot;groups&quot;)</b>
+<b class="fc">&nbsp;                .as(&quot;g&quot;).out(&quot;contains&quot;).has(&quot;score&quot;, propertyRef(Compare.eq, &quot;experience&quot;)).as(&quot;p&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;c&quot;, &quot;p&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; l = traversal.toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, l.size());</b>
+<b class="fc">&nbsp;        assertEquals(v2, l.get(0).get(&quot;p&quot;));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

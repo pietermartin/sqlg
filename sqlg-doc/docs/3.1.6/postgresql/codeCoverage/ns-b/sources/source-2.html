@@ -1,0 +1,159 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestDetachedEdge</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.edges</a>
+</div>
+
+<h1>Coverage Summary for Class: TestDetachedEdge (org.umlg.sqlg.test.edges)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestDetachedEdge</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (20/20)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.edges;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Direction;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Graph;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
+&nbsp;import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/11/17
+&nbsp; * Time: 10:15 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestDetachedEdge extends BaseTest {</b>
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void shouldConstructDetachedEdge() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        Object edgeId = convertToEdgeId();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().E(edgeId).next().property(&quot;year&quot;, 2002);</b>
+<b class="fc">&nbsp;        Edge next = this.sqlgGraph.traversal().E(edgeId).next();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNotNull(this.sqlgGraph.traversal().E(edgeId).next().property(&quot;year&quot;).value());</b>
+&nbsp;
+<b class="fc">&nbsp;        final DetachedEdge detachedEdge = DetachedFactory.detach(next, true);</b>
+<b class="fc">&nbsp;        assertEquals(convertToEdgeId(), detachedEdge.id());</b>
+<b class="fc">&nbsp;        assertEquals(&quot;knows&quot;, detachedEdge.label());</b>
+<b class="fc">&nbsp;        assertEquals(DetachedVertex.class, detachedEdge.vertices(Direction.OUT).next().getClass());</b>
+<b class="fc">&nbsp;        assertEquals(convertToVertexId(&quot;marko&quot;), detachedEdge.vertices(Direction.OUT).next().id());</b>
+<b class="fc">&nbsp;        assertEquals(&quot;person&quot;, detachedEdge.vertices(Direction.IN).next().label());</b>
+<b class="fc">&nbsp;        assertEquals(DetachedVertex.class, detachedEdge.vertices(Direction.IN).next().getClass());</b>
+<b class="fc">&nbsp;        assertEquals(convertToVertexId(&quot;vadas&quot;), detachedEdge.vertices(Direction.IN).next().id());</b>
+<b class="fc">&nbsp;        assertEquals(&quot;person&quot;, detachedEdge.vertices(Direction.IN).next().label());</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(2, IteratorUtils.count(detachedEdge.properties()));</b>
+<b class="fc">&nbsp;        assertEquals(1, IteratorUtils.count(detachedEdge.properties(&quot;year&quot;)));</b>
+<b class="fc">&nbsp;        assertEquals(0.5d, detachedEdge.properties(&quot;weight&quot;).next().value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private Object convertToEdgeId() {
+<b class="fc">&nbsp;        return convertToEdgeId(this.sqlgGraph, &quot;marko&quot;, &quot;knows&quot;, &quot;vadas&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
+<b class="fc">&nbsp;        return graph.traversal().V().has(&quot;name&quot;, outVertexName).outE(edgeLabel).as(&quot;e&quot;).inV().has(&quot;name&quot;, inVertexName).&lt;Edge&gt;select(&quot;e&quot;).next().id();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

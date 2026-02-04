@@ -1,0 +1,40 @@
+=== Custom functions
+
+Sqlg has support to call any operator the database supports in its `select` clause.
+
+.Eg. the `+` operator
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testFunctions() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel personVertexLabel = publicSchema.ensureVertexLabelExist("Person",
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
+                }});
+        this.sqlgGraph.tx().commit();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "name_" + i, "surname", "surname_" + i, "age", i);
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> _additions = this.sqlgGraph.traversal().V().hasLabel("Person")
+                .<Vertex>fun(
+                        "addition", #<1>
+                        PropertyType.LONG, #<2>
+                        o -> "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("age") + " + 10)" #<3>
+                )
+                .toList();
+        for (Vertex addition : _additions) {
+            long agePlus10 = addition.value("addition"); #<4>
+        }
+
+    }
+----
+<1> The name of the property that will hold the result of the function (operator)
+<2> The type of the resulting property.
+<3> The `String` result of the 3rd parameter will be passed as is to the select clause.
+In the case it is saying return `"age" + 10`
+<4> The age is returned in a custom property

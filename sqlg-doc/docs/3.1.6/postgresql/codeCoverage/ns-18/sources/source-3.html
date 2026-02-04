@@ -1,0 +1,150 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestIndexTopologyTraversal</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.index</a>
+</div>
+
+<h1>Coverage Summary for Class: TestIndexTopologyTraversal (org.umlg.sqlg.test.index)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestIndexTopologyTraversal</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (19/19)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.index;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.*;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/11/26
+&nbsp; * Time: 11:01 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestIndexTopologyTraversal extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIndexTopologyTraversal() {
+<b class="fc">&nbsp;        Schema schemaA = this.sqlgGraph.getTopology().ensureSchemaExist(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = schemaA.ensureVertexLabelExist(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        VertexLabel bVertexLabel = schemaA.ensureVertexLabelExist(&quot;B&quot;);</b>
+<b class="fc">&nbsp;        Map&lt;String, PropertyDefinition&gt; properties = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        properties.put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(&quot;ab&quot;, aVertexLabel, bVertexLabel, properties);</b>
+<b class="fc">&nbsp;        edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty(&quot;name&quot;).get()));</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; indexes = this.sqlgGraph.topology().V().hasLabel(&quot;sqlg_schema.index&quot;).toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, indexes.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; indexProperties = this.sqlgGraph.topology().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;sqlg_schema.schema&quot;).has(&quot;name&quot;, &quot;A&quot;)</b>
+<b class="fc">&nbsp;                .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)</b>
+<b class="fc">&nbsp;                .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)</b>
+<b class="fc">&nbsp;                .out(Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE)</b>
+<b class="fc">&nbsp;                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        assertEquals(1, indexProperties.size());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-06-23 10:13</div>
+</div>
+</body>
+</html>

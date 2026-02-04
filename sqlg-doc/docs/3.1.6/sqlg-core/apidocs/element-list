@@ -1,0 +1,15 @@
+org.umlg.sqlg
+org.umlg.sqlg.predicate
+org.umlg.sqlg.services
+org.umlg.sqlg.sql.dialect
+org.umlg.sqlg.sql.parse
+org.umlg.sqlg.step
+org.umlg.sqlg.step.barrier
+org.umlg.sqlg.strategy
+org.umlg.sqlg.strategy.barrier
+org.umlg.sqlg.structure
+org.umlg.sqlg.structure.ds
+org.umlg.sqlg.structure.io.binary
+org.umlg.sqlg.structure.topology
+org.umlg.sqlg.structure.traverser
+org.umlg.sqlg.util
