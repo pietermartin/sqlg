@@ -52,6 +52,23 @@ public class PGRConnectedComponentTest extends BasePGRouting {
     }
 
     @Test
+    public void testConnectedComponent() {
+        loadPGRoutingSampleData();
+
+        List<Vertex> components = this.sqlgGraph.traversal().E().hasLabel("edges").pgrConnectedComponent().toList();
+        for (Vertex v: components) {
+            long component = v.value(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COMPONENT));
+            LOGGER.debug("{}: {}", component, v);
+        }
+        String pgr_connectedComponents = """
+                SELECT * FROM pgr_connectedComponents(
+                  'SELECT "ID" as id, source, target, cost, reverse_cost FROM "E_edges"'
+                  );
+                """;
+        assertPGConnectedComponents(components, pgr_connectedComponents);
+    }
+
+    @Test
     public void testConnectedComponentInSchema() {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A", new LinkedHashMap<>() {{
