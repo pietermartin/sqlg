@@ -262,7 +262,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                                                 break;
                                             } catch (Exception e) {
                                                 sqlgGraphAsync.tx().rollback();
-                                                if (e.getCause().getClass().getSimpleName().equals("PSQLException")) {
+                                                if (e.getCause() != null && e.getCause().getClass().getSimpleName().equals("PSQLException")) {
                                                     //swallow
                                                     logger.warn("Rollback transaction due to schema creation failure.", e);
                                                 } else {
