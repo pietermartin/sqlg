@@ -15,7 +15,7 @@ import java.util.*;
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/13
  */
-public class SqlgHasStep<S extends Element> extends SqlgFilterStep<S> implements HasContainerHolder {
+public class SqlgHasStep<S extends Element> extends SqlgFilterStep<S> implements HasContainerHolder<S, S> {
 
     private List<HasContainer> hasContainers;
 

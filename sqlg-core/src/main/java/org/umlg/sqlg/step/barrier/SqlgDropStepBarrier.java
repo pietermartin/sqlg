@@ -46,19 +46,6 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
         this.callbackRegistry = callbackRegistry;
     }
 
-    /**
-     * This method doesn't do anything as {@code drop()} doesn't take property mutation arguments.
-     */
-    @Override
-    public void configure(final Object... keyValues) {
-        // Do nothing.
-    }
-
-    @Override
-    public Parameters getParameters() {
-        return parameters;
-    }
-
     @Override
     protected Traverser.Admin<S> processNextStart() {
         if (this.first) {

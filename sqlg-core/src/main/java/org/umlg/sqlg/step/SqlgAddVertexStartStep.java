@@ -38,11 +38,6 @@ public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> imp
     }
 
     @Override
-    public void configure(final Object... keyValues) {
-        this.parameters.set(this, keyValues);
-    }
-
-    @Override
     public Parameters getParameters() {
         return this.parameters;
     }

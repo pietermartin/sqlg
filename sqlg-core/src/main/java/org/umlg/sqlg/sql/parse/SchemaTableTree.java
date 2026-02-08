@@ -3323,10 +3323,10 @@ public class SchemaTableTree {
             }
             if (Contains.without.equals(hasContainer.getBiPredicate())) {
                 Object o = hasContainer.getValue();
-                if (o instanceof Collection && ((Collection<?>) o).size() == 0) {
+                if (o instanceof Collection && ((Collection<?>) o).isEmpty()) {
                     //P.without(Collections.emptySet()) translates to the sql IS NOT NULL
                     toRemove.add(hasContainer);
-                    toAdd.add(new HasContainer(hasContainer.getKey(), new P<>(Existence.NOTNULL, null)));
+                    toAdd.add(new HasContainer(hasContainer.getKey(), new P<>(Existence.NOTNULL, (String)null)));
                 }
             }
         }

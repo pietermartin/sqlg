@@ -1213,7 +1213,7 @@ public abstract class BaseStrategy {
                     }
                 }
             } else if ((notNullKey = isNotNullStep(currentStep)) != null) {
-                replacedStep.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL, null)));
+                replacedStep.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL, (String)null)));
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(label -> replacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
@@ -1226,7 +1226,7 @@ public abstract class BaseStrategy {
                 iterator.remove();
                 countToGoPrevious--;
             } else if ((nullKey = isNullStep(currentStep)) != null) {
-                replacedStep.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL, null)));
+                replacedStep.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL, (String)null)));
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(label -> replacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
@@ -1465,14 +1465,14 @@ public abstract class BaseStrategy {
                 } else if (step instanceof TraversalFilterStep) {
                     String notNullKey = isNotNullStep(step);
                     if (notNullKey != null) {
-                        andOrHasContainer.addHasContainer(selectLabel, new HasContainer(notNullKey, new P<>(Existence.NOTNULL, null)));
+                        andOrHasContainer.addHasContainer(selectLabel, new HasContainer(notNullKey, new P<>(Existence.NOTNULL, (String)null)));
                     } else {
                         return Optional.empty();
                     }
                 } else if (step instanceof NotStep) {
                     String nullKey = isNullStep(step);
                     if (nullKey != null) {
-                        andOrHasContainer.addHasContainer(selectLabel, new HasContainer(nullKey, new P<>(Existence.NULL, null)));
+                        andOrHasContainer.addHasContainer(selectLabel, new HasContainer(nullKey, new P<>(Existence.NULL, (String)null)));
                     } else {
                         return Optional.empty();
                     }
@@ -1588,7 +1588,7 @@ public abstract class BaseStrategy {
         sqlgGraphStep.clearIds();
     }
 
-    private static boolean isNotWithMultipleColumnValue(HasContainerHolder currentStep) {
+    private static boolean isNotWithMultipleColumnValue(HasContainerHolder<?,?> currentStep) {
         for (HasContainer h : currentStep.getHasContainers()) {
             P<?> predicate = h.getPredicate();
             //noinspection unchecked
