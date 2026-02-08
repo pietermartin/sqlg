@@ -32,7 +32,7 @@
     </scm>
     <properties>
         <sqlg.version>3.2.0-SNAPSHOT</sqlg.version>
-        <tinkerpop.version>3.7.4</tinkerpop.version>
+        <tinkerpop.version>3.8.0</tinkerpop.version>
         <junit.version>4.13.2</junit.version>
     </properties>
     <developers>
