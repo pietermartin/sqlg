@@ -36,6 +36,64 @@ public interface SqlgTraversalDsl<S, E> extends GraphTraversal.Admin<S, E> {
      * @param directed is the graph directed or not
      * @return a @{@link Path} from startVid to endVid
      */
+    default GraphTraversal<S, Path> ksp(long startVid, long endVid, int k, boolean directed) {
+        return call(
+                SqlgPGRoutingFactory.NAME,
+                Map.of(
+                        SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_ksp,
+                        SqlgPGRoutingFactory.Params.START_VID, startVid,
+                        SqlgPGRoutingFactory.Params.END_VID, endVid,
+                        SqlgPGRoutingFactory.Params.K, k,
+                        SqlgPGRoutingFactory.Params.DIRECTED, directed
+                )
+        );
+    }
+
+    default GraphTraversal<S, Path> ksp(List<Long> startVids, List<Long> endVids, int k, boolean directed) {
+        return call(
+                SqlgPGRoutingFactory.NAME,
+                Map.of(
+                        SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_ksp,
+                        SqlgPGRoutingFactory.Params.START_VIDS, startVids,
+                        SqlgPGRoutingFactory.Params.END_VIDS, endVids,
+                        SqlgPGRoutingFactory.Params.K, k,
+                        SqlgPGRoutingFactory.Params.DIRECTED, directed
+                )
+        );
+    }
+
+    default GraphTraversal<S, Path> ksp(long startVid, List<Long> endVids, int k, boolean directed) {
+        return call(
+                SqlgPGRoutingFactory.NAME,
+                Map.of(
+                        SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_ksp,
+                        SqlgPGRoutingFactory.Params.START_VID, startVid,
+                        SqlgPGRoutingFactory.Params.END_VIDS, endVids,
+                        SqlgPGRoutingFactory.Params.K, k,
+                        SqlgPGRoutingFactory.Params.DIRECTED, directed
+                )
+        );
+    }
+
+    default GraphTraversal<S, Path> ksp(List<Long> startVids, long endVid, int k, boolean directed) {
+        return call(
+                SqlgPGRoutingFactory.NAME,
+                Map.of(
+                        SqlgPGRoutingFactory.Params.FUNCTION, SqlgPGRoutingFactory.pgr_ksp,
+                        SqlgPGRoutingFactory.Params.START_VIDS, startVids,
+                        SqlgPGRoutingFactory.Params.END_VID, endVid,
+                        SqlgPGRoutingFactory.Params.K, k,
+                        SqlgPGRoutingFactory.Params.DIRECTED, directed
+                )
+        );
+    }
+
+    /**
+     * @param startVid sequence id of the start vertex
+     * @param endVid   sequence id of the end vertex
+     * @param directed is the graph directed or not
+     * @return a @{@link Path} from startVid to endVid
+     */
     default GraphTraversal<S, Path> dijkstra(long startVid, long endVid, boolean directed) {
         return call(
                 SqlgPGRoutingFactory.NAME,

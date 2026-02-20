@@ -707,7 +707,8 @@ public abstract class BaseStrategy {
         Preconditions.checkState(function != null, "function is null");
         Preconditions.checkState(function.equals(SqlgPGRoutingFactory.pgr_dijkstra) ||
                         function.equals(SqlgPGRoutingFactory.pgr_drivingDistance) ||
-                        function.equals(SqlgPGRoutingFactory.pgr_connectedComponents),
+                        function.equals(SqlgPGRoutingFactory.pgr_connectedComponents) ||
+                        function.equals(SqlgPGRoutingFactory.pgr_ksp),
                 "Unknown callStep function %s", function);
 
         switch (function) {
@@ -719,6 +720,9 @@ public abstract class BaseStrategy {
                 break;
             case SqlgPGRoutingFactory.pgr_connectedComponents:
                 handlePgrConnectedComponents(callStep, pathCount, param);
+                break;
+            case SqlgPGRoutingFactory.pgr_ksp:
+                handlePgrKsp(callStep, pathCount, param);
                 break;
             default:
                 throw new IllegalStateException("Unknown callStep function " + function);
@@ -843,6 +847,83 @@ public abstract class BaseStrategy {
 
         this.currentReplacedStep.setPgRoutingDijkstraConfig(
                 new PGRoutingDijkstraConfig(SqlgPGRoutingFactory.pgr_dijkstra, _startVids, _endVids, directed != null ? directed : false, vertexLabel, edgeLabel)
+        );
+
+        this.currentReplacedStep = ReplacedStep.from(
+                this.sqlgGraph.getTopology(),
+                new EdgeVertexStep(traversal, Direction.OUT),
+                pathCount.intValue()
+        );
+        this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        this.traversal.removeStep(callStep);
+        this.traversal.addStep(new PathStep<>(traversal));
+
+    }
+
+    private void handlePgrKsp(CallStep<?, ?> callStep, MutableInt pathCount, Map param) {
+        Long start_vid = (Long) param.get(SqlgPGRoutingFactory.Params.START_VID);
+        List<Long> start_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.START_VIDS);
+        Long end_vid = (Long) param.get(SqlgPGRoutingFactory.Params.END_VID);
+        List<Long> end_vids = (List<Long>) param.get(SqlgPGRoutingFactory.Params.END_VIDS);
+        Integer k = (Integer) param.get(SqlgPGRoutingFactory.Params.K);
+
+        Preconditions.checkState(start_vid != null || start_vids != null, "start_vid or start_vids must be set");
+        Preconditions.checkState(end_vid != null || end_vids != null, "end_vid or end_vids must be set");
+        Preconditions.checkState(k > 0, "pgr_ksp k param must be > 0");
+
+        List<Long> _startVids = new ArrayList<>();
+        if (start_vid != null) {
+            _startVids.add(start_vid);
+        } else {
+            _startVids.addAll(start_vids);
+        }
+
+        List<Long> _endVids = new ArrayList<>();
+        if (end_vid != null) {
+            _endVids.add(end_vid);
+        } else {
+            _endVids.addAll(end_vids);
+        }
+
+        Boolean directed = (Boolean) param.get(SqlgPGRoutingFactory.Params.DIRECTED);
+
+        GraphStep graphStep = (GraphStep) this.currentReplacedStep.getStep();
+        Preconditions.checkState(graphStep.returnsEdge());
+        List<HasContainer> labelHasContainers = this.currentReplacedStep.getLabelHasContainers();
+        Preconditions.checkState(labelHasContainers.size() == 1);
+        HasContainer labelHasContainer = labelHasContainers.get(0);
+        String _edgeLabel = (String) labelHasContainer.getValue();
+
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, _edgeLabel);
+
+        EdgeLabel edgeLabel;
+        Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        if (schemaOptional.isPresent()) {
+            Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(schemaTable.getTable());
+            if (edgeLabelOptional.isPresent()) {
+                edgeLabel =  edgeLabelOptional.get();
+            } else {
+                throw new IllegalArgumentException("Failed to find edge label for " + _edgeLabel);
+
+            }
+        } else {
+            throw new IllegalArgumentException("Failed to find schema label for " + _edgeLabel);
+        }
+
+        Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+        Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+        Preconditions.checkState(inVertexLabels.size() == 1);
+        Preconditions.checkState(outVertexLabels.size() == 1);
+        VertexLabel inVertexLabel = inVertexLabels.iterator().next();
+        VertexLabel outVertexLabel = outVertexLabels.iterator().next();
+        Preconditions.checkState(inVertexLabel.equals(outVertexLabel),  "in and out VertexLabels must be the same, found %s and %s", inVertexLabel.getName(), outVertexLabel.getName());
+
+        VertexLabel vertexLabel = inVertexLabels.iterator().next();
+
+        this.currentReplacedStep.addLabel("a");
+
+        this.currentReplacedStep.setPgRoutingKspConfig(
+                new PGRoutingKspConfig(SqlgPGRoutingFactory.pgr_dijkstra, _startVids, _endVids, k, directed != null ? directed : false, vertexLabel, edgeLabel)
         );
 
         this.currentReplacedStep = ReplacedStep.from(

@@ -88,6 +88,7 @@ public class ReplacedStep<S, E> {
      * Hold information about the pg routing step.
      */
     private PGRoutingDijkstraConfig pgRoutingDijkstraConfig;
+    private PGRoutingKspConfig pgRoutingKspConfig;
     private PGRoutingDrivingDistanceConfig pgRoutingDrivingDistanceConfig;
     private PGRoutingConnectedComponentConfig pgRoutingConnectedComponentConfig;
 
@@ -177,6 +178,14 @@ public class ReplacedStep<S, E> {
 
     public void setPgRoutingDijkstraConfig(PGRoutingDijkstraConfig pgRoutingDijkstraConfig) {
         this.pgRoutingDijkstraConfig = pgRoutingDijkstraConfig;
+    }
+
+    public PGRoutingKspConfig getPgRoutingKspConfig() {
+        return pgRoutingKspConfig;
+    }
+
+    public void setPgRoutingKspConfig(PGRoutingKspConfig pgRoutingKspConfig) {
+        this.pgRoutingKspConfig = pgRoutingKspConfig;
     }
 
     public PGRoutingDrivingDistanceConfig getPgRoutingDrivingDistanceConfig() {
@@ -654,6 +663,7 @@ public class ReplacedStep<S, E> {
                 idOnly,
                 this.recursiveRepeatStepConfig,
                 this.pgRoutingDijkstraConfig,
+                this.pgRoutingKspConfig,
                 this.pgRoutingDrivingDistanceConfig,
                 this.pgRoutingConnectedComponentConfig,
                 this.pgVectorConfig,

@@ -267,6 +267,74 @@ public class SqlgUtil {
         return result;
     }
 
+    public static List<Emit<SqlgElement>> loadPGKspResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> idColumnCountMap,
+            boolean forParent
+    ) throws SQLException {
+
+        Preconditions.checkState(subQueryStacks.size() == 1);
+        LinkedList<SchemaTableTree> schemaTableTrees = subQueryStacks.get(0);
+        Preconditions.checkState(schemaTableTrees.size() == 2);
+        SchemaTableTree edgeSchemaTableTree = schemaTableTrees.getFirst();
+        SchemaTableTree vertexSchemaTableTree = schemaTableTrees.get(1);
+        Preconditions.checkState(edgeSchemaTableTree.equals(rootSchemaTableTree));
+
+        if (first) {
+            rootSchemaTableTree.getAliasMapHolder().calculateColumns(subQueryStacks);
+        }
+
+        List<Emit<SqlgElement>> result = new ArrayList<>();
+//        SqlgPGRoutingFactory.StartEndVid previousStartEndVid = null;
+        Long previousPathId = null;
+        while (resultSet.next()) {
+
+            Long vertexId = resultSet.getLong("vertex_id");
+            Long endVertexId = resultSet.getLong("end_vid");
+            Long path_id = resultSet.getLong("path_id");
+
+//            SqlgPGRoutingFactory.StartEndVid startEndVid = new SqlgPGRoutingFactory.StartEndVid(resultSet.getLong("start_vid"), resultSet.getLong("end_vid"));
+
+            if (previousPathId != null && !previousPathId.equals(path_id)) {
+                boolean previousSuccess = resultSet.previous();
+                return result;
+            }
+
+            String vertexLabel = vertexSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            String edgeLabel = edgeSchemaTableTree.getSchemaTable().withOutPrefix().getTable();
+            SqlgVertex sqlgVertex = SqlgVertex.of(sqlgGraph, vertexId, vertexSchemaTableTree.getSchemaTable().getSchema(), vertexLabel);
+            List<LinkedHashMap<ColumnList.Column, String>> _columns = vertexSchemaTableTree.getAliasMapHolder().getColumns(vertexSchemaTableTree);
+            vertexSchemaTableTree.loadProperty(resultSet, sqlgVertex, _columns);
+
+
+            Emit<SqlgElement> emit = new Emit<>(sqlgVertex, vertexSchemaTableTree.getRealLabelsCache(), vertexSchemaTableTree.getStepDepth(), vertexSchemaTableTree.getSqlgComparatorHolder());
+            result.add(emit);
+
+            Long edgeId = resultSet.getLong("edge_id");
+            if (!resultSet.wasNull()) {
+                SqlgEdge sqlgEdge = SqlgEdge.of(sqlgGraph, edgeId, edgeSchemaTableTree.getSchemaTable().getSchema(), edgeLabel);
+                _columns = edgeSchemaTableTree.getAliasMapHolder().getColumns(edgeSchemaTableTree);
+                edgeSchemaTableTree.loadProperty(resultSet, sqlgEdge, _columns);
+                edgeSchemaTableTree.loadEdgeInOutVertices(resultSet, sqlgEdge);
+
+                double traversal_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_COST);
+                double agg_cost = resultSet.getDouble(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_COST), traversal_cost);
+                sqlgEdge.internalSetProperty(Graph.Hidden.hide(SqlgPGRoutingFactory.TRAVERSAL_AGG_COST), agg_cost);
+
+                emit = new Emit<>(sqlgEdge, edgeSchemaTableTree.getStepDepth(), edgeSchemaTableTree.getSqlgComparatorHolder());
+                result.add(emit);
+            }
+            previousPathId = path_id;
+        }
+        return result;
+    }
+
     public static List<Emit<SqlgElement>> loadPGConnectedComponentResultSetIntoResultIterator(
             SqlgGraph sqlgGraph,
             ResultSetMetaData resultSetMetaData,
@@ -591,7 +659,7 @@ public class SqlgUtil {
             Object value = result.getValue();
             typeAndValuesAgain.add(ImmutablePair.of(propertyDefinition, value));
         }
-        
+
         //This is for selects
         setKeyValuesAsParameter(sqlgGraph, false, 1, preparedStatement, typeAndValuesAgain);
     }

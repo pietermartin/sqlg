@@ -282,6 +282,17 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                         this.lastElementIdCountMap,
                         this.forParent
                 );
+            } else if (this.currentRootSchemaTableTree.isPGRoutingKspQuery()) {
+                result = SqlgUtil.loadPGKspResultSetIntoResultIterator(
+                        this.sqlgGraph,
+                        this.queryResult.getMiddle(),
+                        this.queryResult.getLeft(),
+                        this.currentRootSchemaTableTree,
+                        this.subQueryStacks,
+                        this.first,
+                        this.lastElementIdCountMap,
+                        this.forParent
+                );
             } else if (this.currentRootSchemaTableTree.isPGRoutingDrivingDistanceQuery()) {
                 if (first) {
                     this.pgDrivingDistanceResult = SqlgUtil.loadPgrDrivingDistanceResultSetIntoResultIterator(

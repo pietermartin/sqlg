@@ -16,6 +16,7 @@ public class SqlgPGRoutingFactory extends SqlgServiceRegistry.SqlgServiceFactory
 
     public static final String NAME = "sqlg.pgrouting";
     public static final String pgr_dijkstra = "pgr_dijkstra";
+    public static final String pgr_ksp = "pgr_ksp";
     public static final String pgr_drivingDistance = "pgr_drivingDistance";
     public static final String pgr_connectedComponents = "pgr_connectedComponents";
     public static final String TRAVERSAL_COST = "traversal_cost";
@@ -33,6 +34,7 @@ public class SqlgPGRoutingFactory extends SqlgServiceRegistry.SqlgServiceFactory
         String START_VIDS = "start_vids";
         String END_VID = "end_vid";
         String END_VIDS = "end_vids";
+        String K = "k";
 
         Map DESCRIBE = asMap(
                 SqlgPGRoutingFactory.Params.FUNCTION, "The pg_routing function",
