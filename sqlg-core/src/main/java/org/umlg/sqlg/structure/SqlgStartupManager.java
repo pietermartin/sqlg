@@ -108,6 +108,7 @@ class SqlgStartupManager {
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
                 int versionAsInt = Integer.parseInt(oldVersion.replace("-SNAPSHOT", "").replace(".", ""));
+                LOGGER.debug(String.format("loadSqlgSchema() version=%s, oldVersion=%s, versionAsInt=%s", version, oldVersion, versionAsInt));
                 if (versionAsInt < 203) {
                     //Need to check if there are any timestampz or timetz columns.
                     //If so throw an exception as the user needs to alter them to drop the 'z'
@@ -164,6 +165,7 @@ class SqlgStartupManager {
         if (oldVersion != null) {
             v = VersionUtil.parseVersion(oldVersion, null, null);
         }
+        LOGGER.debug(String.format("updateTopology() v=%s",v));
         if (v.isUnknownVersion() || v.compareTo(new Version(1, 5, 0, null, null, null)) < 0) {
             if (this.sqlDialect.supportsDeferrableForeignKey()) {
                 upgradeForeignKeysToDeferrable();

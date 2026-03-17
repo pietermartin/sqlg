@@ -3490,7 +3490,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 Properties props = new Properties();
                 props.setProperty("user", sqlgGraph.configuration().getString("jdbc.username"));
                 props.setProperty("password", sqlgGraph.configuration().getString("jdbc.password"));
-                Connection connection = DriverManager.getConnection(jdbcUrl, props);
+                Connection connection = null;
+                try {
+                    connection = DriverManager.getConnection(jdbcUrl, props);
+                } catch (SQLException e) {
+                    logger.debug("jdbcUrl={}", jdbcUrl);
+                    logger.debug("user={}, password.isEmpty={}", props.getProperty("user"), props.getProperty("password").isEmpty());
+                    logger.error("failed to open standard jdbc connection, log exception, and instead use pool connection", e);
+                    // https://github.com/pietermartin/sqlg/issues/488
+                    connection = this.sqlgGraph.tx().getConnection();
+                }
                 connection.setAutoCommit(false);
                 while (run.get()) {
                     PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
