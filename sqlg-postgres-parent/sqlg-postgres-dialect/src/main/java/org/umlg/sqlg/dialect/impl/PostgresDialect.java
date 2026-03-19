@@ -3517,7 +3517,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                                 try {
                                     Topology topology = this.sqlgGraph.getTopology();
                                     //It is possible for the topology to be null when a notification is received just
-                                    // after the connection pool is setup but before the topology is created.
+                                    // after the connection pool is set up but before the topology is created.
                                     if (topology != null) {
                                         topology.fromNotifyJson(pid, timestamp);
                                     }
@@ -3537,11 +3537,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
                 connection.close();
             } catch (SQLException e) {
-                logger.error(String.format("change listener on graph %s error", this.sqlgGraph), e);
+                logger.error("change listener on graph {} error", this.sqlgGraph, e);
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
                 if (run.get()) {
-                    logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph));
+                    logger.warn("change listener on graph {} interrupted.", this.sqlgGraph);
                 }
                 //swallow
             } finally {
