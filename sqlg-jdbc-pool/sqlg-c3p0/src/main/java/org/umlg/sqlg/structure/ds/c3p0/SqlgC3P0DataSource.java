@@ -42,8 +42,14 @@ public final class SqlgC3P0DataSource implements SqlgDataSource {
         String driver = sqlgPlugin.getDriverFor(jdbcUrl);
         String username = configuration.getString("jdbc.username");
         String password = configuration.getString("jdbc.password");
+        String datasourceName = configuration.getString("c3p0.datasource.name");
+        ComboPooledDataSource comboPooledDataSource;
+        if (StringUtils.isNotEmpty(datasourceName)) {
+            comboPooledDataSource = new ComboPooledDataSource(datasourceName);
+        } else {
+            comboPooledDataSource = new ComboPooledDataSource();
+        }
 
-        ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
         comboPooledDataSource.setDriverClass(driver);
         comboPooledDataSource.setJdbcUrl(jdbcUrl);
         if (!StringUtils.isEmpty(username)) {
