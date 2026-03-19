@@ -42,7 +42,8 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
 <!--            <version>42.7.7</version>-->
-            <version>42.7.4</version>
+<!--            <version>42.7.4</version>-->
+            <version>42.7.10</version>
             <exclusions>
                 <!-- this comes in via guava -->
                 <exclusion>
