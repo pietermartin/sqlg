@@ -57,7 +57,7 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
             if (key.startsWith("dataSource")) {
-                props.setProperty(key.substring("dataSource.".length()), configuration.getProperty(key).toString());
+                props.setProperty(key.substring("dataSource.".length()), configuration.getString(key));
             }
         }
         HikariConfig config = new HikariConfig(props);
