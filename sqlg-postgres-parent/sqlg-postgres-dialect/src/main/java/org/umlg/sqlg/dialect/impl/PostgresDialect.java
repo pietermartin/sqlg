@@ -24,6 +24,8 @@ import org.postgresql.PGNotification;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
@@ -63,6 +65,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 @SuppressWarnings({"unused", "rawtypes"})
 public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostgresDialect.class);
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
     //this strange character is apparently an illegal json char so its good as a quote
@@ -3486,10 +3489,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         @Override
         public void run() {
             try {
-                String jdbcUrl = sqlgGraph.configuration().getString("jdbc.url");
+                String jdbcUrl = sqlgGraph.configuration().getString(SqlgGraph.JDBC_URL);
                 Properties props = new Properties();
                 props.setProperty("user", sqlgGraph.configuration().getString("jdbc.username"));
                 props.setProperty("password", sqlgGraph.configuration().getString("jdbc.password"));
+                LOGGER.info("TopologyChangeListener connection url: {} user: {}", jdbcUrl, sqlgGraph.configuration().getString("jdbc.username"));
                 Connection connection = DriverManager.getConnection(jdbcUrl, props);
                 connection.setAutoCommit(false);
                 while (run.get()) {
