@@ -127,6 +127,11 @@ public class PropertyType {
     public static final int PGCIDR_ORDINAL = 53;
     public static final PropertyType PGCIDR = new PropertyType("PGCIDR", PGCIDR_ORDINAL, "org.umlg.sqlg.inet.PGcidr", new String[]{});
 
+    public static final int PGINET_ARRAY_ORDINAL = 54;
+    public static final PropertyType PGINET_ARRAY = new PropertyType("PGINET_ARRAY", PGINET_ARRAY_ORDINAL, "[Lorg.umlg.sqlg.inet.PGinet;", new String[]{});
+    public static final int PGCIDR_ARRAY_ORDINAL = 55;
+    public static final PropertyType PGCIDR_ARRAY = new PropertyType("PGCIDR_ARRAY", PGCIDR_ARRAY_ORDINAL, "[Lorg.umlg.sqlg.inet.PGcidr;", new String[]{});
+
     public static PropertyType varChar(int length) {
         return new PropertyType("VARCHAR", PropertyType.VARCHAR_ORDINAL, String.class.getName(), new String[]{}, length);
     }
@@ -271,7 +276,9 @@ public class PropertyType {
                 PropertyType.PGHALFVEC,
                 PropertyType.PGBIT,
                 PropertyType.PGINET,
-                PropertyType.PGCIDR
+                PropertyType.PGINET_ARRAY,
+                PropertyType.PGCIDR,
+                PropertyType.PGCIDR_ARRAY
         };
     }
 
@@ -298,5 +305,10 @@ public class PropertyType {
         } else {
             return ordinal == other.ordinal;
         }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(BigDecimal[].class.getName());
+        System.out.println(BigDecimal[].class.getName());
     }
 }

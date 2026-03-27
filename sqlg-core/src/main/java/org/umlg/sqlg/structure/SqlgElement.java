@@ -768,6 +768,16 @@ public abstract class SqlgElement implements Element {
                 } else {
                     return false;
                 }
+            case PGINET_ARRAY_ORDINAL:
+            case PGCIDR_ARRAY_ORDINAL:
+                sqlgGraph.getSqlDialect().registerTypes(sqlgGraph, propertyDefinition.propertyType().ordinal());
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyDefinition.propertyType(), array));
+                    return true;
+                } else {
+                    return false;
+                }
             case byte_ARRAY_ORDINAL:
                 Object object6 = resultSet.getObject(columnIndex);
                 if (object6 != null) {

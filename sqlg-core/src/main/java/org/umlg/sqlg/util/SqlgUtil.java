@@ -873,6 +873,14 @@ public class SqlgUtil {
                     JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
                 }
+                case PGINET_ARRAY_ORDINAL -> {
+                    Object[] objectNodes = (Object[]) pair.getRight();
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.PGINET_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+                }
+                case PGCIDR_ARRAY_ORDINAL -> {
+                    Object[] objectNodes = (Object[]) pair.getRight();
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.PGCIDR_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+                }
                 default -> throw new IllegalStateException("Unhandled type " + pair.left.propertyType().name());
             }
         }

@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.inet.PGinet;
+import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -54,6 +55,50 @@ public class TestInet extends BaseTest {
             Assert.fail("Expected an exception");
         } catch (Exception e) {
             //noop
+        }
+    }
+
+    @Test
+    public void testInetArray() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("InetTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGINET_ARRAY, Multiplicity.of(1, -1)));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        for (int i = 0; i < 100; i++) {
+            Vertex v1 = this.sqlgGraph.addVertex(
+                    T.label, "InetTest",
+                    "name", "a",
+                    "ips", new PGinet[]{new PGinet("23.239.26.161/24"), new PGinet("23.239.26.162/24")}
+            );
+
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("InetTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGinet[] pGinets = inet.value("ips");
+            Assert.assertEquals(2, pGinets.length);
+            Assert.assertEquals("23.239.26.161/24", pGinets[0].toString());
+            Assert.assertEquals("23.239.26.162/24", pGinets[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ips", new PGinet[]{new PGinet("1.x.1.1")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
+            this.sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ips", new PGinet[]{new PGinet("1.300.1.1")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
         }
     }
 
@@ -130,6 +175,50 @@ public class TestInet extends BaseTest {
     }
 
     @Test
+    public void testInetArrayNormalBatchMode() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("InetTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGINET_ARRAY));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            Vertex v1 = this.sqlgGraph.addVertex(
+                    T.label, "InetTest",
+                    "name", "a",
+                    "ips", new PGinet[]{new PGinet("1.1.1.1"), new PGinet("1.1.1.2")}
+            );
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("InetTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGinet[] pGinets = inet.value("ips");
+            Assert.assertEquals(2, pGinets.length);
+            Assert.assertEquals("1.1.1.1", pGinets[0].toString());
+            Assert.assertEquals("1.1.1.2", pGinets[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ips", new PGinet[]{new PGinet("1.x.1.1")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
+            sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ips", new PGinet[]{new PGinet("1.300.1.1")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
+        }
+    }
+
+    @Test
     public void testInetStreamingBatchMode() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("InetTest", new HashMap<>() {{
@@ -140,13 +229,6 @@ public class TestInet extends BaseTest {
 
         this.sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 100; i++) {
-            StringBuilder ip = new StringBuilder();
-            for (int j = 0; j < 4; j++) {
-                ip.append(j);
-                if (j < 3) {
-                    ip.append(".");
-                }
-            }
             this.sqlgGraph.streamVertex(T.label, "InetTest", "name", "a", "ip", new PGinet("1.1.1.1"));
         }
         this.sqlgGraph.tx().commit();
@@ -168,6 +250,50 @@ public class TestInet extends BaseTest {
             Assert.fail("Expected an exception");
         } catch (Exception e) {
             //noop
+        }
+    }
+
+    @Test
+    public void testInetArrayStreamingBatchMode() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("InetTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGINET_ARRAY));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.streamVertex(
+                    T.label, "InetTest",
+                    "name", "a",
+                    "ips", new PGinet[] {new PGinet("1.1.1.1"), new PGinet("1.1.1.2")}
+            );
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("InetTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGinet[] pGinets = inet.value("ips");
+            Assert.assertEquals(2, pGinets.length);
+            Assert.assertEquals("1.1.1.1", pGinets[0].toString());
+            Assert.assertEquals("1.1.1.2", pGinets[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ip", new PGinet("1.x.1.1"));
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
+            sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "InetTest", "name", "a", "ip", new PGinet("1.300.1.1"));
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type inet"));
         }
     }
 }

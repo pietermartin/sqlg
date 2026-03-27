@@ -173,6 +173,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ARRAY_ORDINAL -> "date";
             case LOCALTIME_ARRAY_ORDINAL -> "time";
             case JSON_ARRAY_ORDINAL -> "jsonb";
+            case PGINET_ARRAY_ORDINAL -> "inet";
+            case PGCIDR_ARRAY_ORDINAL -> "cidr";
             default -> throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
         };
     }
@@ -1766,7 +1768,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case PGHALFVEC_ORDINAL -> new String[]{"HALFVEC(" + propertyType.getLength() + ")"};
             case PGBIT_ORDINAL -> new String[]{"BIT(" + propertyType.getLength() + ")"};
             case PGINET_ORDINAL -> new String[]{"INET"};
+            case PGINET_ARRAY_ORDINAL -> new String[]{"INET[]"};
             case PGCIDR_ORDINAL -> new String[]{"CIDR"};
+            case PGCIDR_ARRAY_ORDINAL -> new String[]{"CIDR[]"};
             default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
@@ -2064,6 +2068,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (value instanceof BigDecimal[]) {
             return;
         }
+        if (value instanceof PGinet[]) {
+            return;
+        }
+        if (value instanceof PGcidr[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -2245,8 +2255,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         PGvector.registerTypes(sqlgGraph.tx().getConnection());
                 case PGBIT_ORDINAL -> PGbit.registerType(sqlgGraph.tx().getConnection());
                 case PGINET_ORDINAL -> PGinet.registerType(sqlgGraph.tx().getConnection());
+                case PGINET_ARRAY_ORDINAL -> PGinet.registerType(sqlgGraph.tx().getConnection());
                 case PGCIDR_ORDINAL -> PGcidr.registerType(sqlgGraph.tx().getConnection());
-                default -> throw new IllegalStateException("Unknown propertyTypeOrdinal " + propertyTypeOrdinal);
+                case PGCIDR_ARRAY_ORDINAL -> PGcidr.registerType(sqlgGraph.tx().getConnection());
+                default -> {
+                    throw new IllegalStateException("Unknown propertyTypeOrdinal " + propertyTypeOrdinal);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -3148,6 +3162,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 case LOCALDATE_ARRAY_ORDINAL:
                 case ZONEDDATETIME_ARRAY_ORDINAL:
                 case JSON_ARRAY_ORDINAL:
+                case PGINET_ARRAY_ORDINAL:
+                case PGCIDR_ARRAY_ORDINAL:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
@@ -3199,6 +3215,22 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALTIME_ARRAY_ORDINAL -> {
                 Time[] times = (Time[]) array.getArray();
                 return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
+            }
+            case PGINET_ARRAY_ORDINAL -> {
+                Object[] pgobjects = (Object[]) array.getArray();
+                PGinet[] result = new PGinet[pgobjects.length];
+                for (int i = 0; i < pgobjects.length; i++) {
+                    result[i] = (PGinet)pgobjects[i];
+                }
+                return result;
+            }
+            case PGCIDR_ARRAY_ORDINAL -> {
+                Object[] pgobjects = (Object[]) array.getArray();
+                PGcidr[] result = new PGcidr[pgobjects.length];
+                for (int i = 0; i < pgobjects.length; i++) {
+                    result[i] = (PGcidr)pgobjects[i];
+                }
+                return result;
             }
             case JSON_ARRAY_ORDINAL -> {
                 String arrayAsString = array.toString();

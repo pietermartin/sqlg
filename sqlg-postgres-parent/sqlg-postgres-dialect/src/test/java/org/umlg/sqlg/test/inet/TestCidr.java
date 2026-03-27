@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.inet.PGcidr;
-import org.umlg.sqlg.inet.PGinet;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -26,15 +25,7 @@ public class TestCidr extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         for (int i = 0; i < 100; i++) {
-            StringBuilder ip = new StringBuilder();
-            for (int j = 0; j < 4; j++) {
-                ip.append(j);
-                if (j < 3) {
-                    ip.append(".");
-                }
-            }
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ip", new PGcidr("23.239.26.161/32"));
-
         }
         this.sqlgGraph.tx().commit();
 
@@ -45,16 +36,59 @@ public class TestCidr extends BaseTest {
             Assert.assertEquals("23.239.26.161/32", pGcidr.toString());
         }
         try {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ip", new PGinet("1.x.1.1"));
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ip", new PGcidr("1.x.1.1"));
             Assert.fail("Expected an exception");
         } catch (Exception e) {
             //noop
         }
         try {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ip", new PGinet("1.300.1.1"));
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ip", new PGcidr("1.300.1.1"));
             Assert.fail("Expected an exception");
         } catch (Exception e) {
             //noop
+        }
+    }
+
+    @Test
+    public void testCidrArray() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("CidrTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGCIDR_ARRAY));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        for (int i = 0; i < 100; i++) {
+            Vertex v1 = this.sqlgGraph.addVertex(
+                    T.label, "CidrTest",
+                    "name", "a",
+                    "ips", new PGcidr[]{new PGcidr("23.239.26.161/32"), new PGcidr("23.239.26.162/32")}
+            );
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("CidrTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGcidr[] pGcidrs = inet.value("ips");
+            Assert.assertEquals(2, pGcidrs.length);
+            Assert.assertEquals("23.239.26.161/32", pGcidrs[0].toString());
+            Assert.assertEquals("23.239.26.162/32", pGcidrs[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.x.1.1/32")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
+            sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "CidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.300.1.1/32")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
         }
     }
 
@@ -89,7 +123,7 @@ public class TestCidr extends BaseTest {
     }
 
     @Test
-    public void testIcidrNormalBatchMode() {
+    public void testCidrNormalBatchMode() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("IcidrTest", new HashMap<>() {{
             put("name", PropertyDefinition.of(PropertyType.STRING));
@@ -99,13 +133,6 @@ public class TestCidr extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
-            StringBuilder ip = new StringBuilder();
-            for (int j = 0; j < 4; j++) {
-                ip.append(j);
-                if (j < 3) {
-                    ip.append(".");
-                }
-            }
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "IcidrTest", "name", "a", "ip", new PGcidr("1.1.1.1"));
         }
         this.sqlgGraph.tx().commit();
@@ -131,7 +158,50 @@ public class TestCidr extends BaseTest {
     }
 
     @Test
-    public void testIcidrStreamingBatchMode() {
+    public void testCidrArrayNormalBatchMode() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("IcidrTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGCIDR_ARRAY));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            Vertex v1 = this.sqlgGraph.addVertex(
+                    T.label, "IcidrTest",
+                    "name", "a",
+                    "ips", new PGcidr[]{new PGcidr("1.1.1.1/32"), new PGcidr("1.1.1.2/32")});
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("IcidrTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGcidr[] pGcidrs = inet.value("ips");
+            Assert.assertEquals(2, pGcidrs.length);
+            Assert.assertEquals("1.1.1.1/32", pGcidrs[0].toString());
+            Assert.assertEquals("1.1.1.2/32", pGcidrs[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "IcidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.x.1.1/32")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
+            sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "IcidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.300.1.1")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
+        }
+    }
+
+    @Test
+    public void testCidrStreamingBatchMode() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("IcidrTest", new HashMap<>() {{
             put("name", PropertyDefinition.of(PropertyType.STRING));
@@ -155,7 +225,7 @@ public class TestCidr extends BaseTest {
         List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("IcidrTest").toList();
         Assert.assertEquals(100, ips.size());
         for (Vertex inet : ips) {
-            PGcidr pGcidr= inet.value("ip");
+            PGcidr pGcidr = inet.value("ip");
             Assert.assertEquals("1.1.1.1/32", pGcidr.toString());
         }
         try {
@@ -169,6 +239,50 @@ public class TestCidr extends BaseTest {
             Assert.fail("Expected an exception");
         } catch (Exception e) {
             //noop
+        }
+    }
+
+    @Test
+    public void testCidrArrayStreamingBatchMode() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("IcidrTest", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("ips", PropertyDefinition.of(PropertyType.PGCIDR_ARRAY));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.streamVertex(
+                    T.label, "IcidrTest", "name",
+                    "a", "ips",
+                    new PGcidr[]{new PGcidr("1.1.1.1/32"), new PGcidr("1.1.1.2/32")}
+            );
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> ips = this.sqlgGraph.traversal().V().hasLabel("IcidrTest").toList();
+        Assert.assertEquals(100, ips.size());
+        for (Vertex inet : ips) {
+            PGcidr[] pGcidrs = inet.value("ips");
+            Assert.assertEquals(2, pGcidrs.length);
+            Assert.assertEquals("1.1.1.1/32", pGcidrs[0].toString());
+            Assert.assertEquals("1.1.1.2/32", pGcidrs[1].toString());
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "IcidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.x.1.1/32")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
+            sqlgGraph.tx().rollback();
+        }
+        try {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "IcidrTest", "name", "a", "ips", new PGcidr[]{new PGcidr("1.300.1.1/32")});
+            Assert.fail("Expected an exception");
+        } catch (Exception e) {
+            //noop
+            Assert.assertTrue(e.getMessage().contains("invalid input syntax for type cidr"));
         }
     }
 }
