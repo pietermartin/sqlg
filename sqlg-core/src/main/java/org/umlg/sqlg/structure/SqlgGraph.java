@@ -711,7 +711,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")" + " (user = " + configuration.getString("jdbc.username") + ")";
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getString(JDBC_URL) + ")" + " (user = " + configuration.getString("jdbc.username") + ")";
     }
 
     public ISqlGFeatures features() {
