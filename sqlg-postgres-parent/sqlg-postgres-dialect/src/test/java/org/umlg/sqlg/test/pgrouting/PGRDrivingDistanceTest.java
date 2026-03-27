@@ -41,10 +41,9 @@ public class PGRDrivingDistanceTest extends BasePGRouting {
                 .toList();
         String pgr_drivingDistance = """
                 SELECT * FROM pgr_drivingDistance(
-                  'SELECT id, source, target, cost, reverse_cost FROM edges',
+                  'SELECT "ID" as id, source, target, cost, reverse_cost FROM "E_edges"',
                   %d, %d, %b);
                 """.formatted(start_vid, distance, directed);
-
         assertPGDrivingDistance(result, pgr_drivingDistance);
     }
 
