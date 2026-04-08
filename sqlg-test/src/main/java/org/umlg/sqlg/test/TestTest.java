@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.*;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,24 @@ public class TestTest extends BaseTest {
             LOGGER.info(value.toString());
         }
 
+    }
+
+    public static void main(String[] args) {
+        String url = "jdbc:postgresql://10.70.41.155:9999/cm";
+        String user = "cm";
+        String password = "cm";
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to PostgreSQL!");
+            // Example query
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT version()");
+            while (rs.next()) {
+                System.out.println(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 }

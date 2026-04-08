@@ -58,7 +58,7 @@ import static org.junit.Assert.*;
  */
 public abstract class BaseTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTest.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTest.class);
     protected SqlgGraph sqlgGraph;
     protected SqlgGraph sqlgGraph1;
     protected GraphTraversalSource gt;
@@ -70,7 +70,7 @@ public abstract class BaseTest {
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
             BaseTest.this.start = System.currentTimeMillis();
-            LOGGER.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
+            LOGGER.info("Starting test: {}.{}", description.getClassName(), description.getMethodName());
         }
 
         protected void finished(Description description) {
@@ -80,7 +80,7 @@ public abstract class BaseTest {
                     TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)),
                     TimeUnit.MILLISECONDS.toMillis(millis) - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(millis))
             );
-            LOGGER.info(String.format("Finished test: %s.%s Time taken: %s", description.getClassName(), description.getMethodName(), time));
+            LOGGER.info("Finished test: {}.{} Time taken: {}", description.getClassName(), description.getMethodName(), time);
         }
     };
 
@@ -118,7 +118,7 @@ public abstract class BaseTest {
         }
         sqlgGraph.getServiceRegistry().registerService(new SqlgFunctionFactory(sqlgGraph));
         stopWatch.stop();
-        LOGGER.info("Startup time for test = " + stopWatch);
+        LOGGER.info("Startup time for test = {}", stopWatch);
     }
 
     protected void grantReadOnlyUserPrivileges() {

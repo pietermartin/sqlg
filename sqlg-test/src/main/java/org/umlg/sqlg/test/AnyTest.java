@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestLargeSchemaPerformance;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,20 @@ import org.umlg.sqlg.test.topology.TestLargeSchemaPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLargeSchemaPerformance.class
-//        TestMultipleThreadMultipleJvm.class
+//        TestReducing.class,
+//        TestRecursiveRepeatAll.class,
+//        TestRecursiveRepeatWithNotStep.class,
+//        TestRecursiveRepeatWithoutNotStep.class,
+//        TestRepeatStepIncludeEdgeWithoutNotStep.class,
+//        TestRepeatStepIncludeEdgeWithNotStep.class,
+//        TestTopologyRecursiveRepeat.class
+//        TestTest.class
+//        TestTinkerPopSchemaProposal.class
+//        TestRepeatStepGraphBoth.class
+//        TestAdditionalPools.class
+        TestTopologyUpgrade.class,
+//        TestForeignKeysAreOptional.class,
+//        TestPostgresLtree.class
 
 })
 public class AnyTest {

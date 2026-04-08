@@ -3,7 +3,6 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.umlg.sqlg.util.Preconditions;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -33,8 +32,10 @@ import org.umlg.sqlg.structure.topology.IndexType;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.util.Preconditions;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -272,6 +273,7 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "Fails for MariaDb, the test is copied to TestHas for the other dbs")
 public class SqlgGraph implements Graph {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgGraph.class);
     public static final String GREMLIN_SQLG_SERVICE = "gremlin.sqlg.service";
     public static final String DATA_SOURCE = "sqlg.dataSource";
     public static final String JDBC_URL = "jdbc.url";
@@ -279,7 +281,8 @@ public class SqlgGraph implements Graph {
     private static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
     private static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgGraph.class);
+    private final Map<String, Pair<Configuration, SqlgDataSource>> additionalDataSources = new HashMap<>();
+    private final ThreadLocal<String> dataSourceToUse = ThreadLocal.withInitial(() -> null);
     private final SqlgTransaction sqlgTransaction;
     private final Topology topology;
     private final SchemaTableTreeCache schemaTableTreeCache;
@@ -289,7 +292,7 @@ public class SqlgGraph implements Graph {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Configuration configuration;
     private final ISqlGFeatures features = new SqlgFeatures();
-    private SqlgServiceRegistry serviceRegistry;
+    private final SqlgServiceRegistry serviceRegistry;
 
     /**
      * the build version of sqlg
@@ -347,13 +350,33 @@ public class SqlgGraph implements Graph {
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {
-        SqlgDataSource dataSource = SqlgDataSourceFactory.create(configuration);
+        return open(new Configuration[]{configuration});
+    }
+
+    public static <G extends Graph> G open(final Configuration... configurations) {
+        SqlgDataSource dataSource = SqlgDataSourceFactory.create(configurations[0]);
+        G sqlgGraph;
         try {
-            return open(configuration, dataSource);
+            sqlgGraph = open(configurations[0], dataSource);
         } catch (Exception ex) {
             dataSource.close();
             throw ex;
         }
+        for (int i = 1; i < configurations.length; i++) {
+            Configuration configuration = configurations[i];
+            SqlgDataSource _dataSource = SqlgDataSourceFactory.create(configuration);
+            String dsName;
+            if (_dataSource.isC3p0()) {
+                dsName = configuration.getString("c3p0.datasource.name");
+            } else if (_dataSource.isHikari()) {
+                dsName = configuration.getString("dataSource.poolName");
+            } else {
+                throw new IllegalStateException("Unknown data source: " + configuration.getString("jdbc.url"));
+            }
+            ((SqlgGraph) sqlgGraph).additionalDataSources.put(dsName, Pair.of(configuration, _dataSource));
+        }
+        Preconditions.checkState(((SqlgGraph) sqlgGraph).additionalDataSources.size() == configurations.length - 1, "Additional pools must have unique names.");
+        return sqlgGraph;
     }
 
     @SuppressWarnings("unchecked")
@@ -429,9 +452,9 @@ public class SqlgGraph implements Graph {
         return serviceRegistry;
     }
 
-    protected SqlgServiceRegistry.SqlgServiceFactory instantiate(final String className) {
+    protected SqlgServiceRegistry.SqlgServiceFactory<?, ?> instantiate(final String className) {
         try {
-            return (SqlgServiceRegistry.SqlgServiceFactory) Class.forName(className).getConstructor(SqlgGraph.class).newInstance(this);
+            return (SqlgServiceRegistry.SqlgServiceFactory<?, ?>) Class.forName(className).getConstructor(SqlgGraph.class).newInstance(this);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
                  NoSuchMethodException | InvocationTargetException ex) {
             throw new RuntimeException(ex);
@@ -441,7 +464,6 @@ public class SqlgGraph implements Graph {
     Configuration getConfiguration() {
         return configuration;
     }
-
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -470,6 +492,14 @@ public class SqlgGraph implements Graph {
 
     public GraphTraversalSource topology() {
         return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
+    }
+
+    public GraphTraversalSource traversal(String dataSourceName) {
+        return this.traversal().withStrategies(new SecondPoolStrategy(dataSourceName));
+    }
+
+    public GraphTraversalSource readOnlyTraversal() {
+        return this.traversal().withStrategies(new SecondPoolStrategy(SecondPoolStrategy.READ_ONLY));
     }
 
     @Override
@@ -680,7 +710,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public void close() {
-        LOGGER.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
+        LOGGER.debug("Closing graph. Connection url = {}, maxPoolSize = {}", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100));
         if (this.tx().isOpen())
             this.tx().close();
         try {
@@ -696,6 +726,9 @@ public class SqlgGraph implements Graph {
         }
         this.topology.close();
         this.sqlgDataSource.close();
+        for (Pair<Configuration, SqlgDataSource> additionalDataSource : additionalDataSources.values()) {
+            additionalDataSource.getRight().close();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1325,7 +1358,32 @@ public class SqlgGraph implements Graph {
     }
 
     public Connection getConnection() throws SQLException {
-        return this.sqlgDataSource.getDatasource().getConnection();
+        if (dataSource() != null) {
+            Pair<Configuration, SqlgDataSource> confSqlgDataSource = additionalDataSources.get(dataSource());
+            if (confSqlgDataSource == null) {
+                throw new IllegalStateException("Failed to find datasource with name " + dataSource());
+            }
+            DataSource dataSource = confSqlgDataSource.getRight().getDatasource();
+            Connection connection = dataSource.getConnection();
+            if (confSqlgDataSource.getRight().isC3p0() && confSqlgDataSource.getLeft().getBoolean("c3p0.readOnly", false)) {
+                connection.setReadOnly(true);
+            }
+            return connection;
+        } else {
+            return this.sqlgDataSource.getDatasource().getConnection();
+        }
+    }
+
+    public void dataSource(String dataSourceName) {
+        dataSourceToUse.set(dataSourceName);
+    }
+
+    public String dataSource() {
+        return dataSourceToUse.get();
+    }
+
+    public void resetDataSource() {
+        dataSourceToUse.remove();
     }
 
     public SqlgDataSource getSqlgDataSource() {
