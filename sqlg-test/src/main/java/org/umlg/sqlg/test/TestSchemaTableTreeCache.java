@@ -114,7 +114,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
                 List.of("groupBy1"),
                 false,
                 null,
-                null, null, null,
+                null, null, null, null,
                 null,
                 null
         );
