@@ -32,8 +32,10 @@ public class TestForeignKeysAreOptional extends BaseTest {
             g.tx().commit();
             Connection conn = g.tx().getConnection();
             DatabaseMetaData dm = conn.getMetaData();
-            ResultSet rs = dm.getImportedKeys("sqlggraphdb", "public", "E_Edge1");
+            ResultSet rs = dm.getImportedKeys(null, "public", "E_Edge1");
             Assert.assertTrue(rs.next());
+            String next = rs.getString("PKTABLE_CAT");
+            System.out.println(next);
         }
     }
 
