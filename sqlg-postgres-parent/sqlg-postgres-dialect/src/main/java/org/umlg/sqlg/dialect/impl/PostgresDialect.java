@@ -3220,7 +3220,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 Object[] pgobjects = (Object[]) array.getArray();
                 PGinet[] result = new PGinet[pgobjects.length];
                 for (int i = 0; i < pgobjects.length; i++) {
-                    result[i] = (PGinet)pgobjects[i];
+                    result[i] = (PGinet) pgobjects[i];
                 }
                 return result;
             }
@@ -3228,7 +3228,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 Object[] pgobjects = (Object[]) array.getArray();
                 PGcidr[] result = new PGcidr[pgobjects.length];
                 for (int i = 0; i < pgobjects.length; i++) {
-                    result[i] = (PGcidr)pgobjects[i];
+                    result[i] = (PGcidr) pgobjects[i];
                 }
                 return result;
             }
@@ -3627,7 +3627,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException {
         // copied and simplified from the postgres JDBC driver class (PgDatabaseMetaData)
-        String sql = "SELECT NULL AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
+        String sql = "SELECT '" + catalog + "' AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
                 + "  ct.relname AS TABLE_NAME, NOT i.indisunique AS NON_UNIQUE, "
                 + "  NULL AS INDEX_QUALIFIER, ci.relname AS INDEX_NAME, "
                 + "  CASE i.indisclustered "
