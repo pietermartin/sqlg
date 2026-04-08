@@ -279,7 +279,7 @@ public class SqlgGraph implements Graph {
     private static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
     private static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
-    private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgGraph.class);
     private final SqlgTransaction sqlgTransaction;
     private final Topology topology;
     private final SchemaTableTreeCache schemaTableTreeCache;
@@ -382,7 +382,7 @@ public class SqlgGraph implements Graph {
         this.sqlgDataSource = dataSource;
         this.sqlDialect = dataSource.getDialect();
         try {
-            logger.debug(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.getJdbcUrl(), configuration.getInt("maxPoolSize", 100)));
+            LOGGER.debug("Opening graph. Connection url = {}, maxPoolSize = {}", this.getJdbcUrl(), configuration.getInt("maxPoolSize", 100));
             try (Connection conn = this.getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
@@ -680,7 +680,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public void close() {
-        logger.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
+        LOGGER.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
         try {
@@ -1223,8 +1223,8 @@ public class SqlgGraph implements Graph {
             ArrayNode dataNode = this.mapper.createArrayNode();
             ArrayNode metaNode = this.mapper.createArrayNode();
             Statement statement = conn.createStatement();
-            if (logger.isDebugEnabled()) {
-                logger.debug(query);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(query);
             }
             ResultSet rs = statement.executeQuery(query);
             ResultSetMetaData rsmd = rs.getMetaData();
@@ -1296,8 +1296,8 @@ public class SqlgGraph implements Graph {
                     sql.append(";");
                 }
                 Connection conn = this.tx().getConnection();
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(sql.toString());
                 }
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                     ResultSet rs = preparedStatement.executeQuery();
