@@ -24,8 +24,6 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static org.junit.Assert.*;
-
 /**
  * Date: 2016/02/06
  * Time: 6:17 PM
@@ -126,8 +124,8 @@ public class TestTopologyUpgrade extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Assert.assertEquals(2, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next().intValue());
             Vertex a = sqlgGraph1.traversal().V().hasLabel("A").next();
@@ -142,7 +140,7 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertNotNull(sqlgGraph1.traversal().V(a).properties("name").next().value());
             Assert.assertEquals("john", sqlgGraph1.traversal().V(a).properties("name").next().value());
             Assert.assertEquals(1, sqlgGraph1.traversal().V(a).outE("knows").properties("name").count().next().intValue());
-            assertTrue(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value() != null);
+            Assert.assertTrue(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value() != null);
             Assert.assertEquals("hithere", sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
         }
 
@@ -150,8 +148,8 @@ public class TestTopologyUpgrade extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Assert.assertEquals(2, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next().intValue());
             Vertex a = sqlgGraph1.traversal().V().hasLabel("A").next();
@@ -163,10 +161,10 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertEquals(1, sqlgGraph1.traversal().V(b).in("knows").count().next().intValue());
             Assert.assertEquals(a, sqlgGraph1.traversal().V(b).in("knows").next());
             Assert.assertEquals(1, sqlgGraph1.traversal().V(a).properties("name").count().next().intValue());
-            assertNotNull(sqlgGraph1.traversal().V(a).properties("name").next().value());
+            Assert.assertNotNull(sqlgGraph1.traversal().V(a).properties("name").next().value());
             Assert.assertEquals("john", sqlgGraph1.traversal().V(a).properties("name").next().value());
             Assert.assertEquals(1, sqlgGraph1.traversal().V(a).outE("knows").properties("name").count().next().intValue());
-            assertNotNull(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
+            Assert.assertNotNull(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
             Assert.assertEquals("hithere", sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
         }
     }
@@ -803,8 +801,8 @@ public class TestTopologyUpgrade extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Assert.assertEquals(2, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
-            assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next().intValue());
             Vertex a = sqlgGraph1.traversal().V().hasLabel("A").next();
@@ -816,10 +814,10 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertEquals(1, sqlgGraph1.traversal().V(b).in("knows").count().next().intValue());
             Assert.assertEquals(a, sqlgGraph1.traversal().V(b).in("knows").next());
             Assert.assertEquals(1, sqlgGraph1.traversal().V(a).properties("name").count().next().intValue());
-            assertEquals(true, sqlgGraph1.traversal().V(a).properties("name").next().value() != null);
+            Assert.assertEquals(true, sqlgGraph1.traversal().V(a).properties("name").next().value() != null);
             Assert.assertEquals("john", sqlgGraph1.traversal().V(a).properties("name").next().value());
             Assert.assertEquals(1, sqlgGraph1.traversal().V(a).outE("knows").properties("name").count().next().intValue());
-            assertEquals(true, sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value() != null);
+            Assert.assertEquals(true, sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value() != null);
             Assert.assertEquals("hithere", sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
             Assert.assertEquals(2, sqlgGraph1.getTopology().getPublicSchema().getVertexLabels().size());
 

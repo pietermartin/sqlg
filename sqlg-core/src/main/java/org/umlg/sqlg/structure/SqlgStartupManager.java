@@ -595,7 +595,7 @@ class SqlgStartupManager {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
-            String catalog = null;
+            String catalog = conn.getCatalog();
             String schemaPattern = null;
             List<String> schemaNames = this.sqlDialect.getSchemaNames(metadata);
             for (String schemaName : schemaNames) {
