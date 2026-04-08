@@ -530,13 +530,10 @@ public abstract class BaseStrategy {
         VertexStep repeatVertexStep = (VertexStep) repeatTraversalSteps.get(0);
         EdgeVertexStep repeatEdgeVertexStep;
         EdgeOtherVertexStep repeatEdgeOtherVertexStep;
-        PathFilterStep repeatPathFilterStep;
-        RepeatStep.RepeatEndStep repeatEndStep;
         String vertexStepLabel = "e";
         String edgeVertexStepLabel = "v";
         if (!includeEdge) {
-            repeatPathFilterStep = (PathFilterStep) repeatTraversalSteps.get(1);
-            repeatEndStep = (RepeatStep.RepeatEndStep) repeatTraversalSteps.get(2);
+            //noop
         } else {
             Set<String> labels = repeatVertexStep.getLabels();
             vertexStepLabel = labels.stream().findAny().orElse("e");
@@ -545,12 +542,21 @@ public abstract class BaseStrategy {
                 labels = repeatEdgeOtherVertexStep.getLabels();
                 edgeVertexStepLabel = labels.stream().findAny().orElse("v");
             } else {
-                repeatEdgeVertexStep = (EdgeVertexStep) repeatTraversalSteps.get(1);
-                labels = repeatEdgeVertexStep.getLabels();
-                edgeVertexStepLabel = labels.stream().findAny().orElse("v");
+                Step step = repeatTraversalSteps.get(1);
+                if (step instanceof EdgeVertexStep) {
+                    repeatEdgeVertexStep = (EdgeVertexStep) repeatTraversalSteps.get(1);
+                    labels = repeatEdgeVertexStep.getLabels();
+                    edgeVertexStepLabel = labels.stream().findAny().orElse("v");
+
+                } else if (step instanceof EdgeOtherVertexStep) {
+                    repeatEdgeOtherVertexStep = (EdgeOtherVertexStep) repeatTraversalSteps.get(1);
+                    labels = repeatEdgeOtherVertexStep.getLabels();
+                    edgeVertexStepLabel = labels.stream().findAny().orElse("v");
+
+                } else {
+                    throw new IllegalStateException("Unsupported step type: " + step.getClass());
+                }
             }
-            repeatPathFilterStep = (PathFilterStep) repeatTraversalSteps.get(2);
-            repeatEndStep = (RepeatStep.RepeatEndStep) repeatTraversalSteps.get(3);
         }
 
         //We create a separate SchemaTableTree for the untilTraversal.
