@@ -4125,13 +4125,21 @@ public class SchemaTableTree {
                 this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
                 "e"
         );
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("e.\"depth\"", "\"depth\"");
 
         optionalUntilWhereClause = optionalUntilWhereClause.replace(
                 this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
                 "previous_e"
         );
-        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT");
-        optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "\t\t\tAND NOT");
+        if (optionalUntilWhereClause.contains(" OR ")) {
+            optionalUntilWhereClause = optionalUntilWhereClause.replace("\n\t\n(", "");
+        } else {
+            optionalUntilWhereClause = optionalUntilWhereClause.replace("\n\t\n", "");
+        }
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("previous_e.\"depth\"", "\"depth\"");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("?\n)", "?)\n\t");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace(" OR ", " AND NOT (");
 
         List<String> vertexColumns = new ArrayList<>();
         List<String> edgeColumns = new ArrayList<>();
@@ -4220,6 +4228,7 @@ public class SchemaTableTree {
                 	)
                 	SELECT *, gen_random_uuid() AS gen_random_uuid FROM search_tree
                 	WHERE NOT is_cycle
+                	LIMIT 500000
                 ), b AS (
                     SELECT * FROM a JOIN {vertexSchemaTable} v ON
                 				((a.direction = 'OUT' AND (a.{inForeignKey} = v."ID"))
@@ -4606,6 +4615,7 @@ public class SchemaTableTree {
                 this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
                 "e"
         );
+        optionalUntilWhereClauseWithoutNotStep = optionalUntilWhereClauseWithoutNotStep.replace("e.\"depth\"", "\"depth\"");
 
         optionalUntilWhereClause = optionalUntilWhereClause.replace(
                 this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getSchema()) + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTableTree.getSchemaTable().getTable()),
@@ -4613,6 +4623,7 @@ public class SchemaTableTree {
         );
         optionalUntilWhereClause = optionalUntilWhereClause.replace("WHERE", "AND NOT");
         optionalUntilWhereClause = optionalUntilWhereClause.replace("\n", "");
+        optionalUntilWhereClause = optionalUntilWhereClause.replace("previous_e.\"depth\"", "\"depth\"");
 
         List<String> vertexColumns = new ArrayList<>();
         List<String> edgeColumns = new ArrayList<>();
