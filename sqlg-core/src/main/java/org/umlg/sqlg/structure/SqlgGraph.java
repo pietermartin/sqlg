@@ -494,14 +494,6 @@ public class SqlgGraph implements Graph {
         return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
     }
 
-    public GraphTraversalSource traversal(String dataSourceName) {
-        return this.traversal().withStrategies(new SecondPoolStrategy(dataSourceName));
-    }
-
-    public GraphTraversalSource readOnlyTraversal() {
-        return this.traversal().withStrategies(new SecondPoolStrategy(SecondPoolStrategy.READ_ONLY));
-    }
-
     @Override
     public Configuration configuration() {
         return this.configuration;
@@ -1384,6 +1376,10 @@ public class SqlgGraph implements Graph {
 
     public void resetDataSource() {
         dataSourceToUse.remove();
+    }
+
+    public Pair<Configuration, SqlgDataSource> getAdditionalDataSource(String dataSourceName) {
+        return this.additionalDataSources.get(dataSourceName);
     }
 
     public SqlgDataSource getSqlgDataSource() {

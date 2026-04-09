@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.datasource.TestAdditionalPools;
 
 /**
  * Date: 2014/07/16
@@ -20,8 +20,8 @@ import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 //        TestTest.class
 //        TestTinkerPopSchemaProposal.class
 //        TestRepeatStepGraphBoth.class
-//        TestAdditionalPools.class
-        TestTopologyUpgrade.class,
+        TestAdditionalPools.class
+//        TestTopologyUpgrade.class,
 //        TestForeignKeysAreOptional.class,
 //        TestPostgresLtree.class
 

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
-import org.umlg.sqlg.util.Preconditions;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.TransactionException;
@@ -11,7 +12,9 @@ import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.EdgeRole;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.util.Preconditions;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,8 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     private final ThreadLocal<AtomicBoolean> threadLocalTopologyLocked = ThreadLocal.withInitial(() -> new AtomicBoolean(true));
 
+    private final ThreadLocal<String> threadLocalTransactionDataSource = ThreadLocal.withInitial(() -> null);
+
     /**
      * default fetch size
      */
@@ -58,7 +63,8 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = this.sqlgGraph.getConnection();
+//                Connection connection = this.sqlgGraph.getConnection();
+                Connection connection = _getConnection();
                 connection.setAutoCommit(false);
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     String applicationName = Thread.currentThread().getName();
@@ -132,6 +138,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 this.threadLocalTx.remove();
             }
             this.threadLocalPreparedStatementTx.remove();
+            this.threadLocalTransactionDataSource.remove();
             this.sqlgGraph.resetDataSource();
         }
     }
@@ -177,9 +184,22 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
                 this.threadLocalPreparedStatementTx.remove();
+                this.threadLocalTransactionDataSource.remove();
                 this.sqlgGraph.resetDataSource();
             }
         }
+    }
+
+
+    public void dataSource(String dataSourceName) {
+        if (isOpen()) {
+            throw new IllegalStateException("dataSource can not be set on a transaction that is open. Call rollback or commit first.");
+        }
+        this.threadLocalTransactionDataSource.set(dataSourceName);
+    }
+
+    public String dataSource() {
+        return this.threadLocalTransactionDataSource.get();
     }
 
     /**
@@ -278,6 +298,24 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             readWrite();
         }
         return this.threadLocalTx.get().getConnection();
+    }
+
+    public Connection _getConnection() throws SQLException {
+        if (this.threadLocalTransactionDataSource.get() != null) {
+            String dataSourceName = this.threadLocalTransactionDataSource.get();
+            Pair<Configuration, SqlgDataSource> confSqlgDataSource = this.sqlgGraph.getAdditionalDataSource(dataSourceName);
+            if (confSqlgDataSource == null) {
+                throw new IllegalStateException("Failed to find datasource with name " + dataSourceName);
+            }
+            DataSource dataSource = confSqlgDataSource.getRight().getDatasource();
+            Connection connection = dataSource.getConnection();
+            if (confSqlgDataSource.getRight().isC3p0() && confSqlgDataSource.getLeft().getBoolean("c3p0.readOnly", false)) {
+                connection.setReadOnly(true);
+            }
+            return connection;
+        } else {
+            return this.sqlgGraph.getSqlgDataSource().getDatasource().getConnection();
+        }
     }
 
     public void flush() {

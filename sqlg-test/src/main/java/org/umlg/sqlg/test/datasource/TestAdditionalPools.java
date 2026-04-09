@@ -104,8 +104,13 @@ public class TestAdditionalPools {
         List<Vertex> vertexList = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, vertexList.size());
         this.sqlgGraph.tx().rollback();
-        vertexList = this.sqlgGraph.traversal("pool1").V().hasLabel("A").toList();
+        this.sqlgGraph.tx().dataSource("pool1");
+        Assert.assertEquals("pool1", this.sqlgGraph.tx().dataSource());
+        vertexList = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, vertexList.size());
+        Assert.assertEquals("pool1", this.sqlgGraph.tx().dataSource());
+        this.sqlgGraph.tx().rollback();
+        Assert.assertNull(this.sqlgGraph.tx().dataSource());
     }
 
     @Test
@@ -116,18 +121,27 @@ public class TestAdditionalPools {
         List<Vertex> vertexList = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, vertexList.size());
         this.sqlgGraph.tx().rollback();
-        
-        vertexList = this.sqlgGraph.readOnlyTraversal().V().hasLabel("A").toList();
+
+        this.sqlgGraph.tx().dataSource("readOnly");
+        Assert.assertEquals("readOnly", this.sqlgGraph.tx().dataSource());
+        vertexList = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, vertexList.size());
         this.sqlgGraph.tx().rollback();
+        Assert.assertNull(this.sqlgGraph.tx().dataSource());
+
+        this.sqlgGraph.tx().dataSource("readOnly");
         try {
-            this.sqlgGraph.readOnlyTraversal().addV("A").property("name", "b").iterate();
+            this.sqlgGraph.traversal().addV("A").property("name", "b").iterate();
             Assert.fail();
         } catch (Exception e) {
             //noop
         }
+        Assert.assertEquals("readOnly", this.sqlgGraph.tx().dataSource());
         this.sqlgGraph.tx().rollback();
-        vertexList = this.sqlgGraph.readOnlyTraversal().V().hasLabel("A").toList();
+        Assert.assertNull(this.sqlgGraph.tx().dataSource());
+
+        this.sqlgGraph.tx().dataSource("readOnly");
+        vertexList = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, vertexList.size());
 
         Vertex v = vertexList.get(0);
@@ -138,9 +152,16 @@ public class TestAdditionalPools {
             //noop
         }
         this.sqlgGraph.tx().rollback();
+        Assert.assertNull(this.sqlgGraph.tx().dataSource());
+
         v.property("name", "aa");
         this.sqlgGraph.tx().commit();
 
-        Assert.assertTrue(this.sqlgGraph.readOnlyTraversal().V().hasLabel("A").has("name", "aa").hasNext());
+        this.sqlgGraph.tx().dataSource("readOnly");
+        Assert.assertTrue(this.sqlgGraph.traversal().V().hasLabel("A").has("name", "aa").hasNext());
+        Assert.assertEquals("readOnly", this.sqlgGraph.tx().dataSource());
+        this.sqlgGraph.tx().commit();
+        Assert.assertNull(this.sqlgGraph.tx().dataSource());
     }
+
 }
