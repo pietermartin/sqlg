@@ -91,7 +91,7 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
         try {
             int numBusyConnections = dss.getHikariPoolMXBean().getActiveConnections();
             if (numBusyConnections > 0) {
-                logger.debug("Open connection on calling close. " + numBusyConnections);
+                logger.debug("Open connection on calling close. {}", numBusyConnections);
             }
         } finally {
             this.dss.close();
@@ -105,7 +105,7 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
             return "[" +
                     "{\"jdbcUrl\":\"" + jdbcUrl + "\"," +
                     "\"jndi\": false," +
-                    "\"numMaxPoolSize\":\"" + dss.getMaximumPoolSize() + "\"," +
+                    "\"numMaxPoolSize\":\"" + dss.getMaximumPoolSize() + "\"" +
                     "}" +
                     "]";
         } catch (Exception e) {
