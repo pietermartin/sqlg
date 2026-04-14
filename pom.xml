@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
     <version>3.1.7-SNAPSHOT</version>
     <name>sqlg</name>
-    <description>Sqlg is a tinkerpop 3 implementation on top of a rdbms.
+    <description>Sqlg is a TinkerPop 3 implementation on top of a rdbms.
     </description>
     <url>https://github.com/pietermartin/sqlg</url>
     <licenses>
