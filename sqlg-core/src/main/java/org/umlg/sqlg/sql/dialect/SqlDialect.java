@@ -48,7 +48,7 @@ public interface SqlDialect {
      *
      * @return the TYPE_NAME for the given Types constant.
      */
-    PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter);
+    PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
     void validateProperty(Object key, Object value);
 

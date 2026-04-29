@@ -99,7 +99,7 @@ public class H2Dialect extends BaseSqlDialect {
             case Types.VARBINARY:
                 return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+                return sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
@@ -107,19 +107,16 @@ public class H2Dialect extends BaseSqlDialect {
 
     /**
      * All this is because H2 does not return the TYPE_NAME for column meta data.
-     * The strategy is to actualy query the table get the column's value and interrogate it to get its type.
+     * The strategy is to actually query the tabel get the column's value and interrogate it to get its type.
      * If the column has no data then we are stuffed and an exception is thrown.
      *
      * @param typeName
-     * @param sqlgGraph
-     * @param schema
-     * @param table
      * @param columnName
      * @param metaDataIter
      * @return
      */
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "BOOLEAN ARRAY":
                 return PropertyType.BOOLEAN_ARRAY;

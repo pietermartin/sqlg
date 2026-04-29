@@ -430,13 +430,13 @@ public class MysqlDialect extends BaseSqlDialect {
             case Types.TIME -> PropertyType.LOCALTIME;
             case Types.VARBINARY -> PropertyType.BYTE_ARRAY;
             case Types.ARRAY ->
-                    sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+                    sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
         };
     }
 
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "BOOLEAN ARRAY":
                 return PropertyType.BOOLEAN_ARRAY;

@@ -1802,14 +1802,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     };
             case Types.BINARY -> BYTE_ARRAY;
             case Types.ARRAY ->
-                    sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+                    sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
         };
     }
 
     @SuppressWarnings("Duplicates")
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "_bool" -> {
                 return BOOLEAN_ARRAY;
@@ -1839,7 +1839,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.LOCALTIME_ARRAY;
             }
             case "_timestamp" -> {
-                //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
+                //need to check the next column to know if it's a LocalDateTime or ZonedDateTime array
                 Triple<String, Integer, String> metaData = metaDataIter.next();
                 metaDataIter.previous();
                 if (metaData.getLeft().startsWith(columnName + "~~~")) {

@@ -862,7 +862,7 @@ class SqlgStartupManager {
             if (column2Name.startsWith(columnName + "~~~")) {
                 if (column2Type == Types.VARCHAR) {
                     propertyDefinition = PropertyDefinition.of(PropertyType.ZONEDDATETIME);
-                } else if ((column2Type == Types.ARRAY && this.sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, this.sqlgGraph, schema, table, column2Name, metaDataIter) == PropertyType.STRING_ARRAY)) {
+                } else if ((column2Type == Types.ARRAY && this.sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, column2Name, metaDataIter) == PropertyType.STRING_ARRAY)) {
                     propertyDefinition = PropertyDefinition.of(PropertyType.ZONEDDATETIME_ARRAY);
                 } else {
                     if (metaDataIter.hasNext()) {
@@ -872,7 +872,7 @@ class SqlgStartupManager {
                         int column3Type = column3MetaData.getMiddle();
                         if (column3Name.startsWith(columnName + "~~~")) {
                             if (column3Type == Types.ARRAY) {
-                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName3, this.sqlgGraph, schema, table, column3Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
+                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName3, column3Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
                                 propertyDefinition = PropertyDefinition.of(PropertyType.PERIOD_ARRAY);
                             } else {
                                 Preconditions.checkState(column3Type == Types.INTEGER, "Only Period have a third column and it must be a Integer");
@@ -881,7 +881,7 @@ class SqlgStartupManager {
                         } else {
                             metaDataIter.previous();
                             if (column2Type == Types.ARRAY) {
-                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, this.sqlgGraph, schema, table, column2Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
+                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, column2Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
                                 propertyDefinition = PropertyDefinition.of(PropertyType.DURATION_ARRAY);
                             } else {
                                 Preconditions.checkState(column2Type == Types.INTEGER, "Only Duration and Period have a second column and it must be a Integer");
