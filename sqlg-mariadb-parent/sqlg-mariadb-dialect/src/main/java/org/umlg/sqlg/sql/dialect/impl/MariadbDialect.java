@@ -399,7 +399,7 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(
+    public PropertyType internalSqlTypeToPropertyType(
             SqlgGraph sqlgGraph,
             String schema,
             String table,
@@ -425,13 +425,13 @@ public class MariadbDialect extends BaseSqlDialect {
             case Types.TIME -> PropertyType.LOCALTIME;
             case Types.VARBINARY -> PropertyType.BYTE_ARRAY;
             case Types.ARRAY ->
-                    sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
+                    internalSqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
         };
     }
 
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "BOOLEAN ARRAY":
                 return PropertyType.BOOLEAN_ARRAY;

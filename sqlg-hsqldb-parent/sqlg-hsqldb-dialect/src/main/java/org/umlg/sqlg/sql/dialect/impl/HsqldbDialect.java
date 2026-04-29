@@ -422,7 +422,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -447,14 +447,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case Types.VARBINARY:
                 return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
+                return internalSqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
     }
 
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "BOOLEAN ARRAY":
                 return PropertyType.BOOLEAN_ARRAY;

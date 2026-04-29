@@ -39,7 +39,11 @@ public interface SqlDialect {
 
     Set<String> getInternalSchemas();
 
-    PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter);
+    PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
+
+    PropertyType sqlArrayTypeNameToPropertyType(String typeName);
+
+    PropertyType internalSqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
     /**
      * "TYPE_NAME" is column meta data returned by the jdbc driver.
@@ -48,7 +52,7 @@ public interface SqlDialect {
      *
      * @return the TYPE_NAME for the given Types constant.
      */
-    PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter);
+    PropertyType internalSqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
     void validateProperty(Object key, Object value);
 
@@ -95,6 +99,7 @@ public interface SqlDialect {
     default boolean supportsBigDecimal() {
         return true;
     }
+
     default boolean supportsByteValues() {
         return false;
     }
@@ -493,6 +498,7 @@ public interface SqlDialect {
     }
 
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
+
     default void registerTypes(SqlgGraph sqlgGraph, int propertyTypeOrdinal) {
 
     }
@@ -1300,7 +1306,7 @@ public interface SqlDialect {
                 boolean[] booleans = (boolean[]) value;
                 StringBuilder sb = new StringBuilder("'[");
                 int count = 1;
-                for (boolean aBoolean: booleans) {
+                for (boolean aBoolean : booleans) {
                     sb.append(aBoolean);
                     if (count++ < booleans.length) {
                         sb.append(",");
@@ -1424,6 +1430,7 @@ public interface SqlDialect {
 
     /**
      * This is only needed for Hsqldb where we are unable to check for the existence of Sqlg's schemas
+     *
      * @return true if the user can create schemas
      */
     default boolean canUserCreateSchemas(SqlgGraph sqlgGraph) {
@@ -1459,7 +1466,7 @@ public interface SqlDialect {
     }
 
     default byte[] toByteArray(Object object7) {
-        return (byte[])object7;
+        return (byte[]) object7;
     }
 
     default String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {

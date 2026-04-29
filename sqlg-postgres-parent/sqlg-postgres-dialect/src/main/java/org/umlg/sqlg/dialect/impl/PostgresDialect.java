@@ -1779,7 +1779,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      * This is only used for upgrading from pre sqlg_schema sqlg to a sqlg_schema
      */
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         return switch (sqlType) {
             case Types.BIT -> PropertyType.BOOLEAN;
             case Types.SMALLINT -> PropertyType.SHORT;
@@ -1802,14 +1802,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     };
             case Types.BINARY -> BYTE_ARRAY;
             case Types.ARRAY ->
-                    sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
+                    internalSqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
         };
     }
 
     @SuppressWarnings("Duplicates")
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "_bool" -> {
                 return BOOLEAN_ARRAY;

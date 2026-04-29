@@ -412,7 +412,7 @@ public class MysqlDialect extends BaseSqlDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         return switch (sqlType) {
             case Types.BOOLEAN -> PropertyType.BOOLEAN;
             case Types.SMALLINT -> PropertyType.SHORT;
@@ -430,13 +430,13 @@ public class MysqlDialect extends BaseSqlDialect {
             case Types.TIME -> PropertyType.LOCALTIME;
             case Types.VARBINARY -> PropertyType.BYTE_ARRAY;
             case Types.ARRAY ->
-                    sqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
+                    internalSqlArrayTypeNameToPropertyType(typeName, column, metaDataIter);
             default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
         };
     }
 
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType internalSqlArrayTypeNameToPropertyType(String typeName, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "BOOLEAN ARRAY":
                 return PropertyType.BOOLEAN_ARRAY;

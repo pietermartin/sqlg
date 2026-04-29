@@ -19,7 +19,8 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.PropertyType.JSON_ORDINAL;
+import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.PropertyType.SHORT_ARRAY;
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
@@ -32,6 +33,80 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     protected BaseSqlDialect() {
     }
+
+    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
+        return switch (sqlType) {
+            case Types.BIT -> PropertyType.BOOLEAN;
+            case Types.SMALLINT -> PropertyType.SHORT;
+            case Types.INTEGER -> PropertyType.INTEGER;
+            case Types.BIGINT -> PropertyType.LONG;
+            case Types.REAL -> PropertyType.FLOAT;
+            case Types.DOUBLE -> PropertyType.DOUBLE;
+            case Types.VARCHAR -> PropertyType.STRING;
+            case Types.TIMESTAMP -> PropertyType.LOCALDATETIME;
+            case Types.DATE -> PropertyType.LOCALDATE;
+            case Types.TIME -> PropertyType.LOCALTIME;
+            case Types.OTHER ->
+                //this is an f up as only JSON can be used for other.
+                //means all the gis data types which are also OTHER are not supported
+                    switch (typeName) {
+                        case "jsonb" -> PropertyType.JSON;
+//                        case "geometry" -> getPostGisGeometryType(sqlgGraph, schema, table, column);
+//                        case "geography" -> getPostGisGeographyType(sqlgGraph, schema, table, column);
+                        default -> throw new RuntimeException("Other type not supported " + typeName);
+                    };
+            case Types.BINARY -> BYTE_ARRAY;
+            case Types.ARRAY -> sqlArrayTypeNameToPropertyType(typeName);
+            default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
+        };
+    }
+
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName) {
+        switch (typeName) {
+            case "_bool" -> {
+                return BOOLEAN_ARRAY;
+            }
+            case "_int2" -> {
+                return SHORT_ARRAY;
+            }
+            case "_int4" -> {
+                return PropertyType.INTEGER_ARRAY;
+            }
+            case "_int8" -> {
+                return PropertyType.LONG_ARRAY;
+            }
+            case "_float4" -> {
+                return PropertyType.FLOAT_ARRAY;
+            }
+            case "_float8" -> {
+                return PropertyType.DOUBLE_ARRAY;
+            }
+            case "_text" -> {
+                return PropertyType.STRING_ARRAY;
+            }
+            case "_date" -> {
+                return PropertyType.LOCALDATE_ARRAY;
+            }
+            case "_time" -> {
+                return PropertyType.LOCALTIME_ARRAY;
+            }
+//            case "_timestamp" -> {
+//                //need to check the next column to know if it's a LocalDateTime or ZonedDateTime array
+//                Triple<String, Integer, String> metaData = metaDataIter.next();
+//                metaDataIter.previous();
+//                if (metaData.getLeft().startsWith(columnName + "~~~")) {
+//                    return PropertyType.ZONEDDATETIME_ARRAY;
+//                } else {
+//                    return PropertyType.LOCALDATETIME_ARRAY;
+//                }
+//            }
+            case "_jsonb" -> {
+                return PropertyType.JSON_ARRAY;
+            }
+            default -> throw new RuntimeException("Array type not supported " + typeName);
+        }
+    }
+
 
     public void validateColumnName(String column) {
         if (column.endsWith(IN_VERTEX_COLUMN_END) || column.endsWith(OUT_VERTEX_COLUMN_END)) {
