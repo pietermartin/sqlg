@@ -445,7 +445,6 @@ public class SqlgUtil {
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-                    Preconditions.checkState(!labeledElements.isEmpty());
                     if (lastSchemaTableTree.getReplacedStepDepth() == lastSchemaTableTree.getStepDepth() &&
                             lastSchemaTableTree.isEmit() &&
                             lastSchemaTableTree.isUntilFirst()) {

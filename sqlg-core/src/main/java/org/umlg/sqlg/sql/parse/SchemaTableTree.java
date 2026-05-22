@@ -1031,14 +1031,27 @@ public class SchemaTableTree {
                 );
             }
             singlePathSql.append(sql);
+
+            //LEFT JOIN is for recursive queries with a .not(__.out("ab))
+            //List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+            //   .not(__.out("ab"))
+            //   .toList();
             if (count == 1) {
-                singlePathSql.append("\n) a").append(count++).append(" INNER JOIN (");
+                if (subQueryLinkedList.getLast().isOuterLeftJoin()) {
+                    singlePathSql.append("\n) a").append(count++).append(" LEFT JOIN (");
+                } else {
+                    singlePathSql.append("\n) a").append(count++).append(" INNER JOIN (");
+                }
             } else {
                 //join the last with the first
                 singlePathSql.append("\n) a").append(count).append(" ON ");
                 singlePathSql.append(constructSectionedJoin(sqlgGraph, lastOfPrevious, firstSchemaTableTree, count));
                 if (count++ < subQueryLinkedLists.size()) {
-                    singlePathSql.append(" INNER JOIN (");
+                    if (subQueryLinkedList.getLast().isOuterLeftJoin()) {
+                        singlePathSql.append(" LEFT JOIN (");
+                    } else {
+                        singlePathSql.append(" INNER JOIN (");
+                    }
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();

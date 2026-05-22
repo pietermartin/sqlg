@@ -19,6 +19,62 @@ import java.util.List;
 public class TestNotOutStep extends BaseTest {
 
     @Test
+    public void testCardModules() {
+
+        Vertex shelf = this.sqlgGraph.addVertex(T.label, "Shelf", "name", "shelf1");
+        Vertex card1 = this.sqlgGraph.addVertex(T.label, "Card", "name", "card1");
+        Vertex card2 = this.sqlgGraph.addVertex(T.label, "Card", "name", "card2");
+        Vertex module1 = this.sqlgGraph.addVertex(T.label, "Card", "name", "module1");
+        shelf.addEdge("shelf_card", card1);
+        shelf.addEdge("shelf_card", card2);
+        shelf.addEdge("shelf_card", module1);
+        card1.addEdge("module", module1);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> cards = this.sqlgGraph.traversal().V().hasLabel("Shelf")
+                .out("shelf_card")
+                .not(__.out("module"))
+                .toList();
+        Assert.assertEquals(2, cards.size());
+    }
+
+    @Test
+    public void testNotOutOnRecursivelyManyJoins() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+        Vertex a5 = this.sqlgGraph.addVertex(T.label, "A", "name", "a5");
+        a1.addEdge("ab", a2);
+        a1.addEdge("ab", a3);
+        a1.addEdge("ab", a4);
+        a4.addEdge("ab", a5);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .not(org.umlg.sqlg.structure.__.out("ab"))
+                .toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testNotOutOnRecursivelyTraversedEdge() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+        Vertex a5 = this.sqlgGraph.addVertex(T.label, "A", "name", "a5");
+        a1.addEdge("ab", a2);
+        a1.addEdge("ab", a3);
+        a1.addEdge("ab", a4);
+        a4.addEdge("ab", a5);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .not(org.umlg.sqlg.structure.__.out("ab"))
+                .toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
     public void testProcessTestsFailure() {
         loadModern();
         //this traversal gets optimized into a Not traversal by TinkerPop
