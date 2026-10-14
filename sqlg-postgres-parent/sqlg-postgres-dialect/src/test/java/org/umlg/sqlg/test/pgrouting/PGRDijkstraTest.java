@@ -21,6 +21,57 @@ public class PGRDijkstraTest extends BasePGRouting {
     private final static Logger LOGGER = LoggerFactory.getLogger(PGRDijkstraTest.class);
 
     @Test
+    public void testDijkstraWithCost() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        aVertexLabel.ensureEdgeLabelExist("ab", aVertexLabel, new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+            put("cost", PropertyDefinition.of(PropertyType.DOUBLE));
+            put("reverse_cost", PropertyDefinition.of(PropertyType.DOUBLE));
+        }});
+        this.sqlgGraph.tx().commit();
+
+
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "A", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "A", "name", "c");
+        Vertex d = this.sqlgGraph.addVertex(T.label, "A", "name", "d");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "A", "name", "e");
+        Vertex f = this.sqlgGraph.addVertex(T.label, "A", "name", "f");
+        Vertex g = this.sqlgGraph.addVertex(T.label, "A", "name", "g");
+
+        String edgeLabelName = "edges";
+        Edge e1 = a.addEdge(edgeLabelName, b,"cost", 1D, "reverse_cost", 1D);
+        Edge e2 = b.addEdge(edgeLabelName, c,  "cost", 1D, "reverse_cost", 1D);
+        Edge e3 = c.addEdge(edgeLabelName, d,  "cost", 2D, "reverse_cost", 1D);
+        Edge e4 = d.addEdge(edgeLabelName, g,  "cost", 1D, "reverse_cost", 1D);
+        Edge e5 = b.addEdge(edgeLabelName, e,  "cost", 1D, "reverse_cost", 1D);
+        Edge e6 = e.addEdge(edgeLabelName, f, "cost", 1D, "reverse_cost", 1D);
+        Edge e7 = f.addEdge(edgeLabelName, g, "cost", 1D, "reverse_cost", 1D);
+
+        this.sqlgGraph.tx().commit();
+
+        List<Path> directed_paths = this.sqlgGraph.traversal().E().hasLabel("edges")
+                .dijkstra(((RecordId)(a.id())).sequenceId(), ((RecordId)(g.id())).sequenceId(), true)
+                .toList();
+        Assert.assertEquals(1, directed_paths.size());
+        Assert.assertEquals(9, directed_paths.get(0).size());
+        StringBuilder path = new StringBuilder();
+        for (Object o : directed_paths.get(0)) {
+            if (o instanceof Vertex vertex) {
+                path.append(vertex.<String>value("name"));
+                path.append(" -> ");
+            } else if (o instanceof Edge edge) {
+
+            } else {
+                Assert.fail();
+            }
+        }
+        LOGGER.info(path.toString());
+    }
+
+    @Test
     public void testDirectionFalseIsNotTheSameAsDirectionBoth() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new LinkedHashMap<>() {{
             put("name", PropertyDefinition.of(PropertyType.STRING));
