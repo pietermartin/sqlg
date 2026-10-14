@@ -1513,7 +1513,7 @@ public class Topology {
                     int lower = rs.getInt("propertyLowerMultiplicity");
                     int upper = rs.getInt("propertyUpperMultiplicity");
                     PropertyColumn property = new PropertyColumn(
-                            vertexLabel,
+                            edgeLabel,
                             propertyName,
                             PropertyDefinition.of(
                                     PropertyType.valueOf(propertyType),
