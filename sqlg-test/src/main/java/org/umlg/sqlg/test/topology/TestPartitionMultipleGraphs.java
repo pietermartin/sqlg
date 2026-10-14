@@ -214,4 +214,39 @@ public class TestPartitionMultipleGraphs extends BaseTest {
         Assert.assertFalse(p.isPresent());
     }
 
+    @Test
+    public void testNotifyRemovedSubPartition() throws InterruptedException {
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("name", "date")),
+                PartitionType.LIST,
+                "\"name\""
+        );
+        Partition a1 = a.ensureListPartitionWithSubPartitionExists("a1", "'a1'", PartitionType.RANGE, "\"date\"");
+        a1.ensureRangePartitionExists("a1_oct", "'2025-10-01'", "'2025-11-01'");
+        this.sqlgGraph.tx().commit();
+        Thread.sleep(1000);
+        Assert.assertTrue(subPartition(this.sqlgGraph1, "a1_oct").isPresent());
+
+        a1.getPartition("a1_oct").orElseThrow().remove();
+        this.sqlgGraph.tx().commit();
+        Thread.sleep(1000);
+        Assert.assertTrue(subPartition(this.sqlgGraph1, "a1_oct").isEmpty());
+
+        a1.ensureRangePartitionExists("a1_oct", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().commit();
+        Thread.sleep(1000);
+        Assert.assertEquals("'2026-10-01'", subPartition(this.sqlgGraph1, "a1_oct").orElseThrow().getFrom());
+    }
+
+    private static Optional<Partition> subPartition(SqlgGraph sqlgGraph, String name) {
+        return sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").orElseThrow()
+                .getPartition("a1").orElseThrow().getPartition(name);
+    }
+
 }

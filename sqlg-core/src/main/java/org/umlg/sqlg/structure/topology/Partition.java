@@ -245,6 +245,13 @@ public class Partition implements TopologyInf {
             } else {
                 partition.detach();
             }
+            //without it afterCommit skips the label and the removed partition stays in the topology
+            getAbstractLabel().markDirty();
+            getAbstractLabel().getSchema().markDirty();
+            if (getAbstractLabel() instanceof EdgeLabel edgeLabel) {
+                edgeLabel.getInVertexLabels().forEach(AbstractLabel::markDirty);
+                edgeLabel.getOutVertexLabels().forEach(AbstractLabel::markDirty);
+            }
             this.getAbstractLabel().getSchema().getTopology().fire(partition, partition, TopologyChangeAction.DELETE, true);
         }
     }

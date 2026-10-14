@@ -2,7 +2,9 @@ package org.umlg.sqlg.test.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -13,10 +15,44 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TestPartitionRemove extends BaseTest {
+
+    @Test
+    public void testRemoveSubPartitionAndRecreateWithSameName() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        VertexLabel aVertexLabel = aSchema.ensurePartitionedVertexLabelExist("A",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("name", "date")),
+                PartitionType.LIST,
+                "\"name\""
+        );
+        Partition a1 = aVertexLabel.ensureListPartitionWithSubPartitionExists("a1", "'a1'", PartitionType.RANGE, "\"date\"");
+        a1.ensureRangePartitionExists("a1_oct", "'2025-10-01'", "'2025-11-01'");
+        this.sqlgGraph.tx().commit();
+
+        a1.getPartition("a1_oct").orElseThrow().remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(a1.getPartition("a1_oct").isEmpty());
+        Assert.assertTrue(aVertexLabel.getPartition("a1").orElseThrow().getPartitions().isEmpty());
+
+        //the name can be used again, for a different range
+        a1.ensureRangePartitionExists("a1_oct", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().commit();
+        Partition oct = a1.getPartition("a1_oct").orElseThrow();
+        Assert.assertEquals("'2026-10-01'", oct.getFrom());
+        Assert.assertEquals("'2026-11-01'", oct.getTo());
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "date", LocalDate.of(2026, 10, 8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A.A").count().next(), 0);
+    }
 
     @Test
     public void testRemovePartitionViaVertexLabelRemove() {
