@@ -323,6 +323,12 @@ public class TestInet extends BaseTest {
     }
 
     @Test
+    public void testAddToLastOctetAgain() {
+        PGinet pGinet = new PGinet("10.10.90.0/31");
+        Assert.assertEquals("10.10.90.1/31", pGinet.addToLastOctet(1).getValue());
+    }
+
+    @Test
     public void testAddToLastOctet() {
         PGinet pGinet = new PGinet("10.10.90.34");
         Assert.assertEquals("10.10.90.44", pGinet.addToLastOctet(10).getValue());
