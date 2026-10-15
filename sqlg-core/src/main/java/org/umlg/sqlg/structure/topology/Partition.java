@@ -848,6 +848,7 @@ public class Partition implements TopologyInf {
 
     void afterRollback() {
         Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSchemaChanged(), "Partition.afterRollback must have schemaChanged = true");
+        this.uncommittedPartitions.clear();
         this.uncommittedRemovedPartitions.clear();
         for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
             entry.getValue().afterRollback();

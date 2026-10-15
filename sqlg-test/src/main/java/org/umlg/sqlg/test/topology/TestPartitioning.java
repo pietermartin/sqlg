@@ -37,6 +37,63 @@ public class TestPartitioning extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
     }
 
+    @Test
+    public void testRolledBackPartitionIsCreatedInTheNextTransaction() {
+        VertexLabel a = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid", "date")),
+                PartitionType.RANGE,
+                "\"date\""
+        );
+        a.ensureRangePartitionExists("a_2026_09", "'2026-09-01'", "'2026-10-01'");
+        this.sqlgGraph.tx().commit();
+
+        a.ensureRangePartitionExists("a_2026_10", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().rollback();
+        Assert.assertTrue(a.getPartition("a_2026_10").isEmpty());
+
+        //the same thread creates it again, this time it must really be created
+        a.ensureRangePartitionExists("a_2026_10", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(a.getPartition("a_2026_10").isPresent());
+        this.sqlgGraph.addVertex(T.label, "A", "uid", "1", "date", LocalDate.of(2026, 10, 8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+    }
+
+    @Test
+    public void testRolledBackSubPartitionIsCreatedInTheNextTransaction() {
+        VertexLabel b = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("name", "date")),
+                PartitionType.LIST,
+                "\"name\""
+        );
+        Partition b1 = b.ensureListPartitionWithSubPartitionExists("b1", "'b1'", PartitionType.RANGE, "\"date\"");
+        b1.ensureRangePartitionExists("b1_2026_09", "'2026-09-01'", "'2026-10-01'");
+        this.sqlgGraph.tx().commit();
+
+        b1.ensureRangePartitionExists("b1_2026_10", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().rollback();
+        Assert.assertTrue(b1.getPartition("b1_2026_10").isEmpty());
+
+        //the same thread creates it again, this time it must really be created
+        b1.ensureRangePartitionExists("b1_2026_10", "'2026-10-01'", "'2026-11-01'");
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(b1.getPartition("b1_2026_10").isPresent());
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b1", "date", LocalDate.of(2026, 10, 8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+    }
+
     private enum TEST {
         TEST1,
         TEST2,

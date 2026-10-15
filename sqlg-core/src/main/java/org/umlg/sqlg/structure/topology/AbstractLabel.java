@@ -1077,6 +1077,9 @@ public abstract class AbstractLabel implements TopologyInf {
                 entry.getValue().afterRollback();
             }
         }
+        //the partitions created in the rolled back transaction, left behind they make the next transaction on this
+        //thread believe the partition exists without creating it
+        this.uncommittedPartitions.clear();
         this.uncommittedRemovedPartitions.clear();
         if (!this.partitions.isEmpty()) {
             for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
